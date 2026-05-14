@@ -1,0 +1,357 @@
+---
+title: "Local MCP Server"
+description: "Connect Claude Desktop to Prometheux using the local MCP server."
+---
+
+# Local MCP Server for Claude Desktop
+
+Connect Claude Desktop to Prometheux using the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) — an open standard that enables AI assistants to interact with external tools and data sources.
+
+The local MCP server (`prometheux-mcp`) runs on your machine alongside Claude Desktop, providing a simple and secure way to integrate AI agents with your Prometheux ontologies.
+
+## Why Use Local MCP?
+
+**Best for:** Claude Desktop users, development environments, on-premise deployments
+
+**Pros:**
+- Simple pip install
+- Runs locally (no external dependencies)
+- Full control over credentials
+- Works with any Prometheux instance (cloud or on-premise)
+
+**Cons:**
+- Requires Claude Desktop app (not available for Claude Web)
+- Needs to be installed on each machine
+
+**Use this when:**
+- You're using Claude Desktop
+- You want a simple, local installation
+- You're developing or testing locally
+
+<Info>
+If you want to connect from Claude Web, Genie Code, or any other MCP client, check out the [Remote MCP Server](/integrations/mcp/remote) and the [Client Guides](/integrations/mcp/claude).
+</Info>
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Prometheux account** with access to a deployed instance
+- **Claude Desktop** installed on your machine ([download here](https://claude.ai/download))
+- **Your credentials**: token, username, and organization from your Prometheux admin
+
+### Installation
+
+<Tabs>
+  <Tab title="Automated (Recommended)">
+
+**Easiest method** - download and run our installation script:
+
+**macOS/Linux:**
+```bash
+curl -sSL https://raw.githubusercontent.com/prometheuxresearch/px-mcp-server/main/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/prometheuxresearch/px-mcp-server/main/install.ps1" -OutFile "install.ps1"
+.\install.ps1
+```
+
+The script will:
+- Install `pipx` (if not already installed)
+- Install `prometheux-mcp` package from PyPI
+- Prompt for your credentials (URL, token, username, organization)
+- Automatically configure Claude Desktop
+- Create backups of existing configuration
+
+Then just restart Claude Desktop and you're ready!
+
+  </Tab>
+  <Tab title="Manual Install">
+
+**Manual installation using pipx:**
+
+pipx installs the package in an isolated environment and works reliably with Claude Desktop on all platforms.
+
+**macOS:**
+```bash
+brew install pipx
+pipx ensurepath
+pipx install prometheux-mcp
+```
+
+**Windows:**
+```bash
+pip install pipx
+pipx ensurepath
+pipx install prometheux-mcp
+```
+
+**Linux:**
+```bash
+pip install pipx
+pipx ensurepath
+pipx install prometheux-mcp
+```
+
+After installation, you'll need to manually configure Claude Desktop (see Configuration section below).
+
+  </Tab>
+</Tabs>
+
+### Configuration
+
+<Info>
+If you used the automated installation script, configuration was done automatically. Skip to the [Usage](#usage) section below.
+</Info>
+
+**For manual installations only:**
+
+#### 1. Get Your Credentials
+
+You'll need:
+- **Server URL** (e.g., `https://api.prometheux.ai` or your on-premise URL)
+- **Authentication token**
+- **Username**
+- **Organization**
+
+Contact your Prometheux admin or check your account settings for these credentials.
+
+#### 2. Configure Claude Desktop
+
+Edit the Claude Desktop configuration file:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+<Tabs>
+  <Tab title="Configuration">
+
+```json
+{
+  "mcpServers": {
+    "prometheux": {
+      "command": "/Users/YOUR_USERNAME/.local/bin/prometheux-mcp",
+      "args": ["--url", "https://api.prometheux.ai"],
+      "env": {
+        "PROMETHEUX_TOKEN": "your_token_here",
+        "PROMETHEUX_USERNAME": "your_username",
+        "PROMETHEUX_ORGANIZATION": "your_organization"
+      }
+    }
+  }
+}
+```
+
+<Tip>
+Run this in your terminal to find the full path:
+- **macOS/Linux:** `which prometheux-mcp`
+- **Windows:** `where prometheux-mcp` (in PowerShell or Command Prompt)
+
+**Common paths after pipx install:**
+- **macOS:** `/Users/YOUR_USERNAME/.local/bin/prometheux-mcp`
+- **Windows:** `C:\\Users\\YOUR_USERNAME\\.local\\bin\\prometheux-mcp.exe`
+- **Linux:** `/home/YOUR_USERNAME/.local/bin/prometheux-mcp`
+
+Use double backslashes (`\\`) for Windows paths in JSON.
+</Tip>
+
+<Tip>
+The server automatically constructs the full API path using your username and organization: `{url}/jarvispy/{organization}/{username}/mcp/messages`
+</Tip>
+
+<Tip>
+For on-premise deployments or custom URLs, replace `https://api.prometheux.ai` with your own server URL:
+```
+"args": ["--url", "https://your-custom-domain.com"]
+```
+</Tip>
+
+  </Tab>
+  <Tab title="With Debug Mode">
+
+Add `--debug` flag to see detailed logs in Claude Desktop's console:
+
+```json
+{
+  "mcpServers": {
+    "prometheux": {
+      "command": "/Users/YOUR_USERNAME/.local/bin/prometheux-mcp",
+      "args": ["--url", "https://api.prometheux.ai", "--debug"],
+      "env": {
+        "PROMETHEUX_TOKEN": "your_token_here",
+        "PROMETHEUX_USERNAME": "your_username",
+        "PROMETHEUX_ORGANIZATION": "your_organization"
+      }
+    }
+  }
+}
+```
+
+Replace the command path with your actual path (see previous tab for how to find it).
+
+  </Tab>
+</Tabs>
+
+#### 3. Restart Claude Desktop
+
+Completely quit Claude Desktop (Cmd+Q on macOS, or close from system tray) and reopen it. The MCP server will start automatically when Claude launches.
+
+## Usage
+
+Once configured, just chat naturally with Claude. The AI will automatically use the Prometheux MCP tools when relevant.
+
+<Tip>
+See the [MCP overview page](/integrations/mcp/overview#example-usage) for example conversations and a complete list of available tools.
+</Tip>
+
+## Troubleshooting
+
+### "command not found" or "Server disconnected" error
+
+Claude Desktop can't find the `prometheux-mcp` command.
+
+**Solution:**
+
+<Tip>
+If you used manual installation, try the automated installation script instead - it handles all path configuration automatically:
+```bash
+# macOS/Linux
+curl -sSL https://raw.githubusercontent.com/prometheuxresearch/px-mcp-server/main/install.sh -o install.sh && chmod +x install.sh && ./install.sh
+```
+```powershell
+# Windows
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/prometheuxresearch/px-mcp-server/main/install.ps1" -OutFile "install.ps1"; .\install.ps1
+```
+</Tip>
+
+**Manual fix:**
+
+*macOS:*
+1. Find the full path: `which prometheux-mcp`
+2. Use that full path in your config (usually `/Users/YOUR_USERNAME/.local/bin/prometheux-mcp`)
+3. Restart Claude Desktop completely (Cmd+Q, then reopen)
+
+*Windows:*
+1. Find the full path: `where prometheux-mcp` (in PowerShell or Command Prompt)
+2. Use that full path in your config with double backslashes (e.g., `C:\\Users\\YOUR_USERNAME\\.local\\bin\\prometheux-mcp.exe`)
+3. Restart Claude Desktop
+
+*Linux:*
+1. Find the full path: `which prometheux-mcp`
+2. Use that full path in your config (usually `/home/YOUR_USERNAME/.local/bin/prometheux-mcp`)
+3. Restart Claude Desktop
+
+<Tip>
+GUI applications like Claude Desktop may not inherit your terminal's PATH. Using the full path is more reliable than the short command.
+</Tip>
+
+### "Connection refused" error
+
+The MCP server can't reach your Prometheux instance.
+
+**Solution:**
+1. Verify your server URL is correct and accessible
+2. Test the connection: `curl https://your-server-url/mcp/info`
+3. Check if you're behind a VPN or firewall that might block access
+4. For on-premise installations, ensure the server is running
+
+### "Authentication failed" error
+
+Your credentials are incorrect or expired.
+
+**Solution:**
+1. Double-check your token, username, and organization in the config
+2. Verify the credentials with your Prometheux admin
+3. Ensure there are no extra spaces or quotes in the JSON config
+4. Check if your token has expired and needs renewal
+
+### Claude doesn't use the tools
+
+Claude might not realize the tools are relevant to your query.
+
+**Solution:**
+1. Be more explicit: "Use the prometheux tools to list concepts in project X"
+2. Check Claude Desktop's console for MCP errors (View > Developer > Toggle Developer Tools)
+3. Enable debug mode in your config (`--debug` flag) and check logs
+4. Verify the server is connected: look for the hammer icon in Claude Desktop
+
+## Advanced Usage
+
+### Using MCP Programmatically
+
+You can also use the Prometheux MCP package as a Python library:
+
+```python
+import asyncio
+from prometheux_mcp.config import Settings
+from prometheux_mcp.client import PrometheuxClient
+
+async def main():
+    # Configure connection
+    settings = Settings(
+        url="https://api.prometheux.ai",
+        token="your_token",
+        username="your_username",
+        organization="your_org"
+    )
+    
+    # Create client
+    async with PrometheuxClient(settings) as client:
+        # List concepts
+        concepts = await client.list_concepts("project-123")
+        print(f"Found {concepts['count']} concepts")
+        
+        # Run a concept
+        result = await client.run_concept(
+            project_id="project-123",
+            concept_name="my_concept",
+            force_rerun=True
+        )
+        print(f"Derived {result['total_records']} records")
+
+asyncio.run(main())
+```
+
+### Local Development
+
+To test MCP locally with your development instance:
+
+```json
+{
+  "mcpServers": {
+    "prometheux-local": {
+      "command": "prometheux-mcp",
+      "args": ["--url", "http://localhost:8000", "--debug"],
+      "env": {
+        "PROMETHEUX_TOKEN": "dev_token",
+        "PROMETHEUX_USERNAME": "dev_user",
+        "PROMETHEUX_ORGANIZATION": "dev_org"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Learn More
+
+- **MCP Protocol Specification:** [modelcontextprotocol.io](https://modelcontextprotocol.io)
+- **Local MCP Server (GitHub):** [prometheuxresearch/px-mcp-server](https://github.com/prometheuxresearch/px-mcp-server)
+- **Local MCP Server (PyPI):** [prometheux-mcp](https://pypi.org/project/prometheux-mcp/)
+- **Remote MCP Server:** See [Remote MCP Server](/integrations/mcp/remote) for Claude Web integration
+- **Python SDK:** See [Python SDK Reference](/integrations/python-sdk) for alternative integration methods
+- **REST API:** See [REST API Reference](/integrations/rest-api) for direct HTTP access
+
+## Related Resources
+
+- [Concepts API](/integrations/api-endpoints/concepts) - Learn about the concept API
+- [Python SDK](/integrations/python-sdk) - Alternative programmatic access
+- [Chat API](/integrations/chat-api) - Interactive AI chat interface

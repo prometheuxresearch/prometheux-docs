@@ -1,0 +1,146 @@
+---
+title: "Vadalingo (Translations)"
+description: "Translate natural language, SQL, RDF, and OWL into Vadalog programs using LLM-powered translation."
+---
+
+# Vadalingo (Translations)
+
+Translate natural language, SQL, RDF, and OWL into Vadalog programs using LLM-powered translation.
+
+## Natural Language to Vadalog
+
+Translate a natural language description into a Vadalog program. You can reference existing concepts using `@concept_name` in your description — their schemas will be used as context for the translation.
+
+**HTTP Request:**
+
+```
+POST /api/v1/vadalingo/{project_id}/translate/nl-to-vadalog
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `domain_knowledge` | string | Yes | Natural language description to translate. Use `@concept_name` to reference existing concepts |
+
+**Example:**
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalingo/my-project-id/translate/nl-to-vadalog" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "domain_knowledge": "Find all companies that are transitively controlled by @owner through ownership chains"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "domain_knowledge": "Find all companies that are transitively controlled by @owner...",
+    "vadalog_program": "control(X, Y) <- owner(X, Y, S), S > 0.5.\ncontrol(X, Z) <- control(X, Y), owner(Y, Z, S), S > 0.5.",
+    "project_id": "my-project-id",
+    "concepts_used": ["owner"],
+    "concepts_source": "tagged"
+  },
+  "message": "Natural language to Vadalog translation completed successfully",
+  "status": "success"
+}
+```
+
+<Tip>
+When you include `@concept_name` in the description, the API fetches those concepts' schemas and provides them as context to the LLM. If no `@` references are found, all project concepts are used as context.
+</Tip>
+
+## SQL to Vadalog
+
+Translate a SQL query into a Vadalog program.
+
+**HTTP Request:**
+
+```
+POST /api/v1/vadalingo/{project_id}/translate/sql-to-vadalog
+```
+
+**Example:**
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalingo/my-project-id/translate/sql-to-vadalog" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "sql_data": "SELECT c.name, SUM(o.amount) FROM customers c JOIN orders o ON c.id = o.customer_id GROUP BY c.name"
+  }'
+```
+
+## RDF to Vadalog
+
+Translate RDF data into a Vadalog program.
+
+**HTTP Request:**
+
+```
+POST /api/v1/vadalingo/{project_id}/translate/rdf-to-vadalog
+```
+
+**Example:**
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalingo/my-project-id/translate/rdf-to-vadalog" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "rdf_data": "<http://example.org/Alice> <http://xmlns.com/foaf/0.1/knows> <http://example.org/Bob> ."
+  }'
+```
+
+## OWL to Vadalog
+
+Translate an OWL ontology into Vadalog rules. Supports RDF/XML, Turtle, N3, and N-Triples formats. Can optionally generate Parquet data files and save the result as a concept.
+
+**HTTP Request:**
+
+```
+POST /api/v1/vadalingo/{project_id}/translate/owl-to-vadalog
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `owl_content` | string | Yes | OWL ontology content (RDF/XML, Turtle, N3, N-Triples) |
+| `base_namespace` | string | Yes | Base namespace for local classes and properties |
+| `data_base_path` | string | No | Relative path for Parquet output (e.g. `"owl"`) |
+| `add_concepts` | boolean | No | Save the result as a concept in the project. Default: `false` |
+| `options` | object | No | Configuration options (see below) |
+
+**Options:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `include_imports` | boolean | `false` | Process imported ontologies |
+| `include_schema` | boolean | `false` | Include schema documentation in Vadalog output |
+| `include_not_rules` | boolean | `false` | Generate integrity constraint rules using negation |
+
+**Response:**
+
+```json
+{
+  "data": {
+    "owl_content_length": 4526,
+    "base_namespace": "http://example.org/ontology#",
+    "predicates": { },
+    "rules": [],
+    "vadalog_program": "...",
+    "data_bindings": [],
+    "saved_data_files": [],
+    "metadata": { },
+    "project_id": "my-project-id",
+    "concept_id": null
+  },
+  "message": "OWL to Vadalog translation completed successfully",
+  "status": "success"
+}
+```

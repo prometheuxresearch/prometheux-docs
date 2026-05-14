@@ -1,0 +1,80 @@
+---
+title: "Connect Claude"
+description: "Connect Claude Desktop or Web to Prometheux using the Remote MCP Server."
+---
+
+# Connect Claude to Prometheux
+
+Connect Claude (Desktop or Web) to Prometheux using the [Remote MCP Server](/integrations/mcp/remote). This guide covers the Claude-specific setup steps — for local installation with Claude Desktop, see the [Local MCP Server](/integrations/mcp/local) page instead.
+
+## Prerequisites
+
+- **Claude account** (Desktop or Web) at [claude.ai](https://claude.ai)
+- **Prometheux credentials** (username, organization, API token)
+
+## Setup
+
+1. **Open Claude** (Web at [claude.ai](https://claude.ai), or Desktop app)
+
+2. **Add the MCP Server:**
+   - Click your profile icon → **Settings**
+   - Navigate to **"Connectors"**
+   - Click **"Add custom connector"**
+
+3. **Configure the connection:**
+   - **Name:** `prometheux` (or any name you prefer)
+   - **Remote MCP Server URL:** `https://api.prometheux.ai/px-remote-mcp-server`
+   - Click **"Add"**
+
+4. **Connect:**
+   - Click **"Connect"** on the Prometheux connector
+   - Claude will redirect you to the Prometheux OAuth login page
+   - Enter your credentials:
+     - **Username:** Your Prometheux username
+     - **Organization:** Your Prometheux organization
+     - **API Token:** Your Prometheux authentication token
+   - Click **"Connect to Claude"**
+
+5. **Start using:** The connection is now active. Claude will automatically use the Prometheux tools when relevant to your queries.
+
+## Usage
+
+Once connected, interact naturally with Claude. The AI will automatically use the Prometheux MCP tools when relevant.
+
+<Tip>
+See the [MCP overview page](/integrations/mcp/overview#available-tools) for example conversations and a complete list of available tools.
+</Tip>
+
+## Disconnecting
+
+To disconnect the remote MCP server:
+1. Go to Claude Settings → **Connectors**
+2. Find the Prometheux connector
+3. Click **"Disconnect"**
+
+## Troubleshooting
+
+### "Unable to connect" error
+
+**Solution:**
+- Verify the server URL is correct: `https://api.prometheux.ai/px-remote-mcp-server`
+- Check if your Prometheux credentials are valid
+- Try refreshing your browser and reconnecting
+
+### OAuth login page doesn't load
+
+**Solution:**
+- Check your browser's popup blocker settings
+- Try the connection flow in an incognito/private window
+- Clear your browser cache and cookies for claude.ai
+
+### Tools not appearing in Claude
+
+**Solution:**
+- Ensure you completed the OAuth flow successfully
+- Check Claude's developer console (F12) for error messages
+- Try disconnecting and reconnecting the server
+- Verify the connector shows as "Connected" in Settings
+- Be more explicit in your query: "Use the prometheux tools to list concepts in project X"
+
+For general troubleshooting, see the [Remote MCP Server troubleshooting](/integrations/mcp/remote#troubleshooting) section.

@@ -1,0 +1,271 @@
+---
+title: "Specialized Functions"
+description: "Math, hash, date/time, type casting, interval, and utility functions in Vadalog."
+---
+
+# Specialized Functions
+
+Vadalog provides a comprehensive library of specialized functions for mathematical operations, hashing, date/time manipulation, type casting, and interval checks.
+
+## Mathematical Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `math:mod()` | `(dividend, divisor) → number` | Modulo operation |
+| `math:sqrt()` | `(x) → double` | Square root |
+| `math:abs()` | `(x) → number` | Absolute value |
+| `math:round()` | `(x, scale?) → number` | Round to nearest integer or decimal places |
+| `math:bround()` | `(x, scale?) → number` | Banker's rounding (round to nearest even) |
+| `math:min()` | `(v1, v2, …) → same type` | Minimum value |
+| `math:max()` | `(v1, v2, …) → same type` | Maximum value |
+| `math:log()` | `(x) → double` | Natural logarithm |
+| `math:log10()` | `(x) → double` | Base-10 logarithm |
+| `math:pow()` | `(base, exponent) → double` | Power (exponentiation) |
+| `math:exp()` | `(x) → double` | Exponential (e^x) |
+| `math:ceil()` | `(x) → number` | Round up to nearest integer |
+| `math:floor()` | `(x) → number` | Round down to nearest integer |
+| `math:sin()` | `(x) → double` | Sine |
+| `math:cos()` | `(x) → double` | Cosine |
+| `math:tan()` | `(x) → double` | Tangent |
+| `math:uniform()` | `(upperBound) → number` | Random integer [0, upperBound) |
+| `math:rand()` | `() → double` | Random double [0, 1) |
+| `math:PI()` | `() → double` | Pi constant |
+| `math:E()` | `() → double` | Euler's number |
+
+**Examples:**
+
+```prolog
+% Square root for distance calculation
+distance(X, Y, Distance) <- 
+    point(X, Y), 
+    Distance = math:sqrt(X * X + Y * Y).
+
+% Compound interest
+compound_interest(Principal, Rate, Time, Amount) <- 
+    investment(Principal, Rate, Time), 
+    Amount = Principal * math:pow(1 + Rate, Time).
+
+% Ceiling for packaging
+quantity_boxes(Items, Boxes) <- 
+    order(Items), 
+    Boxes = math:ceil(Items / 24).
+
+% Circle area
+circle_area(Radius, Area) <- 
+    circle(Radius), 
+    Area = math:PI() * math:pow(Radius, 2).
+```
+
+## Hash Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `hash:hash()` | `(v1, v2, …) → int` | 32-bit Spark hash |
+| `hash:sha1()` | `(value) → string` | SHA-1 hash |
+| `hash:md5()` | `(value) → string` | MD5 hash |
+| `hash:sha2()` | `(v1, …, bitLength) → string` | SHA-2 hash (256, 384, 512 bits) |
+
+**Examples:**
+
+```prolog
+% SHA-256 hash
+secure_user_sha256(Username, PasswordHash) <- 
+    user(Username, Password), 
+    PasswordHash = hash:sha2(Password, 256).
+
+% Composite key hash
+composite_hash(User, Pass, Hash) <- 
+    credentials(User, Pass), 
+    Hash = hash:sha2(User, Pass, 256).
+```
+
+## Date and Time Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `date:current_date()` | `() → date` | Current date |
+| `date:current_timestamp()` | `() → timestamp` | Current timestamp |
+| `date:next_day()` | `(date) → date` | Add one day |
+| `date:prev_day()` | `(date) → date` | Subtract one day |
+| `date:add()` | `(date, days) → date` | Add N days |
+| `date:sub()` | `(date, days) → date` | Subtract N days |
+| `date:diff()` | `(end, start) → int` | Difference in days |
+| `date:spec_day()` | `(text "MMM-yyyy") → string` | Parse date with format |
+| `date:to_timestamp()` | `(text, format) → timestamp` | Parse string to timestamp |
+| `date:format()` | `(dateOrTs, pattern) → string` | Format to string |
+
+**Examples:**
+
+```prolog
+% Employee tenure
+employee_tenure(Name, Years) <- 
+    employee(Name, HireDate), 
+    Today = date:current_date(), 
+    Days = date:diff(Today, HireDate), 
+    Years = Days / 365.
+
+% Product expiry
+expiry_date(Product, ExpiryDate) <- 
+    product(Product, ManufactureDate, ShelfLife), 
+    ExpiryDate = date:add(ManufactureDate, ShelfLife).
+
+% Parse timestamp
+parsed_timestamp(Raw, Ts) <- 
+    raw_date(Raw), 
+    Ts = date:to_timestamp(Raw, "yy-M-dd HH:mm:ss,SSS Z").
+```
+
+## Type Casting Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `as_string()` | `(value) → string` | Cast to string |
+| `as_int()` | `(value) → int` | Cast to integer |
+| `as_long()` | `(value) → long` | Cast to long |
+| `as_double()` | `(value) → double` | Cast to double |
+| `as_float()` | `(value) → float` | Cast to float |
+| `as_boolean()` | `(value) → boolean` | Cast to boolean |
+| `as_date()` | `(value) → date` | Cast to date |
+| `as_timestamp()` | `(value) → timestamp` | Cast to timestamp |
+| `as_json()` | `(value) → string` | Cast to JSON string |
+| `as_list()` | `(value, elementType) → list` | Cast to list |
+| `as_set()` | `(value, elementType) → set` | Cast to set |
+| `as_map()` | `(keys, values, types) → map` | Cast to map |
+
+**Example:**
+
+```prolog
+formatted_id(ID) <- 
+    customer(NumericID), 
+    ID = concat("CUST-", as_string(NumericID)).
+```
+
+## Interval Operators
+
+| Function | Bounds | Returns true for |
+|----------|--------|-----------------|
+| `between(v, min, max)` | Exclusive both | `min < v < max` |
+| `_between(v, min, max)` | Left inclusive | `min <= v < max` |
+| `between_(v, min, max)` | Right inclusive | `min < v <= max` |
+| `_between_(v, min, max)` | Both inclusive | `min <= v <= max` |
+
+**Example:**
+
+```prolog
+adult_customers(Name, Age) <- 
+    customer(Name, Age), 
+    IsAdult = _between_(Age, 18, 65), 
+    IsAdult == #T.
+```
+
+## Null Handling Functions
+
+### `is_null()` / `is_not_null()`
+
+```prolog
+b(El, State) <- a(El), State = is_null(El).
+b(El, State) <- a(El), State = is_not_null(El).
+```
+
+### `nullManagement:ifnull()`
+
+Return a fallback value when an expression is null:
+
+```prolog
+b(El, Result) <- a(El), Result = nullManagement:ifnull(El, "was_null", "was_not_null").
+```
+
+### `nullManagement:coalesce()`
+
+Return the first non-null value:
+
+```prolog
+b(Result) <- a(El), Result = nullManagement:coalesce(El, "fallback").
+```
+
+## Utility Functions
+
+### `struct()` / `struct:get()`
+
+Create structured data by pairing keys with values:
+
+```prolog
+a(10, 20).
+b(S) <- a(X, Y), S = struct("field1", X, "field2", Y).
+c(F1, F2) <- b(S), F1 = struct:get("field1", S), F2 = struct:get("field2", S).
+@output("c").
+% Output: c(10, 20).
+```
+
+### `uuid()`
+
+Generate universally unique identifiers:
+
+```prolog
+% Random UUID
+random_id(A, U) <- input(A), U = uuid().
+
+% Deterministic UUID (same inputs always produce same UUID)
+patient_id(Clinic, Patient, UniqueID) <- 
+    patient_data(Clinic, Patient), 
+    UniqueID = uuid(Clinic, Patient).
+```
+
+### `monotonically_increasing_id()`
+
+Generate monotonically increasing IDs:
+
+```prolog
+numbered_records(Name, ID) <- records(Name), ID = monotonically_increasing_id().
+```
+
+### `utils:phone_number()`
+
+Format phone numbers:
+
+```prolog
+% Default region
+formatted_phone(Ph, Fmt) <- phone_data(Ph), Fmt = utils:phone_number(Ph).
+
+% Specific region
+formatted_phone_uk(Ph, Fmt) <- phone_data(Ph), Fmt = utils:phone_number(Ph, "GB").
+```
+
+## Anonymization Functions
+
+### `mask()`
+
+Mask sensitive data for privacy protection. Replaces characters with configurable mask characters ('X', 'x', 'n' by default).
+
+```prolog
+% Basic masking
+masked_email(Name, MaskedEmail) <- 
+    user(Name, Email), 
+    MaskedEmail = mask(Email).
+% "John.Doe123@example.com" → "Xxxx.Xxx nnn@xxxxxxx.xxx"
+
+% Custom characters
+custom_masked_ssn(Person, MaskedSSN) <- 
+    person(Person, SSN), 
+    MaskedSSN = mask(SSN, '*', '*', '#', '-').
+% "123-45-6789" → "###-##-####"
+```
+
+### `anonymization:risk()` / `anonymization:msu()`
+
+Calculate privacy risk scores:
+
+```prolog
+privacy_assessment(Dataset, RiskScore) <- 
+    sensitive_data(Dataset, Attributes), 
+    RiskScore = anonymization:risk(0.1, [1.0, 0.8, 0.6], 1000).
+```
+
+## Kalman Filter Functions
+
+Advanced signal processing and fault detection:
+
+```prolog
+kalmanFilter:fault(A, B, C, R, Q, X, U, nu) → string
+kalmanFilter:extractor(input1, input2, inputNumber) → int
+```

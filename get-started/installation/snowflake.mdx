@@ -1,0 +1,385 @@
+---
+title: "Snowflake Native App"
+description: "For teams already on Snowflake — install directly from the Marketplace with full data sovereignty."
+---
+
+# Snowflake Native App
+
+> For teams already on Snowflake — install directly from the Marketplace with
+> full data sovereignty.
+
+## Overview
+
+Prometheux is available as a **Snowflake Native App** that runs entirely within
+your Snowflake environment. All processing happens inside your account, and the
+app leverages Snowflake's compute, security, and access controls natively.
+
+Key advantages:
+
+- **Data sovereignty** — data is processed within Snowflake
+- **Snowflake-native security** — leverages Snowflake's access controls
+- **Elastic compute** — scales with Snowflake warehouses and compute pools
+- **Marketplace distribution** — easy installation and updates
+
+## Prerequisites
+
+- **Snowflake Account**: Any tier (Standard, Enterprise, Business Critical)
+- **Privileges**: `ACCOUNTADMIN` role for initial setup, or specific grants for
+  non-admin users
+- **Compute Resources**: Access to create or use compute pools
+- **Warehouse**: Any warehouse for database operations
+
+The Snowflake Native Apps framework automatically handles privilege granting for
+application database access, service management, snapshot operations, and
+configuration storage.
+
+## Quick Start
+
+Install directly from the Snowflake Marketplace, then launch from the
+Snowsight UI:
+
+1. **Navigate to Snowsight** — Go to your Snowflake web interface
+2. **Find the App** — Navigate to Data > Apps > Prometheux
+3. **Launch** — Click the "Launch App" button
+4. **Initialize** — The app will auto-configure and provide a launch URL
+
+The platform will automatically create required databases and schemas, set up
+default configuration, and provide a platform access URL.
+
+### View Configuration
+
+```sql
+USE DATABASE prometheux;
+USE SCHEMA v1;
+
+CALL get_app_configuration();
+```
+
+## Warehouse Configuration
+
+Prometheux automatically creates a dedicated warehouse called
+`PROMETHEUX_WAREHOUSE` for read/write operations on your Snowflake databases.
+
+| Setting | Value |
+| --- | --- |
+| Size | SMALL |
+| Auto-suspend | 180 seconds (3 minutes) |
+| Auto-resume | Enabled |
+| Approximate cost | $0.0023/hour when active |
+
+<Tip>
+Prometheux minimizes warehouse usage costs by storing application data in an
+internal PostgreSQL database within the compute pool, only using the Snowflake
+warehouse for operations on your Snowflake databases.
+</Tip>
+
+To use an existing warehouse alongside the app warehouse:
+
+```sql
+GRANT USAGE ON WAREHOUSE YOUR_EXISTING_WH TO APPLICATION prometheux;
+```
+
+## Essential Procedures
+
+### Core Platform Management
+
+```sql
+USE DATABASE prometheux;
+USE SCHEMA v1;
+
+-- Initialize/restart platform with stored configuration
+CALL init();
+
+-- Get platform access URL
+CALL platform_url();
+
+-- Stop platform (automatically creates snapshot)
+CALL stop_platform();
+```
+
+### Configuration Management
+
+```sql
+-- View current configuration
+CALL get_app_configuration();
+
+-- Set compute pool
+CALL set_compute_pool('prometheux_compute_pool');
+
+-- Add external access integrations (comma-separated list)
+CALL add_external_access_integrations('integration1,integration2');
+
+-- Remove external access integrations
+CALL remove_external_access_integrations('integration1');
+```
+
+### Monitoring
+
+```sql
+-- Check snapshot status
+CALL check_snapshots();
+```
+
+View application logs via Snowflake's telemetry events:
+
+```sql
+SELECT
+    TIMESTAMP                      AS time_utc,
+    VALUE::string                  AS message
+FROM SNOWFLAKE.TELEMETRY.EVENTS
+WHERE RECORD_TYPE = 'LOG'
+  AND (
+        RESOURCE_ATTRIBUTES['snow.application.name'] = 'PROMETHEUX'
+        OR RESOURCE_ATTRIBUTES['snow.database.name'] = 'PROMETHEUX'
+      )
+ORDER BY time_utc DESC;
+```
+
+## Uploading Data
+
+<Warning>
+Snowflake's shared file system for Native Apps does not support filenames with
+spaces. Use underscores (`_`) or hyphens (`-`) instead.
+</Warning>
+
+**Via Snowsight UI**: Navigate to Catalog > Database Explorer > PROMETHEUX >
+APP_PUBLIC > STAGES > USER_UPLOADS and use the upload button.
+
+**Via SQL**:
+
+```sql
+USE DATABASE prometheux;
+USE SCHEMA app_public;
+
+PUT file://path/to/your.csv @user_uploads AUTO_COMPRESS=FALSE;
+```
+
+The system automatically transfers your file to the internal block volume and
+makes it available to all back-end components.
+
+## Granting Access to Existing Databases
+
+Prometheux needs different levels of access depending on your use case.
+
+### Read-Only Access
+
+```sql
+USE ROLE ACCOUNTADMIN;
+
+GRANT USAGE ON DATABASE YOUR_DATABASE TO APPLICATION prometheux;
+GRANT USAGE ON SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT SELECT ON ALL TABLES IN SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT SELECT ON ALL VIEWS IN SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+
+SHOW GRANTS TO APPLICATION prometheux;
+```
+
+### Read-Write Access
+
+```sql
+USE ROLE ACCOUNTADMIN;
+
+-- Database and schema access
+GRANT USAGE ON DATABASE YOUR_DATABASE TO APPLICATION prometheux;
+GRANT USAGE ON SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+
+-- Schema-level DDL privileges
+GRANT CREATE TABLE ON SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT CREATE VIEW ON SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT CREATE SEQUENCE ON SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT CREATE FUNCTION ON SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT CREATE PROCEDURE ON SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+
+-- Table-level DML privileges
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+
+-- View, sequence, function, and procedure access
+GRANT SELECT ON ALL VIEWS IN SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT USAGE ON ALL FUNCTIONS IN SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+GRANT USAGE ON ALL PROCEDURES IN SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+
+SHOW GRANTS TO APPLICATION prometheux;
+```
+
+### Granular Access (Specific Tables)
+
+```sql
+USE ROLE ACCOUNTADMIN;
+
+GRANT USAGE ON DATABASE YOUR_DATABASE TO APPLICATION prometheux;
+GRANT USAGE ON SCHEMA YOUR_DATABASE.YOUR_SCHEMA TO APPLICATION prometheux;
+
+GRANT SELECT ON TABLE YOUR_DATABASE.YOUR_SCHEMA.CUSTOMERS TO APPLICATION prometheux;
+GRANT SELECT ON TABLE YOUR_DATABASE.YOUR_SCHEMA.ORDERS TO APPLICATION prometheux;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE YOUR_DATABASE.YOUR_SCHEMA.ANALYSIS_RESULTS TO APPLICATION prometheux;
+
+SHOW GRANTS TO APPLICATION prometheux;
+```
+
+## External Access Configuration
+
+To enable Prometheux to connect to external services, create and configure
+external access integrations in Snowflake. Create the integrations first, then
+add them to the app.
+
+<details>
+<summary><strong>Prometheux API Integration</strong></summary>
+
+```sql
+USE ROLE ACCOUNTADMIN;
+CREATE DATABASE IF NOT EXISTS prometheux_integrations;
+CREATE SCHEMA IF NOT EXISTS prometheux_integrations.security;
+USE DATABASE prometheux_integrations;
+USE SCHEMA prometheux_integrations.security;
+
+CREATE OR REPLACE NETWORK RULE prometheux_network_rule
+  MODE = EGRESS
+  TYPE = HOST_PORT
+  VALUE_LIST = ('*.prometheux.ai', 'databases.prometheux.ai:0');
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION prometheux_outbound
+  ALLOWED_NETWORK_RULES = (prometheux_network_rule)
+  ENABLED = true;
+
+GRANT USAGE ON INTEGRATION prometheux_outbound TO APPLICATION prometheux;
+```
+
+</details>
+
+<details>
+<summary><strong>Azure OpenAI Integration</strong></summary>
+
+```sql
+USE ROLE ACCOUNTADMIN;
+CREATE DATABASE IF NOT EXISTS prometheux_integrations;
+CREATE SCHEMA IF NOT EXISTS prometheux_integrations.security;
+USE DATABASE prometheux_integrations;
+USE SCHEMA prometheux_integrations.security;
+
+CREATE OR REPLACE NETWORK RULE azure_openai_network_rule
+  MODE = EGRESS
+  TYPE = HOST_PORT
+  VALUE_LIST = ('*.azure.com', '*.openai.com', '*.openai.azure.com', '*.cognitiveservices.azure.com', 'openaipublic.blob.core.windows.net');
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION azure_openai_outbound
+  ALLOWED_NETWORK_RULES = (azure_openai_network_rule)
+  ENABLED = true;
+
+GRANT USAGE ON INTEGRATION azure_openai_outbound TO APPLICATION prometheux;
+```
+
+</details>
+
+<details>
+<summary><strong>General Internet Access</strong></summary>
+
+```sql
+USE ROLE ACCOUNTADMIN;
+CREATE DATABASE IF NOT EXISTS prometheux_integrations;
+CREATE SCHEMA IF NOT EXISTS prometheux_integrations.security;
+USE DATABASE prometheux_integrations;
+USE SCHEMA prometheux_integrations.security;
+
+CREATE OR REPLACE NETWORK RULE general_internet_rule
+  MODE = EGRESS
+  TYPE = HOST_PORT
+  VALUE_LIST = ('0.0.0.0:80', '0.0.0.0:443');
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION all_outbound
+  ALLOWED_NETWORK_RULES = (general_internet_rule)
+  ENABLED = true;
+
+GRANT USAGE ON INTEGRATION all_outbound TO APPLICATION prometheux;
+```
+
+</details>
+
+<details>
+<summary><strong>Telemetry (Share Logs with Prometheux)</strong></summary>
+
+```sql
+USE ROLE ACCOUNTADMIN;
+CREATE DATABASE IF NOT EXISTS prometheux_integrations;
+CREATE SCHEMA IF NOT EXISTS prometheux_integrations.security;
+USE DATABASE prometheux_integrations;
+USE SCHEMA prometheux_integrations.security;
+
+CREATE OR REPLACE NETWORK RULE prometheux_telemetry_network_rule
+  MODE = EGRESS
+  TYPE = HOST_PORT
+  VALUE_LIST = ('eu.i.posthog.com');
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION prometheux_telemetry_outbound
+  ALLOWED_NETWORK_RULES = (prometheux_telemetry_network_rule)
+  ENABLED = true;
+
+GRANT USAGE ON INTEGRATION prometheux_telemetry_outbound TO APPLICATION prometheux;
+```
+
+</details>
+
+Once integrations are created, add them to the app and restart:
+
+```sql
+USE DATABASE prometheux;
+USE SCHEMA v1;
+
+CALL add_external_access_integrations('prometheux_outbound,azure_openai_outbound');
+CALL init();
+```
+
+## Modifying Compute Pool Settings
+
+By default, the platform starts with 1 node using the `CPU_X64_M` instance
+family. You can change this based on your performance requirements.
+
+### Available Instance Families
+
+**CPU-Optimized:**
+
+| Instance Family | vCPUs | Memory | Cost |
+| --- | --- | --- | --- |
+| `CPU_X64_M` (default) | 6 | 28 GB | $0.59/hr (0.22 credits/hr) |
+| `CPU_X64_SL` | 14 | 54 GB | $1.11/hr (0.41 credits/hr) |
+| `CPU_X64_L` | 28 | 116 GB | $2.24/hr (0.83 credits/hr) |
+
+**High-Memory:**
+
+| Instance Family | vCPUs | Memory | Cost | Availability |
+| --- | --- | --- | --- | --- |
+| `HIGHMEM_X64_S` | 6 | 58 GB | $0.76/hr (0.28 credits/hr) | All clouds |
+| `HIGHMEM_X64_M` | 28 | 240–244 GB | $3.00/hr (1.11 credits/hr) | All clouds |
+| `HIGHMEM_X64_SL` | 92 | 654 GB | $7.91/hr (2.93 credits/hr) | Azure/GCP only |
+| `HIGHMEM_X64_L` | 124 | 984 GB | $11.99/hr (4.44 credits/hr) | AWS only |
+
+### Changing Compute Pool
+
+```sql
+USE ROLE ACCOUNTADMIN;
+
+CREATE COMPUTE POOL high_performance_pool FOR APPLICATION prometheux
+    MIN_NODES = 1
+    MAX_NODES = 1
+    INSTANCE_FAMILY = CPU_X64_L
+    AUTO_RESUME = TRUE;
+
+GRANT USAGE ON COMPUTE POOL high_performance_pool TO APPLICATION prometheux;
+```
+
+```sql
+USE DATABASE prometheux;
+USE SCHEMA v1;
+
+CALL set_compute_pool('high_performance_pool');
+CALL init();
+```
+
+## Next Steps
+
+- [Vadalog Reference](/vadalog/overview) — Understand the core building blocks
+- [Python SDK](/integrations/python-sdk) — Connect to Prometheux programmatically
+- [MCP Server](/integrations/mcp/overview) — Integrate with Claude and other AI assistants
+
+For feedback or enterprise use cases, contact the Prometheux team at
+[support@prometheux.co.uk](mailto:support@prometheux.co.uk).

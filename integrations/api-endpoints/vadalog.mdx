@@ -1,0 +1,140 @@
+---
+title: "Vadalog API"
+description: "Analyze programs, manage bind annotations, and evaluate logic against the Vadalog engine."
+---
+
+# Vadalog API
+
+The Vadalog API exposes JarvisPy routes for analyzing programs, managing bind annotations, and evaluating logic against the Vadalog engine.
+
+**Python SDK:** There are no dedicated Vadalog helpers in `prometheux_chain`. Call these endpoints with your HTTP client (for example `httpx` or `requests`) against your JarvisPy base URL, with a valid JWT.
+
+---
+
+## Analyze Program
+
+Inspect a Vadalog program without executing it. Returns predicate structure derived from the parser.
+
+**HTTP:** `POST /api/v1/vadalog/analyze`
+
+**Body (JSON)**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `program` | string | Yes | Vadalog program source |
+| `conceptType` | string | No | When `"sql"`, `program` is treated as SQL |
+| `conceptName` | string | No | Concept name when using SQL mode |
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/analyze" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "program": "@input(\"products\").\n@output(\"expensive_products\").\nexpensive_products(Product, Price) <- products(Product, Price), Price > 100."
+  }'
+```
+
+---
+
+## Parse Binds
+
+Parse `@bind` / `@qbind` annotations from a program.
+
+**HTTP:** `POST /api/v1/vadalog/parse-binds`
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/parse-binds" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "program": "@bind(\"data\",\"csv useHeaders=true\",\"/tmp\",\"test.csv\").\nresult(X) <- data(X).\n@output(\"result\").",
+    "outputPredicate": "result"
+  }'
+```
+
+---
+
+## Build Bind
+
+Rewrite an existing bind annotation for a new predicate name.
+
+**HTTP:** `POST /api/v1/vadalog/build-bind`
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/build-bind" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "bindAnnotation": "@bind(\"old_pred\",\"csv useHeaders=true\",\"/tmp\",\"data.csv\").",
+    "predicateName": "new_pred",
+    "isOutput": false
+  }'
+```
+
+---
+
+## Evaluate Program
+
+Run a Vadalog program with optional parameters and compute hints.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+**Not available in SDK — use REST API directly.**
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/evaluate" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "program": "@input(\"products\").\n@output(\"expensive_products\").\nexpensive_products(Product, Price) <- products(Product, Price), Price > ?threshold.",
+    "params": {
+      "threshold": 100
+    }
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Stop Evaluation
+
+Signals the engine to stop the current evaluation.
+
+**HTTP:** `GET /api/v1/vadalog/stop`
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/stop" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+## Get Engine Status
+
+Lightweight health check for the evaluation service.
+
+**HTTP:** `GET /api/v1/vadalog/status`
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/status" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Example response:
+
+```json
+{
+  "data": {
+    "status": "ready",
+    "timestamp": "2026-03-30T12:00:00.000000"
+  },
+  "message": "Evaluation service status retrieved successfully",
+  "status": "success"
+}
+```

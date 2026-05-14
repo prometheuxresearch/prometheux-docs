@@ -1,0 +1,93 @@
+---
+title: "Single Node"
+description: "Deploy Prometheux on a single VM in AWS, Azure, GCP, or your own data centre using Docker Compose."
+---
+
+# Single Node
+
+> Deploy Prometheux on a single VM in AWS, Azure, GCP, or your own data centre
+> using Docker Compose.
+
+## Overview
+
+The single-node deployment runs the full Prometheux platform on one machine
+using Docker Compose. It takes minutes to set up and is the easiest way to run
+Prometheux on infrastructure you control.
+
+The deployment is fully containerised — no manual dependency installation, no
+complex networking, and no cluster management required.
+
+## What You Need
+
+- A Linux VM (or bare metal server) with **Docker** and **Docker Compose**
+  installed
+- Minimum recommended hardware: **4 vCPUs, 16 GB RAM, 50 GB disk**
+- An image pull token from the Prometheux team
+
+<Tip>
+The Prometheux team will walk you through the initial setup and provide your
+credentials. [Book a call](https://calendly.com/prometheux/prometheux-intro?utm_source=docs)
+to get started.
+</Tip>
+
+## How It Works
+
+1. **Clone** the deployment repository
+2. **Add your token** to a single configuration file
+3. **Run one command** to start the platform
+
+```bash
+git clone git@github.com:prometheuxresearch/prometheux-deploy.git
+cd prometheux-deploy
+./docker-compose-up.sh
+```
+
+That's it. The script pulls the container images and starts all services
+automatically.
+
+## What Gets Deployed
+
+| Component | Description |
+| --- | --- |
+| **Prometheux Engine** | The core ontology engine for building and querying knowledge graphs |
+| **Platform UI** | Web-based interface for managing ontologies, data sources, and queries |
+
+All services run inside Docker containers and are fully managed by the
+provided scripts.
+
+## Supported Environments
+
+The single-node deployment works on any machine that can run Docker:
+
+| Cloud | Recommended Instance |
+| --- | --- |
+| **AWS** | `m5.xlarge` (4 vCPU, 16 GB) or larger |
+| **Azure** | `Standard_D4s_v3` (4 vCPU, 16 GB) or larger |
+| **GCP** | `e2-standard-4` (4 vCPU, 16 GB) or larger |
+| **On-premises** | Any Linux server meeting the hardware requirements |
+
+## Management
+
+Simple scripts are provided for day-to-day operations:
+
+```bash
+./docker-compose-up.sh     # Start the platform
+./docker-compose-down.sh   # Stop the platform
+docker compose logs -f     # View logs
+```
+
+Updating to a new version is just as simple — stop, pull the latest images,
+and restart.
+
+## Configuration
+
+Engine configuration files are mounted from the host, making them easy to
+adjust. For the full list of available properties, see the
+[Configuration Reference](/get-started/installation/on-premises/cluster#configuration-reference).
+
+## Next Steps
+
+- [REST API](/integrations/rest-api) — Interact with the engine programmatically
+- [Python SDK](/integrations/python-sdk) — Use `prometheux_chain` from notebooks or scripts
+- [Cluster deployment](/get-started/installation/on-premises/cluster) — Scale to
+  distributed Yarn or Kubernetes clusters

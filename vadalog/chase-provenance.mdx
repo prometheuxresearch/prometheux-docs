@@ -1,0 +1,118 @@
+---
+title: "Chase & Provenance"
+description: "Materializing the chase graph for full explanations of logical derivations in Vadalog."
+---
+
+# Chase and Provenance
+
+Prometheux natively supports full explanations of logical processes for output generation in reasoning tasks via the materialization of the chase graph during its parallel and distributed evaluation.
+
+The chase graph mode is activated using the `@chase` annotation and is materialized into data sources such as CSV files or Neo4j databases.
+
+## Configuring the Chase Graph
+
+```prolog
+@chase("datasource", "filepath", "filename").
+```
+
+## Materializing to CSV
+
+The chase graph is stored as a CSV dataset with columns: `Fact`, `ProvenanceLeft`, `ProvenanceRight`, `Rule`.
+
+```prolog
+arc(1,2).
+arc(1,3).
+
+path(X,Y) <- arc(X,Y).
+@chase("csv", "disk/data", "chase.csv").
+@output("path").
+```
+
+Output at `disk/data/chase.csv`:
+
+```csv
+Fact,ProvenanceLeft,ProvenanceRight,Rule
+"path(1,2)","arc(1,2)","","path(X,Y) <- arc(X,Y)"
+"path(1,3)","arc(1,3)", "","path(X,Y) <- arc(X,Y)"
+```
+
+### Handling Aggregations
+
+For programs with aggregations, intermediate chase nodes are introduced (prefixed with `aggregated_explainability_`):
+
+```prolog
+own(1,2,0.3).
+own(1,2,0.4).
+path_own(X,Y,Z) <- own(X,Y,Z), Z > 0.
+path_own_agg(X,Y,C) <- path_own(X,Y,Z), C = msum(Z).
+@chase("csv coalesce=true", "disk/data", "chase.csv").
+@output("path_own_agg").
+```
+
+## Materializing for Neo4j Bulk Import
+
+Set `forNeo4jBulkImport=true` to structure data for Neo4j's bulk import tool:
+
+```prolog
+path(X,Y) <- arc(X,Y).
+@chase("csv forNeo4jBulkImport=true, compression=gzip", "neo4j-import", "chase").
+@output("path").
+```
+
+This produces separate node and edge CSV files. Import using:
+
+```bash
+docker run --rm \
+--volume=${PWD}/neo4j-data:/var/lib/neo4j/data \
+--volume=${PWD}/neo4j-import:/var/lib/neo4j/import \
+neo4j:4.4.31 \
+neo4j-admin import --database=neo4j \
+  --nodes=/var/lib/neo4j/import/chase/nodes/part-[a-zA-Z0-9\-]+.csv.gz \
+  --relationships=/var/lib/neo4j/import/chase/edges/part-[a-zA-Z0-9\-]+.csv.gz
+```
+
+## Materializing to Neo4j (via Connector)
+
+The chase graph is stored as a graph where each derivation creates a `DERIVED_BY` edge between `CHASE_NODE` nodes:
+
+```prolog
+arc(1,2).
+arc(1,3).
+
+path(X,Y) <- arc(X,Y).
+@chase("neo4j", "", "").
+@output("path").
+```
+
+Configure Neo4j in `vada.properties`:
+
+```yaml
+neo4j.chase.url=bolt://localhost:7687
+neo4j.chase.username=neo4j
+neo4j.chase.password=neo4j
+neo4j.chase.database=neo4j
+```
+
+## Retrieving the Chase from Neo4j
+
+```prolog
+@qbind("chase_neo4j", "neo4j", "\", "MATCH(n:CHASE_NODE) -[r:DERIVED_BY]->(m:CHASE_NODE) RETURN n.fact, m.fact, r.rule").
+chase_edge(X,Y,R) <- chase_neo4j(X,Y,R).
+@output("chase_edge").
+```
+
+For specific fact explanations using APOC traversal:
+
+```prolog
+@qbind("chase_neo4j", "neo4j", "\", "MATCH (root:CHASE_NODE {fact: 'a(1,2)' }) CALL apoc.path.subgraphNodes(root, {relationshipFilter: 'DERIVED_BY>', limit: 1000}) YIELD node MATCH (node)-[r]->(m) RETURN node.fact, m.fact, r.rule").
+chase_edge(X,Y,R) <- chase_neo4j(X,Y,R).
+@output("chase_edge").
+```
+
+<Tip>
+Index the `CHASE_NODE` for better Neo4j performance:
+
+```cypher
+CREATE INDEX index_chase_node__fact IF NOT EXISTS FOR (chase_node:CHASE_NODE) ON (chase_node.fact)
+```
+</Tip>

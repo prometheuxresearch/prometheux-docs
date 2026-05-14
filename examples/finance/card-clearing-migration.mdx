@@ -1,0 +1,127 @@
+---
+title: "Card Clearing Migration"
+description: "Migrating mainframe COBOL card clearing pipelines to Prometheux using Vadalog."
+---
+
+# From Mainframe to Modern: Migrating Card Clearing
+
+Card clearing and settlement is a core process in payment networks. Acquirers and issuers exchange transaction records — typically stored as fixed-length EBCDIC files on mainframes — to reconcile purchases, refunds, and chargebacks across the network.
+
+Migrating this workflow off the mainframe usually requires months of ETL development: decoding COBOL copybooks, mapping packed-decimal fields, joining with modern reference data, and validating totals. With Prometheux, the same pipeline can be expressed in a handful of Vadalog rules that read the mainframe extract directly and join it with data already living in modern systems.
+
+## The Scenario
+
+A payment processor maintains daily clearing files on an IBM mainframe. Each record contains the card number, merchant ID, transaction amount (COMP-3 packed decimal), currency code, and an authorization code. The operations team wants to:
+
+1. **Preview** the latest clearing extract without loading the entire file
+2. **Count** the total number of transactions
+3. **Join** clearing records with a PostgreSQL merchant reference table to enrich transactions with merchant names and categories
+4. **Flag** high-value transactions for compliance review
+
+## The Copybook
+
+The clearing file uses a standard fixed-length layout:
+
+```cobol
+       01 CLEARING-REC.
+          05 CLR-CARD-NUMBER      PIC X(16).
+          05 CLR-MERCHANT-ID      PIC 9(10).
+          05 CLR-TX-AMOUNT        PIC S9(11)V99 COMP-3.
+          05 CLR-CURRENCY         PIC X(3).
+          05 CLR-AUTH-CODE        PIC X(6).
+          05 CLR-TX-DATE          PIC 9(8).
+          05 CLR-TX-TYPE          PIC X(2).
+             88 TX-PURCHASE       VALUE 'PU'.
+             88 TX-REFUND         VALUE 'RF'.
+             88 TX-CHARGEBACK     VALUE 'CB'.
+          05 CLR-RESP-CODE        PIC 9(2).
+```
+
+## Step 1: Preview and Count
+
+Before running the full pipeline, preview the first few records and get a total count — both expressed as SQL over the COBOL bind. The file is read once by the COBOL connector, and Spark executes the SQL in memory:
+
+```prolog
+@bind("clearing",
+      "cobol copybook='/data/clearing/clearing_rec.cpy', cobolPreset='flat-fixed-ebcdic'",
+      "/data/clearing",
+      "daily_clearing_20260224.dat").
+
+% Preview the first 20 records
+clearing_preview() <- SELECT * FROM clearing LIMIT 20 OFFSET 0.
+
+% Count total transactions in the file
+clearing_count(Total) <- SELECT COUNT(*) AS total FROM clearing.
+
+@output("clearing_preview").
+@output("clearing_count").
+```
+
+## Step 2: Enrich with Modern Reference Data
+
+Join the mainframe clearing records with a PostgreSQL merchant table to add merchant names and MCC categories. The SQL query spans two data sources — Prometheux handles the cross-source join transparently:
+
+```prolog
+@bind("clearing",
+      "cobol copybook='/data/clearing/clearing_rec.cpy', cobolPreset='flat-fixed-ebcdic'",
+      "/data/clearing",
+      "daily_clearing_20260224.dat").
+
+@bind("merchants", "postgresql", "payments_db", "merchant_directory").
+
+% Enrich clearing records with merchant names and categories.
+% Cross-source join: COBOL extract + PostgreSQL table.
+enriched_tx() <- SELECT clearing_0    AS card_number,
+                        merchants_1   AS merchant_name,
+                        merchants_2   AS mcc_category,
+                        clearing_2    AS amount,
+                        clearing_3    AS currency,
+                        clearing_5    AS tx_date
+                 FROM clearing
+                 JOIN merchants ON clearing_1 = merchants_0.
+
+@output("enriched_tx").
+```
+
+## Step 3: Flag High-Value Transactions
+
+Combine SQL for initial filtering with Vadalog rules for compliance logic. Transactions above a threshold are flagged, and recursive rules propagate alerts to related cards:
+
+```prolog
+@bind("clearing",
+      "cobol copybook='/data/clearing/clearing_rec.cpy', cobolPreset='flat-fixed-ebcdic'",
+      "/data/clearing",
+      "daily_clearing_20260224.dat").
+
+% Extract purchases over 10,000 in any currency
+high_value() <- SELECT CLEARING_REC_CLR_CARD_NUMBER  AS card,
+                       CLEARING_REC_CLR_MERCHANT_ID   AS merchant,
+                       CLEARING_REC_CLR_TX_AMOUNT      AS amount,
+                       CLEARING_REC_CLR_CURRENCY       AS currency,
+                       CLEARING_REC_CLR_AUTH_CODE      AS auth_code
+                FROM clearing
+                WHERE CLEARING_REC_CLR_TX_TYPE = 'PU'
+                  AND CLEARING_REC_CLR_TX_AMOUNT > 10000.
+
+@output("high_value").
+
+% Vadalog rule: flag any card that has more than 3 high-value transactions
+% in a single day as suspicious
+suspicious_card(Card) <- high_value(Card, _, _, _, _),
+                         Count = #count(Card),
+                         Count > 3.
+
+@output("suspicious_card").
+```
+
+## Why This Matters
+
+| Traditional Approach | With Prometheux |
+|---------------------|----------------|
+| Weeks of ETL to decode COBOL copybooks | One `@bind` with a copybook path |
+| Separate pipelines for mainframe and SQL data | Cross-source JOINs in a single program |
+| Custom code for packed decimals (COMP-3) | Automatic decoding by the COBOL connector |
+| No ad-hoc querying of mainframe files | SQL preview, count, and filter out of the box |
+| Compliance rules hardcoded in COBOL | Declarative Vadalog rules with recursion |
+
+The mainframe file never needs to be manually converted, staged, or pre-processed. Prometheux reads it natively, applies SQL and Vadalog rules, and joins it with data from PostgreSQL, Neo4j, CSV, or any other connected source — all in a single program.

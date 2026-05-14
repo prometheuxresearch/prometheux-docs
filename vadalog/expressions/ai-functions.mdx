@@ -1,0 +1,253 @@
+---
+title: "AI Functions"
+description: "Embeddings and LLM integration in Vadalog for semantic similarity and AI-powered data processing."
+---
+
+# AI Functions
+
+AI-powered text processing using embeddings and large language models.
+
+## Vector Embeddings
+
+Generate and compare vector embeddings for semantic similarity:
+
+```prolog
+embeddings:vectorize(arg1: string, arg2: string, …) → array<double>
+embeddings:cosine_sim_udf(left: array<double>, right: array<double>) → double
+embeddings:cosine_sim(left: array<double>, right: array<double>) → double
+```
+
+**Example:**
+
+```prolog
+customer_similarity(Name1, Name2, Similarity) <- 
+    customer(Name1, Info1), 
+    customer(Name2, Info2), 
+    Vec1 = embeddings:vectorize(Name1, Info1), 
+    Vec2 = embeddings:vectorize(Name2, Info2), 
+    Similarity = embeddings:cosine_sim(Vec1, Vec2).
+```
+
+## LLM Generation
+
+Generate dynamic content using large language models. Prometheux provides two approaches:
+
+1. **`llm:generate`** — for simple use cases
+2. **`#LLM`** — for large-scale parallel processing
+
+---
+
+### Approach 1: `llm:generate`
+
+Traditional UDF for straightforward use cases with automatic LLM pool support:
+
+```prolog
+llm:generate(prompt: string) → string
+llm:generate(prompt: string, options: string) → typed
+llm:generate(prompt: string, options: string, arg1: any, arg2: any, ...) → typed
+```
+
+**Options Format** (comma-separated, second argument):
+- `"output_type=string"` — specify output type (default: `string`)
+- `"selected_models=gpt-4o"` — filter to single model
+- `"selected_models=gpt-4o;gpt-4o-mini;gpt-4.1"` — filter to multiple models
+- `"output_type=int,selected_models=gpt-4o"` — combine options
+
+**Supported Output Types:** `string`, `int`, `double`, `boolean`, `list<string>`, `list<int>`, `list<double>`, `list<boolean>`
+
+**Prompt Templating:** Use `${Variable}` for direct variable interpolation or `${arg_1}`, `${arg_2}` for positional arguments.
+
+**Examples:**
+
+```prolog
+% Simple question answering (defaults to string)
+answer(Q, A) <- question(Q), A = llm:generate(Q).
+
+% Variable interpolation in prompt
+product_summary(Name, Price, Summary) <- 
+    product(Name, Price), 
+    Summary = llm:generate("Describe ${Name} priced at ${Price}").
+
+% Specify output type
+count(Data, Num) <- 
+    data(Data), 
+    Num = llm:generate("Count items in: ${Data}", "output_type=int").
+
+% Select specific models
+fast_answer(Q, A) <- 
+    question(Q), 
+    A = llm:generate(Q, "selected_models=gpt-4o-mini").
+
+% Combine output type and model selection
+analysis(Data, Result) <- 
+    data(Data), 
+    Result = llm:generate("Analyze: ${Data}", "output_type=boolean,selected_models=gpt-4o").
+
+% Multiple models for load balancing
+balanced_query(Q, A) <- 
+    question(Q), 
+    A = llm:generate(Q, "selected_models=gpt-4o;gpt-4o-mini;gpt-4.1").
+```
+
+**Using positional arguments:**
+
+```prolog
+diagnose_with_args(PatientID, HasDiagnosis, Explanation) <- 
+    clinical_notes(PatientID, Notes), 
+    HasDiagnosis = llm:generate(
+        "Review the clinical notes for patient ${arg_1}: ${arg_2}. Determine if there is a diagnosis.",
+        "output_type=boolean",
+        PatientID,
+        Notes
+    ),
+    Explanation = llm:generate(
+        "Analyze the notes for patient ${arg_1}: ${arg_2}. Provide a brief rationale.",
+        "output_type=string",
+        PatientID,
+        Notes
+    ).
+```
+
+**When to use `selected_models`:**
+- Quality control: route critical queries to premium models (`gpt-4o`)
+- Performance optimization: use faster models (`gpt-4o-mini`) for simple tasks
+- Cost optimization: balance cost and quality across model tiers
+- Model testing: test specific models without changing system configuration
+
+---
+
+### Approach 2: `#LLM`
+
+For large-scale processing across LLM endpoints. Processes all rows from the input relation in parallel:
+
+```prolog
+#LLM(input_relation, parameters)
+```
+
+**Parameters** (comma-separated string):
+
+| Parameter | Description |
+|-----------|-------------|
+| `prompt=<text>` | Single prompt template |
+| `prompt_1=<text>,prompt_2=<text>,...` | Multiple numbered prompts |
+| `prompts=prompt_1:<text>;prompt_2:<text>,...` | Compact format |
+| `output_type=<type>` | Output type for all prompts (default: `string`) |
+| `output_type_1=<type>,...` | Per-prompt output types |
+| `projected_columns=<spec>` | Custom output column ordering (e.g., `arg_1:llm_2:llm_1`) |
+| `selected_models=<models>` | Semicolon-separated list of models |
+| `num_partitions=<N>` | Manual partition override (optional) |
+
+**Supported Output Types:** `string`, `int`, `integer`, `long`, `double`, `float`, `number`, `boolean`, `bool`, `list<string>`, `list<int>`, `list<double>`, `set<string>`
+
+**Prompt Templating:** Use `{arg_1}`, `{arg_2}`, etc. (1-based indexing) to reference input columns.
+
+#### Examples
+
+**Single prompt:**
+
+```prolog
+sentiment_analysis(FeedbackID, Text, Sentiment) <- 
+    #LLM(feedback, "prompt=Classify the sentiment of this feedback as positive, neutral, or negative: {arg_2}").
+```
+
+**Multiple prompts with different output types:**
+
+```prolog
+review_analysis(ProductID, Review, Sentiment, Rating, Keywords) <- 
+    #LLM(reviews, 
+        "prompt_1=What is the sentiment: {arg_2}?,
+         prompt_2=Rate this review from 1-10 (just the number): {arg_2},
+         prompt_3=Extract key topics from: {arg_2},
+         output_type_1=string,
+         output_type_2=int,
+         output_type_3=string").
+```
+
+**Custom column ordering:**
+
+```prolog
+enriched_data(Summary, OriginalText, WordCount) <- 
+    #LLM(documents, 
+        "prompt_1=Summarize in one sentence: {arg_1},
+         prompt_2=Count words in: {arg_1} (answer with just the number),
+         output_type_1=string,
+         output_type_2=int,
+         projected_columns=llm_1:arg_1:llm_2").
+```
+
+**Model selection:**
+
+```prolog
+% High-quality analysis with gpt-4o only
+detailed_analysis(Doc, Analysis) <- 
+    #LLM(documents, 
+        "prompt=Provide a detailed analysis of: {arg_1},
+         output_type=string,
+         selected_models=gpt-4o").
+
+% Balanced approach with multiple models
+balanced_processing(Data, Result) <- 
+    #LLM(dataset, 
+        "prompt=Process: {arg_1},
+         output_type=string,
+         selected_models=gpt-4o;gpt-4o-mini").
+```
+
+**Healthcare decision support (multi-output with `projected_columns`):**
+
+```prolog
+patient_analysis(PatientID, Notes, RiskLevel, Recommendations, FollowUpDays) <- 
+    #LLM(clinical_notes, 
+        "prompt_1=Assess risk level (low/medium/high) for: {arg_2},
+         prompt_2=Provide 3 key recommendations for: {arg_2},
+         prompt_3=How many days until follow-up? Answer with just a number for: {arg_2},
+         output_type_1=string,
+         output_type_2=string,
+         output_type_3=int,
+         projected_columns=arg_1:arg_2:llm_1:llm_2:llm_3,
+         selected_models=gpt-4o").
+```
+
+<Note>
+Prometheux automatically handles optimal partitioning based on your data source. Only specify `num_partitions` if you need to override automatic behavior for specific performance requirements.
+</Note>
+
+## Use Cases
+
+### Semantic Search
+
+```prolog
+similar_documents(Doc1, Doc2, Score) <- 
+    document(Doc1, Content1), 
+    document(Doc2, Content2), 
+    Vec1 = embeddings:vectorize(Content1), 
+    Vec2 = embeddings:vectorize(Content2), 
+    Score = embeddings:cosine_sim(Vec1, Vec2), 
+    Score > 0.8.
+```
+
+### Content Classification at Scale
+
+```prolog
+classify_feedback(FeedbackID, Text, Category, IsUrgent) <- 
+    #LLM(feedback, 
+        "prompt_1=Classify this feedback as positive, neutral, or negative: {arg_2},
+         prompt_2=Is this feedback urgent? Answer yes or no: {arg_2},
+         output_type_1=string,
+         output_type_2=string,
+         selected_models=gpt-4o;gpt-4o-mini").
+```
+
+### Data Enrichment
+
+```prolog
+enrich_product(ProductID, Name, Category, Description, TargetAge, Keywords) <- 
+    #LLM(product, 
+        "prompt_1=Generate a marketing description for {arg_2} in {arg_3} category,
+         prompt_2=What age group is {arg_2} best suited for? Answer with a number (e.g., 25),
+         prompt_3=List 3 keywords for {arg_2},
+         output_type_1=string,
+         output_type_2=int,
+         output_type_3=string,
+         selected_models=gpt-4o").
+```

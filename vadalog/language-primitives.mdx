@@ -1,0 +1,174 @@
+---
+title: "Language Primitives"
+description: "Core Vadalog concepts: rules, facts, data types, variables, and labelled nulls."
+---
+
+# Language Primitives
+
+At the core of your ontology is a set of rules.
+
+A rule is an expression of the form `h <- b1, … , bn.`, where:
+
+- The symbol `<-` can be read as "is derived by"
+- The part that comes before `<-`, the `h`, is known as the **head**
+- The part after, `b1, … , bn`, is known as the **body**
+- All rules must be terminated with a period (`.`)
+
+Both the head and body of a rule are expressed in the form `r(t1, t2, … , tn)` which are known as **atoms**. `r` is the **predicate** of the atom, and `t1, t2, …, tn` are its **terms**.
+
+Predicates can be thought of as general statements that can be true or false for different values.
+
+The terms of an atom is an ordered list of any [constant](#data-types), [variable](#variables), or [labelled null](#labelled-nulls).
+
+An atom is said to be **ground** if it only contains constants. A ground atom is also known as a **fact**, and is always true. Thus `student("Plato")` is the fact that Plato is indeed a student.
+
+## Rules and Programs
+
+A rule is a way to derive new facts from existing ones. It says that if certain conditions of a predicate are true, then another predicate must also be true.
+
+```prolog
+a(X) <- b(X).
+```
+
+This rule generates facts for atom `a`, given facts for atom `b`. `X` is a variable, which represents a generalization of a fact. Thus, for every value `X` for which `b` is true, `a(X)` is also true.
+
+Consider this next rule:
+
+```prolog
+c(X,Z) <- a(X,Y), b(Y,Z).
+```
+
+For every two facts `a` and `b`, where the facts are joined by some common term `Y`, a third fact `c` can be derived. An example of this might exist in family trees:
+
+```prolog
+is_nephew(Person, Child) <- is_sibling(Person, Sibling),
+                            is_son(Sibling, Child).
+```
+
+A **Vadalog (logic) program (or ontology)** is a set P of rules and facts.
+
+The following is an example that shows a simple Vadalog program.
+
+```prolog
+a(1).
+c(1,2).
+b(Y,X) <- a(X), c(X,Y).
+@output("b").
+```
+
+`a(1)` is a fact, `b(Y,X) <- a(X),c(X,Y)` is a rule. Observe that `@output("b")` is an annotation and specifies that the facts for `b` are in the output. We will take a look at [annotations](/vadalog/annotations) later.
+
+When a rule's head predicate can be successfully derived by all variables of the body, we say that it has been **activated**.
+
+## Comments
+
+Line comments in Vadalog programs are denoted by `%`:
+
+```prolog
+% this is a comment
+```
+
+## Data Types
+
+The table below shows the data types supported by Vadalog, along with the literals for the respective constants.
+
+| Data type | Examples of constant literals |
+| --------- | ----------------------------- |
+| string    | `"string literal"`, `"a string"`, `""` |
+| integer   | `1`, `3`, `5`, `-2`, `0` |
+| double    | `1.22`, `1.0`, `-2.3`, `0.0` |
+| date      | `2012-10-20`, `2013-09-19 11:10:00` |
+| boolean   | `#T`, `#F` |
+| set       | `{1}`, `{1,2}`, `{}`, `{"a"}`, `{2.0,30}` |
+| list      | `[1]`, `[1,2]`, `[]`, `["a"]`, `[2.0,30]` |
+| unknown   | `/` |
+
+## Variables
+
+Variables in Vadalog are more like variables in algebra or first-order logic than those of imperative programming languages. They represent a concrete value rather than a memory location.
+
+For example, consider:
+
+- "Every father X is a man" → `man(X) <- father(X, Y).`
+- "For any man X there exists a father Y" → `father(X, Y) <- father("Luke Skywalker", Y).`
+
+If a variable appears in the head, but not in the body, then **there exists** at least one value of the variable that makes the head true.
+
+<Note>
+A Vadalog variable is **local** to the rule in which it occurs. This means that occurrences of the same variable name in different rules refer to different variables.
+</Note>
+
+<Note>
+Variables in Vadalog need to be capitalized, and can contain underscores.
+</Note>
+
+## Anonymous Variables
+
+To ignore certain predicates in a rule body, use anonymous variables with the underscore symbol (`_`):
+
+```prolog
+t("Text", 1, 2).
+t("Text2", 1, 2).
+b(X) <- t(X, _, _).
+@output("b").
+```
+
+Here, `b(X)` is derivable for all values of `X` for predicate `t`, regardless of the values of `t`'s 2nd and 3rd terms. The expected output:
+
+```
+b("Text").
+b("Text2").
+```
+
+## Labelled Nulls
+
+All nulls that occur during the execution of a Vadalog program are **labelled**. A labelled null represents a unique identifier for an unknown value. Labelled nulls are produced as a result of:
+
+1. nulls in the data sources (unless the data source supports labelled nulls, all of them are assumed to have different identifiers);
+2. variables that exist in the head but not the body.
+
+The type of a labelled null is always unknown.
+
+**Example 1:**
+
+```prolog
+employee(1).
+employee(2).
+manager(Y,X) <- employee(X).
+@output("manager").
+```
+
+This ontology represents that every employee has a manager. The expected result:
+
+```
+manager(y1,1).
+manager(y2,2).
+```
+
+where `y1` and `y2` are labelled nulls, representing that there must be a manager for each of the two employees. We cannot know from this program alone if they are the same person or not, but there exists the possibility that they are different people.
+
+**Example 2:**
+
+```prolog
+employee("Jack").
+contract("Jack").
+employee("Ruth").
+contract("Ruth").
+employee("Ann").
+
+manager(Y,X) <- employee(X).
+hired(Y,X) <- manager(Y,X), contract(X).
+contractSigned(X) <- hired(Y,X), manager(Y,Z).
+@output("contractSigned").
+```
+
+This example states that every employee X has a manager Y. If the manager Y sees that there is a pending contract for the respective employee X, then she hires the employee. Once a manager Y has hired an employee X, the respective contract X is signed.
+
+The expected result:
+
+```prolog
+contractSigned("Jack").
+contractSigned("Ruth").
+```
+
+Observe that the name of the manager is unknown throughout the entire processing.

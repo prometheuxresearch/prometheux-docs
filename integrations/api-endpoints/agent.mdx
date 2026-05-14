@@ -1,0 +1,100 @@
+---
+title: "AI Agent"
+description: "A streaming conversational interface that autonomously plans and executes data workflows."
+---
+
+# AI Agent
+
+The Vadalog AI Agent is a streaming conversational interface that can autonomously plan and execute data workflows — generating Vadalog programs, running concepts, inspecting results, and iterating based on outcomes.
+
+## Chat
+
+Send a message to the agent and receive a streaming NDJSON response. The agent maintains conversation history within a session, so follow-up messages have full context.
+
+**HTTP Request:**
+
+```
+POST /api/v1/agent/{project_id}/chat
+```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project to work within |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `message` | string | Yes | The user's message |
+| `session_id` | string | No | Conversation session identifier. Default: `"default"` |
+| `model` | string | No | Override the LLM model for this session |
+
+**Example:**
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/agent/my-project-id/chat" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "message": "Create a concept that finds all transitive suppliers and run it",
+    "session_id": "session-1"
+  }'
+```
+
+**Response (NDJSON stream):**
+
+The response is a stream of newline-delimited JSON objects. Each line has a `type` and `data` field:
+
+| Type | Description |
+|------|-------------|
+| `metadata` | Session metadata (project, model, context loaded) |
+| `tool_start` | Agent is invoking a tool (tool name and input) |
+| `proposal` | Agent proposes a Vadalog concept (code, name, description) |
+| `tool_result` | Result from a tool invocation |
+| `content` | Text chunk from the agent's response |
+| `done` | Stream complete |
+| `error` | An error occurred |
+
+**Example stream:**
+
+```json
+{"type": "metadata", "data": {"project_id": "my-project-id", "model": "gpt-4o", "context_loaded": true}}
+{"type": "tool_start", "data": {"tool": "create_concept", "input": {"vadalog_code": "..."}}}
+{"type": "proposal", "data": {"tool": "create_concept", "concept_name": "transitive_suppliers", "vadalog_code": "...", "description": "..."}}
+{"type": "tool_result", "data": {"tool": "create_concept", "result": {"id": "concept-uuid"}}}
+{"type": "tool_start", "data": {"tool": "run_concept", "input": {"concept_name": "transitive_suppliers"}}}
+{"type": "tool_result", "data": {"tool": "run_concept", "result": {"total_records": 42}}}
+{"type": "content", "data": {"chunk": "I created and ran the transitive_suppliers concept. It derived 42 records..."}}
+{"type": "done", "data": {"project_id": "my-project-id"}}
+```
+
+## Reset Session
+
+Clear the conversation history for a session.
+
+**HTTP Request:**
+
+```
+POST /api/v1/agent/{project_id}/reset
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `session_id` | string | No | Session to reset. Default: `"default"` |
+
+**Example:**
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/agent/my-project-id/reset" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"session_id": "session-1"}'
+```
+
+<Tip>
+Sessions are maintained server-side and keyed by username + session ID. Use different `session_id` values to run parallel conversations. Sessions are automatically evicted (LRU) when the server reaches capacity.
+</Tip>

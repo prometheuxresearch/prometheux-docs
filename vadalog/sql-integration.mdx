@@ -1,0 +1,208 @@
+---
+title: "SQL Integration"
+description: "Embedding native SQL queries within Vadalog rules for cross-source joins, aggregations, and data transformations."
+---
+
+# SQL Integration in Vadalog
+
+Prometheux supports **native SQL queries** embedded directly within Vadalog rules. This allows you to:
+
+- Leverage existing SQL skills with familiar SELECT statements alongside Vadalog rules
+- Use SQL's expressive power for complex JOINs, aggregations, window functions, and CTEs
+- Query across data sources — seamlessly combine PostgreSQL, MariaDB, Neo4j, COBOL mainframe files, CSV, and in-memory facts in a single SQL query
+- Scale to large datasets with distributed query execution
+
+## Two Ways to Use SQL
+
+### 1. SQL in Rule Bodies
+
+When a rule body starts with `SELECT` or `WITH`, it is interpreted as a SQL query:
+
+```prolog
+result_predicate() <- SELECT column1, column2 FROM table WHERE condition.
+```
+
+The SQL query ends with `.` (the rule terminator). No arguments are needed in the head — the output schema is defined by the SELECT clause.
+
+**Example with in-memory facts:**
+
+```prolog
+person("Alice", 25).
+person("Bob", 30).
+person("Charlie", 20).
+
+adults() <- SELECT person_0 as name, person_1 as age 
+            FROM person 
+            WHERE person_1 >= 25.
+
+@output("adults").
+```
+
+Output: `adults("Alice", 25)` and `adults("Bob", 30)`
+
+**Example with CSV:**
+
+```prolog
+@bind("employees", "csv useHeaders=true", "data", "employees.csv").
+
+high_earners() <- SELECT name, salary 
+                  FROM employees 
+                  WHERE salary > 100000.
+
+@output("high_earners").
+```
+
+### 2. SQL in Functions (Advanced)
+
+Pass SQL queries as string arguments to graph analytics functions. Head arguments are required to capture function output.
+
+```prolog
+edge(1, 2). edge(2, 3). edge(3, 4).
+
+% Traditional approach
+tc_traditional(X, Y) <- #TC(edge).
+
+% SQL approach — filter before applying the graph function
+tc_sql(X, Y) <- #TC("SELECT edge_0, edge_1 FROM edge WHERE edge_0 < 3").
+
+@output("tc_sql").
+```
+
+<Warning>
+**Head Argument Rules:**
+- **SQL in rule bodies**: Head arguments are optional — empty parentheses `()` work
+- **SQL in functions**: Head arguments are **required** (e.g., `(X, Y)`) to capture function output
+</Warning>
+
+## Column Naming Conventions
+
+<Note>
+When all tables in a SQL query are from the **same database**, you can use actual column names. For queries across **different data sources**, use `predicateName_columnIndex` notation.
+</Note>
+
+### For In-Memory Facts
+
+Use `predicateName_columnIndex` (zero-based):
+
+```prolog
+person("Alice", 30, "Engineer").
+% Columns: person_0, person_1, person_2
+
+adults() <- SELECT person_0 as name, person_1 as age 
+            FROM person 
+            WHERE person_1 >= 18.
+```
+
+### For CSV/Parquet with Headers
+
+Single-table queries can use actual column names:
+
+```prolog
+@bind("employees", "csv useHeaders=true", "data", "employees.csv").
+high_earners() <- SELECT name, salary FROM employees WHERE salary > 100000.
+```
+
+Multi-table queries across different CSV files must use `predicateName_columnIndex`:
+
+```prolog
+@bind("employees", "csv useHeaders=true", "data", "employees.csv").
+@bind("departments", "csv useHeaders=true", "data", "departments.csv").
+
+emp_dept() <- SELECT employees_1, departments_1 
+              FROM employees 
+              JOIN departments ON employees_2 = departments_0.
+```
+
+### For Database Tables
+
+Single-table or same-database queries can use actual column names:
+
+```prolog
+@bind("employees", "postgresql", "company_db", "employees").
+@bind("departments", "postgresql", "company_db", "departments").
+
+% Both in same PostgreSQL database — use actual column names
+emp_dept() <- SELECT e.name, e.salary, d.dept_name
+              FROM employees e
+              JOIN departments d ON e.dept_id = d.dept_id.
+```
+
+Cross-database queries must use `predicateName_columnIndex`:
+
+```prolog
+@bind("employees", "postgresql", "company_db", "employees").
+@bind("departments", "mariadb", "other_db", "departments").
+
+% Different databases — must use predicateName_columnIndex
+emp_dept() <- SELECT employees_1, employees_3, departments_1 
+              FROM employees 
+              JOIN departments ON employees_2 = departments_0.
+```
+
+## Case-Sensitive Identifiers
+
+Use backticks for case-sensitive column or table names. Vadalog automatically converts them to the correct quote character for each database.
+
+```prolog
+@bind("inventory", "postgresql", "warehouse_db", "inventory_case").
+
+high_stock() <- SELECT `ItemId`, `ProductName`, `StockLevel`
+                FROM `inventory_case`
+                WHERE `StockLevel` > 100.
+```
+
+| Database | Quote Character |
+|----------|----------------|
+| PostgreSQL, Oracle, Snowflake, DB2, SQL Server | `"` (double quotes) |
+| MySQL, MariaDB, Databricks, Neo4j | `` ` `` (backticks) |
+
+## Examples
+
+### SQL Aggregation
+
+```prolog
+@bind("employees", "mariadb", "company_db", "employees").
+@bind("departments", "mariadb", "company_db", "departments").
+
+dept_stats() <- SELECT d.dept_name,
+                       COUNT(*) as emp_count,
+                       SUM(e.salary) as total_salary,
+                       AVG(e.salary) as avg_salary
+                FROM employees e
+                JOIN departments d ON e.dept_id = d.dept_id
+                GROUP BY d.dept_name.
+
+@output("dept_stats").
+```
+
+### UNION
+
+```prolog
+us_employees("Alice", "USA").
+uk_employees("Charlie", "UK").
+
+all_employees() <- SELECT us_employees_0 as name, us_employees_1 as country 
+                   FROM us_employees 
+                   UNION 
+                   SELECT uk_employees_0 as name, uk_employees_1 as country 
+                   FROM uk_employees.
+```
+
+### Three-Way Cross-Source JOIN
+
+```prolog
+@bind("pg_departments", "postgresql", "company_db", "departments").
+@bind("csv_employees", "csv useHeaders=true", "data", "employees.csv").
+
+budgets(100, 500000).
+budgets(200, 300000).
+
+dept_budget() <- SELECT pg_departments_1 as dept_name,
+                        csv_employees_1 as employee_name,
+                        budgets_1 as budget
+                 FROM pg_departments
+                 JOIN csv_employees ON pg_departments_0 = csv_employees_2
+                 JOIN budgets ON pg_departments_0 = budgets_0.
+
+@output("dept_budget").
+```

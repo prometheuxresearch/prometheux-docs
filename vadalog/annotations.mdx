@@ -1,0 +1,289 @@
+---
+title: "Annotations"
+description: "Annotations for configuring data sources, outputs, schemas, parameters, and post-processing in Vadalog."
+---
+
+# Annotations
+
+Annotations are special facts that allow you to inject specific behaviors into Vadalog programs. They can be _stand-alone_, _rule level_, or _fact level_.
+
+```prolog
+@annotationName(p1, …, pn).                             % stand-alone
+@annotationName(p1, …, pn) a(X) <- b(X,Y),c(Y).       % rule-level
+@annotationName(p1, …, pn) myFact(1,2,"a").             % fact-level
+```
+
+Multiple annotations of the same level can be combined by prefixing and whitespace-separating them.
+
+## @output
+
+Specifies that the facts for an atom will be exported to an external target (e.g., standard output or a database).
+
+```prolog
+@output("atomName").
+```
+
+If `@output` is used without any `@bind`, the default target is standard output. Use `@model`, `@bind`, and `@mapping` to customize the target.
+
+## @model
+
+Creates and enforces a schema for a predicate.
+
+```prolog
+@model("predicate_name", "['field_name:type', 'field_name:type', '...']", "optional_description").
+```
+
+**Example:**
+
+```prolog
+b(1, "2", 1.0, "Davide").
+a(A, B, C, D) <- b(A, B, C, D).
+
+@model("a", "['first:string', 'second:string', 'third:double', 'fourth:string']").
+@output("a").
+```
+
+### Natural Language Descriptions
+
+Include a description to provide human-readable context. Use `[term]` to reference predicate terms that will be substituted with actual values.
+
+```prolog
+@model("state_path_probability", 
+       "['id:string','startState:string','endState:string','prob:double']", 
+       "The probability of a series of states with ID [id] from [startState] to [endState] is [prob].").
+```
+
+<Info>
+If no description is provided and an LLM is configured, the description is automatically generated during compilation based on the schema and fields.
+</Info>
+
+### Superclasses
+
+Inherit attribute schemas from a base predicate:
+
+```prolog
+@model("person", "['id:int', 'name:string', 'age:int']").
+@model("engineer(person)", "['id:person[id]', 'engineerName:person[name]', 'specialty:string']").
+```
+
+### Triples
+
+Model knowledge graph relationships:
+
+```prolog
+@model("(person)manages(engineer)", 
+       "['manager:person[name]', 'engineer_managed:engineer[name]', 'responsibility_level:string']").
+```
+
+### Typed Collections
+
+Include a predicate as a data type within a collection:
+
+```prolog
+@model("event","['Event Id(ID):string', 'FromState:string', 'ToState:string', 'Prob:double']").
+@model("risk","['RiskId:string', 'Events:[event]']").
+```
+
+## @bind, @mapping, and @qbind
+
+### @bind
+
+Binds an input or output atom to a data source:
+
+```prolog
+@bind("atomName","data source","outermost container","innermost container").
+```
+
+**Example:**
+
+```prolog
+@output("m").
+@bind("m","postgres","doctors_source","Medprescriptions").
+@bind("q","sqlite","doctors_source","Medprescriptions").
+m(X) <- b(X),q(X).
+```
+
+You can bind multiple sources to the same input predicate — their facts are merged:
+
+```prolog
+@output("path").
+path(X,Y) <- edge(X,Y).
+path(X,Z) <- edge(X,Y),path(Y,Z).
+@bind("edge","csv","path/to/myCsv1/","graph_partition_1.csv").
+@bind("edge","postgres","graph_source_db","graph_partition_2_table").
+```
+
+### @mapping
+
+Maps specific columns of the input/output source to a position of an atom:
+
+```prolog
+@mapping("atomName", positionInAtom, "columnName", "columnType").
+```
+
+**Example:**
+
+```prolog
+@bind("m","postgres","doctors_source","Medprescriptions").
+@mapping("m",0,"id","int").
+@mapping("m",1,"patient","string").
+@mapping("m",2,"npi","int").
+@mapping("m",3,"doctor","string").
+@mapping("m",4,"spec","string").
+@mapping("m",5,"conf","int").
+```
+
+Mappings can be omitted — in that case they are automatically inferred from the source.
+
+### @qbind
+
+Binds an atom to a source, generating facts as the result of a query:
+
+```prolog
+@qbind("atomName","data source","outermost container","query").
+```
+
+**Example:**
+
+```prolog
+@qbind("t","postgres","vada","select * from ""TestTable"" where id between 1 and 2").
+```
+
+Parametric `@qbind` using input field values:
+
+```prolog
+@qbind("t","postgres","vada","select * from ""TestTable"" where id = ${1}").
+@qbind("t","postgres","vada","select * from ""TestTable"" where id = ${1} and field = ${2}").
+```
+
+## Post-processing with @post
+
+Post-processing operations applied to facts annotated with `@output` before exporting:
+
+```prolog
+@post("atomName","post processing directive").
+```
+
+Multiple `@post` annotations can be used for the same atom.
+
+### Order by
+
+Sort output over some positions:
+
+```prolog
+@post("atomName", "orderby(p1, …, pn)").
+```
+
+Prefix a position with `-` for descending sort.
+
+```prolog
+t(1,"b",5). t(1,"a",1). t(1,"c",1).
+p(X,Y,Z) <- t(X,Y,Z).
+@output("p").
+@post("p","orderby(3,-2)").
+```
+
+Output: `p(1,"c",1). p(1,"a",1). p(1,"b",5).`
+
+### Min / Max
+
+Calculate min or max for one or more positions, grouping by the others:
+
+```prolog
+@post("atomName","min(p1, …, pn)").
+@post("atomName","max(p1, …, pn)").
+```
+
+```prolog
+t(1,"b",5). t(1,"b",1). t(1,"c",1).
+p(X,Y,Z) <- t(X,Y,Z).
+@output("p").
+@post("p","min(3)").
+```
+
+Output: `p(1,"b",1). p(1,"c",1).`
+
+### Argmin / Argmax
+
+Return only the facts that minimise (or maximise) a specific position within each group:
+
+```prolog
+@post("atomName", "argmin(p, <p1, …, pn>)").
+@post("atomName", "argmax(p, <p1, …, pn>)").
+```
+
+```prolog
+f(1,3,"a", 3). f(4,3,"a", 5). f(2,6,"b", 7). f(2,6,"b", 8). f(3,6,"b", 9).
+g(X,Y,Z,K) <- f(X,Y,Z,K).
+@output("g").
+@post("g","argmin(4,<2,3>)").
+@post("g","orderby(1)").
+```
+
+Output: `g(1,3,"a",3). g(2,6,"b",7).`
+
+### Unique
+
+Guarantee duplicate-free output:
+
+```prolog
+@post("atomName", "unique").
+```
+
+### Certain
+
+Filter out facts containing marked nulls:
+
+```prolog
+@post("atomName", "certain").
+```
+
+### Limit
+
+Limit output to N tuples:
+
+```prolog
+@post("atomName", "limit(N)").
+```
+
+## @param
+
+Introduce dynamic parameters that can be referenced throughout the program:
+
+```prolog
+@param("parameter_name", value).
+```
+
+Reference parameters in rules using `${parameter_name}`:
+
+```prolog
+@param("max_distance", 15).
+@param("min_distance", 5).
+
+connection("A", "B", 10).
+connection("A", "C", 20).
+connection("B", "D", 7).
+
+valid_path(Start, End, Distance) <- 
+    connection(Start, End, Distance), 
+    Distance >= ${min_distance}, 
+    Distance <= ${max_distance}.
+
+@output("valid_path").
+```
+
+List parameters work with collection operations:
+
+```prolog
+@param("priority_levels", [1, 2, 3]).
+
+high_priority_task(Start, End, Priority) <- 
+    task(Start, End, Priority), 
+    AllowedPriorities = ${priority_levels}, 
+    IsHighPriority = collections:contains(AllowedPriorities, Priority), 
+    IsHighPriority = #T.
+```
+
+<Tip>
+For parameterization via API, see [evaluateFromRepoWithParams](/integrations/rest-api).
+</Tip>

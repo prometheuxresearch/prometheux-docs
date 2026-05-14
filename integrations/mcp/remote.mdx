@@ -1,0 +1,162 @@
+---
+title: "Remote MCP Server"
+description: "A cloud-hosted MCP server that enables any MCP-compatible AI agent to interact with Prometheux."
+---
+
+# Remote MCP Server
+
+The remote MCP server (`px-remote-mcp-server`) is a cloud-hosted [Model Context Protocol](https://modelcontextprotocol.io) server that enables any MCP-compatible AI agent to interact with Prometheux — without needing to install anything locally.
+
+It uses OAuth 2.0 authentication with PKCE, so users log in through a browser and their credentials are never exposed to the AI client.
+
+## Why Use Remote MCP?
+
+**Best for:** Multi-client integrations, enterprise environments, browser-based AI agents
+
+**Pros:**
+- Works with any MCP-compatible client (Claude, Genie Code, and more)
+- OAuth 2.0 authentication with browser login flow
+- Centralized deployment (one server, many users)
+- Handles authentication and session management
+- No local installation required
+
+**Cons:**
+- Requires a deployed server instance
+- Suitable for production cloud deployments
+
+<Info>
+If you prefer a local installation that doesn't require a deployed server, check out the [Local MCP Server](/integrations/mcp/local) documentation.
+</Info>
+
+---
+
+## Server Details
+
+The Prometheux remote MCP server is deployed at:
+
+| Property | Value |
+|----------|-------|
+| **Base URL** | `https://api.prometheux.ai/px-remote-mcp-server` |
+| **Host** | `https://api.prometheux.ai` |
+| **Port** | `443` |
+| **Base path** | `/px-remote-mcp-server` |
+| **Protocol** | Streamable HTTP (MCP over HTTP + SSE) |
+| **Authentication** | OAuth 2.0 Authorization Code + PKCE |
+
+### OAuth Endpoints
+
+| Endpoint | URL |
+|----------|-----|
+| **Authorization** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/authorize` |
+| **Token** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/token` |
+| **User Info** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/userinfo` |
+| **Discovery** | `https://api.prometheux.ai/px-remote-mcp-server/.well-known/oauth-authorization-server` |
+
+### OAuth Parameters
+
+When configuring a client manually, use these parameters:
+
+| Parameter | Value |
+|-----------|-------|
+| **Client ID** | `prometheux` |
+| **OAuth Scope** | `openid profile` |
+| **Authorization Endpoint** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/authorize` |
+| **Token Endpoint** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/token` |
+
+## Authentication Flow
+
+When connecting through any MCP client, the OAuth flow works as follows:
+
+1. The client redirects you to the Prometheux login page
+2. You enter your credentials:
+   - **Username**: Your Prometheux username
+   - **Organization**: Your Prometheux organization
+   - **API Token**: Your Prometheux authentication token
+3. After successful authentication, the client receives a session token
+4. All subsequent MCP requests use this token automatically
+
+## Connect Your Client
+
+We provide step-by-step guides for connecting specific MCP clients:
+
+| Client | Guide |
+|--------|-------|
+| **Claude** (Desktop & Web) | [Connect Claude](/integrations/mcp/claude) |
+| **Genie Code** (Databricks) | [Connect Genie Code](/integrations/mcp/databricks-genie) |
+| **Snowflake Cortex** | For more info, ask your Prometheux rep |
+
+For other MCP-compatible clients, use the [Server Details](#server-details) and [OAuth Endpoints](#oauth-endpoints) above to configure the connection manually.
+
+## Session Management
+
+- **Sessions persist** until you explicitly disconnect or the server restarts
+- **Re-authentication:** If your session expires, the client will prompt you to log in again
+- **Security:** Your Prometheux token remains valid until you revoke it from your Prometheux dashboard
+
+## Troubleshooting
+
+### "Unable to connect" error
+
+The client can't reach the remote MCP server.
+
+**Solution:**
+- Verify the server URL is correct: `https://api.prometheux.ai/px-remote-mcp-server`
+- Check if your Prometheux credentials are valid
+- Ensure the remote MCP server is running and accessible
+- Try refreshing and reconnecting
+
+### OAuth login page doesn't load
+
+The authentication flow isn't starting properly.
+
+**Solution:**
+- Check your browser's popup blocker settings
+- Try the connection flow in an incognito/private window
+- Verify the remote MCP server is running and accessible
+- Clear your browser cache and cookies
+
+### "Authentication required" after login
+
+Your session expired or credentials are invalid.
+
+**Solution:**
+- Your Prometheux token may have been revoked or expired
+- Re-authenticate by disconnecting and reconnecting
+- Contact your Prometheux admin to verify your credentials
+- Check that you entered the correct username, organization, and token
+
+### Tools not appearing
+
+The AI agent doesn't recognize the Prometheux tools.
+
+**Solution:**
+- Ensure you completed the OAuth flow successfully
+- Try disconnecting and reconnecting the server
+- Verify the connection shows as active in your client's settings
+- Be more explicit in your query: "Use the prometheux tools to list concepts in project X"
+
+### "Connection timeout" error
+
+The remote MCP server is taking too long to respond.
+
+**Solution:**
+- Check your internet connection
+- Verify the Prometheux instance is accessible and running
+- Check if you're behind a VPN or firewall that might be blocking access
+- Try again in a few moments — the server might be temporarily overloaded
+
+---
+
+## Learn More
+
+- **MCP Protocol Specification:** [modelcontextprotocol.io](https://modelcontextprotocol.io)
+- **Available Tools:** See [MCP Overview](/integrations/mcp/overview#available-tools) for the full tool reference
+- **Local MCP Server:** See [Local MCP Server](/integrations/mcp/local) for Claude Desktop integration
+- **Python SDK:** See [Python SDK Reference](/integrations/python-sdk) for alternative integration methods
+- **REST API:** See [REST API Reference](/integrations/rest-api) for direct HTTP access
+
+## Related Resources
+
+- [Concepts API](/integrations/api-endpoints/concepts) - Learn about the concept API
+- [Python SDK](/integrations/python-sdk) - Alternative programmatic access
+- [Chat API](/integrations/chat-api) - Interactive AI chat interface

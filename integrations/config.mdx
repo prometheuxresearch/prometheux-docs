@@ -1,0 +1,472 @@
+---
+title: "Config"
+description: "SDK configuration and LLM setup for the Prometheux platform."
+---
+
+# Config
+
+The `config` module provides an interface for reading and writing configuration values. It includes functions to load, retrieve, and update configuration values for the Prometheux platform.
+
+---
+
+## Configuration Functions
+
+### Get Configuration Value
+
+Retrieves a value from the configuration using the specified key.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+token = px.config.get("PMTX_TOKEN")
+print(token)
+```
+
+**Function Signature**
+
+```python
+def get(key, default=None)
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `key` | str | Yes | The key for the configuration value to retrieve |
+| `default` | any | No | A default value to return if the key is not found |
+
+**Returns**
+
+The value associated with the specified key, or `None` if the key does not exist.
+
+  </Tab>
+  <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+GET /api/v1/users/load-config?scope=user
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| scope | string | No | Configuration scope (default: "user") |
+
+### cURL Example
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/load-config?scope=user" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+### Set Configuration Value
+
+Sets a configuration value for the specified key.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+px.config.set("PMTX_TOKEN", "new_token")
+```
+
+**Function Signature**
+
+```python
+def set(key, value)
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `key` | str | Yes | The key for the configuration value to set |
+| `value` | any | Yes | The value to associate with the key |
+
+  </Tab>
+  <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+POST /api/v1/users/save-config
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| config_data | object | Yes | Configuration data to save |
+| scope | string | No | Configuration scope (default: "user") |
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/save-config" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "config_data": {
+      "theme": "dark",
+      "language": "en",
+      "notifications": true
+    },
+    "scope": "user"
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+### Update Multiple Configuration Values
+
+Update multiple configuration values at once from a dictionary.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+px.config.update_config({
+    "PMTX_TOKEN": "updated_token",
+    "LLM_API_KEY": "new_api_key"
+})
+```
+
+**Function Signature**
+
+```python
+def update_config(updates)
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `updates` | dict | Yes | A dictionary containing keys and values to update |
+
+  </Tab>
+  <Tab title="REST API">
+
+Use the save-config endpoint with all values in the config_data object:
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/save-config" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "config_data": {
+      "PMTX_TOKEN": "updated_token",
+      "LLM_API_KEY": "new_api_key"
+    },
+    "scope": "user"
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Authentication Token
+
+The `PMTX_TOKEN` can be configured in two ways:
+
+### Using Environment Variables
+
+```python
+import os
+
+os.environ['PMTX_TOKEN'] = 'pmtx_token'
+```
+
+### Using the SDK Configuration
+
+```python
+import prometheux_chain as px
+
+px.config.set("PMTX_TOKEN", "pmtx_token")
+```
+
+---
+
+## Configuring LLMs
+
+The Prometheux Chain exploits LLMs to generate more human-readable `explanations`, `translations` of Vadalog rules, `graph rag` and LLM output `validation` tasks. By default, no LLM is configured.
+
+### Setting up the LLM
+
+To enable and configure an LLM, such as OpenAI's GPT, follow these steps:
+
+**1. Set the LLM Provider:**
+
+```python
+import prometheux_chain as px
+
+px.config.set("LLM_PROVIDER", "OpenAI")
+```
+
+**2. Provide the API Key:**
+
+```python
+px.config.set("LLM_API_KEY", "your_api_key")
+```
+
+---
+
+## Default Configurations
+
+The SDK uses the following default configurations:
+
+| Key | Default Value | Description |
+|-----|---------------|-------------|
+| `PMTX_TOKEN` | None | Prometheux authentication token |
+| `LLM_API_KEY` | None | LLM API key |
+| `LLM_PROVIDER` | OpenAI | LLM provider name |
+| `LLM_VERSION` | gpt-4o | LLM model version |
+| `LLM_TEMPERATURE` | 0.50 | LLM temperature setting |
+| `LLM_MAX_TOKENS` | 2000 | Maximum tokens for LLM responses |
+| `EMBEDDING_MODEL_VERSION` | text-embedding-3-large | Embedding model version |
+| `EMBEDDING_DIMENSIONS` | 2048 | Embedding dimensions |
+
+---
+
+## User Management
+
+### Get User Role
+
+Retrieve the current user's role.
+
+> **Python SDK:** Not available in the current SDK. Use the REST API below.
+
+### HTTP Request
+
+```bash
+GET /api/v1/users/get-role
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/get-role" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Response
+
+```json
+{
+  "data": {
+    "role": "user"
+  },
+  "message": "Role retrieved successfully",
+  "status": "success"
+}
+```
+
+---
+
+### Get Usage Status
+
+Get current API usage statistics and limits.
+
+> **Python SDK:** Not available in the current SDK. Use the REST API below.
+
+### HTTP Request
+
+```bash
+GET /api/v1/users/usage-status
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/usage-status" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Response
+
+```json
+{
+  "data": {
+    "llm_usage": {
+      "current": 150,
+      "limit": 1000,
+      "remaining": 850
+    },
+    "embedding_usage": {
+      "current": 50,
+      "limit": 500,
+      "remaining": 450
+    }
+  },
+  "message": "Usage status retrieved successfully",
+  "status": "success"
+}
+```
+
+---
+
+### Save User Config
+
+Persist user-scoped configuration on the server (for example UI preferences).
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+px.save_user_config(config_data={"theme": "dark"}, scope="user")
+```
+
+**Function Signature**
+
+```python
+def save_user_config(config_data: Dict[str, Any], scope: str = "user") -> str
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `config_data` | dict | Yes | Key-value configuration to save |
+| `scope` | str | No | Configuration scope (default: `"user"`) |
+
+**Returns**
+
+A string status or message from the server.
+
+  </Tab>
+  <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+POST /api/v1/users/save-config
+```
+
+### Request body
+
+```json
+{
+  "config_data": {
+    "theme": "dark"
+  },
+  "scope": "user"
+}
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/save-config" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "config_data": {
+      "theme": "dark"
+    },
+    "scope": "user"
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+### Load User Config
+
+Load user-scoped configuration from the server.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+config = px.load_user_config(scope="user")
+```
+
+**Function Signature**
+
+```python
+def load_user_config(scope: str = "user") -> Dict[str, Any]
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `scope` | str | No | Configuration scope (default: `"user"`) |
+
+**Returns**
+
+A dictionary of configuration key-value pairs.
+
+  </Tab>
+  <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+GET /api/v1/users/load-config?scope=user
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/load-config?scope=user" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Complete Configuration Example
+
+```python
+import prometheux_chain as px
+import os
+
+# Set up authentication via environment variable
+os.environ['PMTX_TOKEN'] = 'my_pmtx_token'
+
+# Or set via SDK
+px.config.set("PMTX_TOKEN", "my_pmtx_token")
+
+# Configure the backend URL
+px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/my-org/my-user")
+
+# Configure LLM settings
+px.config.update_config({
+    "LLM_PROVIDER": "OpenAI",
+    "LLM_API_KEY": "your_openai_api_key",
+    "LLM_VERSION": "gpt-4o",
+    "LLM_TEMPERATURE": 0.7,
+    "LLM_MAX_TOKENS": 4000
+})
+
+# Verify configuration
+print(f"API URL: {px.config.get('JARVISPY_URL')}")
+print(f"LLM Provider: {px.config.get('LLM_PROVIDER')}")
+```

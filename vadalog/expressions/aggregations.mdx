@@ -1,0 +1,237 @@
+---
+title: "Aggregations"
+description: "Monotonic aggregations for computing sums, counts, min/max, and medians in Vadalog."
+---
+
+# Aggregations
+
+Monotonic aggregations are functions for incremental and recursion-friendly computation of aggregate values. They maintain state outside of the program, allowing you to perform calculations across recursive steps.
+
+The functions are:
+
+- `msum(X, [K1, …, Kn])` — incremental sum
+- `mprod(X, [K1, …, Kn])` — incremental product
+- `mcount([K1])` — incremental count
+- `mmin(X, [K1, …, Kn])` — incremental minimum
+- `mmax(X, [K1, …, Kn])` — incremental maximum
+- `munion(X, [K1, …, Kn])` — incremental union of sets
+- `mavg(X)` — incremental average
+- `mmedian(X, "variant")` — incremental median
+
+Upon invocation, all functions return the currently accumulated value for the respective aggregate. All functions except `mcount` take as first argument the value to be used in the incremental computation.
+
+<Note>
+Group-by behavior is achieved by having the same variables appear in both the rule head and body. The aggregation functions themselves do NOT take group-by variables as parameters.
+
+```prolog
+% Correct: Dept appears in both head and body for grouping
+dept_avg(Dept, Avg) <- employee(_, Dept, Salary), Avg = mavg(Salary).
+```
+</Note>
+
+Some aggregate functions cannot be used inside a recursive rule because the value they return may change in a non-monotonic way when new facts arrive. These functions are fully supported in non-recursive queries or as a post-processing step after recursive evaluation has converged.
+
+## Basic Example
+
+```prolog
+a("one", 3, "a", 10).
+a("one", 6, "c", 30).
+a("one", 1, "b", 20).
+a("one", 2, "c", 30).
+a("two", 5, "f", 60).
+a("two", 3, "e", 50).
+a("two", 6, "g", 70).
+a("two", 2, "d", 40).
+a("two", 3, "d", 40).
+
+ssum(X, Sum) <- a(X, Y, Z, U), Sum = msum(Y).
+pprod(X, Sum) <- a(X, Y, Z, U), Sum = mprod(Y).
+pmin(X, Sum) <- a(X, Y, Z, U), Sum = mmin(Y).
+pmax(X, Sum) <- a(X, Y, Z, U), Sum = mmax(Y).
+ccount(X, Sum) <- a(X, Y, Z, U), Sum = mcount(X).
+aavg(X, AVG) <- a(X, Y, Z, U), AVG = mavg(Y).
+mmedian_result(X, Median) <- a(X, Y, Z, U), Median = mmedian(Y, "exact").
+
+@output("ssum").
+@output("pprod").
+@output("pmin").
+@output("pmax").
+@output("ccount").
+@output("aavg").
+@output("mmedian_result").
+```
+
+Results:
+
+```prolog
+ssum("one", 12.0)
+ssum("two", 19.0)
+
+pprod("one", 360.0)
+pprod("two", 12600.0)
+
+pmin("one", 1.0)
+pmin("two", 2.0)
+
+pmax("one", 6.0)
+pmax("two", 7.0)
+
+ccount("one", 4)
+ccount("two", 5)
+
+aavg("one", 3.0)
+aavg("two", 4.0)
+
+mmedian_result("one", 3.0)
+mmedian_result("two", 3.0)
+```
+
+## Simple Sum Example
+
+```prolog
+s(1.0, "a").
+s(2.0, "a").
+s(3.0, "a").
+s(4.0, "b").
+s(3.0, "b").
+
+f(J, Y) <- s(X, Y), J = msum(X).
+@output("f").
+```
+
+Output:
+
+```
+f(6, "a").
+f(7, "b").
+```
+
+## Contributors
+
+Contributors allow controlling which facts contribute to the aggregation:
+
+```prolog
+s(0.1, 2, "a").
+s(0.2, 2, "a").
+s(0.5, 3, "a").
+s(0.6, 4, "b").
+s(0.5, 5, "b").
+
+f(J, Z) <- s(X, Y, Z), J = mprod(X,<Y>).
+@output("f").
+```
+
+Here Y denotes the contributor to the product. When two facts within the same group refer to the same contributor, only the one with the smallest contribution is considered (for monotonically decreasing functions).
+
+Expected result:
+
+```prolog
+f(0.05,"a").
+f(0.3,"b").
+```
+
+## Using `mmax` Without Intermediate Results
+
+`mmin` and `mmax` produce no intermediate results:
+
+```prolog
+b(1, 2).
+b(1, 3).
+b(2, 5).
+b(2, 7).
+h(X, Z) <- b(X, Y), Z = mmax(Y), X > 0.
+@output("h").
+```
+
+Output:
+
+```
+h(1, 3).
+h(2, 7).
+```
+
+## Computing Sum Without Intermediate Results
+
+```prolog
+b(1, 2). b(1, 3). b(2, 5). b(2, 7).
+
+b_msum(X, Z) <- b(X, Y), Z = msum(Y).
+b_sum(X, Z) <- b_msum(X, Y), Z = mmax(Y).
+
+@output("b_sum").
+```
+
+Output:
+
+```
+b_sum(1, 5).
+b_sum(2, 12).
+```
+
+## Set Union with `munion`
+
+```prolog
+c(15552,"Name").
+c(15552,"Synonym").
+c(15552,"Alternative").
+
+synonyms(Id, NewSynonyms) <- c(Id,Synonym), NewSynonyms = munion({}|Synonym).
+```
+
+## Graph Indegree Example
+
+```prolog
+edge(1,2). edge(3,2). edge(5,2). edge(3,1). edge(2,5).
+indegree(Y, J) <- edge(X, Y), J = msum(1, <X>).
+found(X) <- indegree(X, J), J > 2.
+@output("found").
+```
+
+Output: `found(2).`
+
+## Median Aggregation
+
+The `mmedian` aggregate computes the median of a dataset. Three variants are available:
+
+| Variant | Best For | Accuracy | Memory |
+|---------|----------|----------|--------|
+| `"exact"` | Small to medium datasets (< 10,000 values) | 100% | All values |
+| `"p2_algorithm"` | Very large datasets (millions+) | 95-99% | 40 bytes |
+| `"reservoir_sampling"` | Large datasets (10,000-1,000,000+) | High | 8KB |
+
+```prolog
+mark("Alice", "Math", 85.0).
+mark("Alice", "Math", 90.0).
+mark("Alice", "Math", 78.0).
+mark("Alice", "Math", 92.0).
+mark("Alice", "Math", 88.0).
+
+median_exact(Student, Median) <- 
+    mark(Student, _, Score), 
+    Median = mmedian(Score, "exact").
+
+@output("median_exact").
+```
+
+Output:
+
+```prolog
+median_exact("Alice", 88.0).  % Sorted: [78, 85, 88, 90, 92]
+```
+
+## `maxcount`
+
+Returns the key tuple with the highest frequency:
+
+```prolog
+@output("hotspot").
+affects("Component1","Component2").
+affects("Component3","Component2").
+affects("Component4","Component2").
+affects("Component5","Component1").
+affects("Component2","Component1").
+affects("Component6","Component7").
+hotspot(Component2,MaxCount) <- affects(Component1,Component2), MaxCount=maxcount().
+```
+
+Output: `hotspot("Component2", 3).`

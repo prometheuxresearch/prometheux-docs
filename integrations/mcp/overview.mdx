@@ -1,0 +1,180 @@
+---
+title: "AI Agent Integration via MCP"
+description: "Connect AI agents to Prometheux using the Model Context Protocol (MCP)."
+---
+
+# AI Agent Integration via MCP
+
+Connect AI agents to Prometheux using the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) — an open standard that enables AI assistants to interact with external tools and data sources.
+
+Prometheux offers two MCP integration options:
+
+- **[Local MCP Server](/integrations/mcp/local)** (`prometheux-mcp`): Runs on your machine alongside Claude Desktop
+- **[Remote MCP Server](/integrations/mcp/remote)** (`px-remote-mcp-server`): Cloud-hosted option that works with any MCP-compatible client via OAuth authentication
+
+## What is MCP?
+
+The Model Context Protocol allows AI agents to:
+- **Discover** available tools and resources
+- **Execute** operations through a standardized interface
+- **Access** external data sources and APIs
+
+With Prometheux's MCP integration, you can use natural language to interact with your ontologies, list concepts, and execute reasoning — all directly from your preferred AI agent.
+
+## Which Option Should I Use?
+
+<Tabs>
+  <Tab title="Local MCP Server">
+
+**Best for:** Claude Desktop users, development environments, on-premise deployments
+
+**Pros:**
+- Simple pip install
+- Runs locally (no external dependencies)
+- Full control over credentials
+- Works with any Prometheux instance (cloud or on-premise)
+
+**Cons:**
+- Requires Claude Desktop app
+- Needs to be installed on each machine
+
+**Use this when:**
+- You're using Claude Desktop
+- You want a simple, local installation
+- You're developing or testing locally
+
+**[Get Started with Local MCP](/integrations/mcp/local)**
+
+  </Tab>
+  <Tab title="Remote MCP Server">
+
+**Best for:** Multi-client deployments, enterprise environments, browser-based AI agents
+
+**Pros:**
+- Works with any MCP-compatible client (Claude, Genie Code, and more)
+- OAuth authentication with browser login flow
+- Centralized deployment (one server, many users)
+- Handles authentication and session management
+- No local installation required
+
+**Cons:**
+- Requires a deployed server instance
+- Suitable for production cloud deployments
+
+**Use this when:**
+- You want to connect from Genie Code, Claude Web, or other MCP clients
+- You want centralized authentication for multiple users
+- You're deploying for an organization
+- You prefer not to install anything locally
+
+**[Get Started with Remote MCP](/integrations/mcp/remote)**
+
+  </Tab>
+</Tabs>
+
+## Supported MCP Clients
+
+The remote MCP server supports any client that implements the MCP standard. We provide step-by-step connection guides for:
+
+| Client | Status | Guide |
+|--------|--------|-------|
+| **Claude** (Desktop & Web) | Supported | [Connect Claude](/integrations/mcp/claude) |
+| **Genie Code** (Databricks) | Supported | [Connect Genie Code](/integrations/mcp/databricks-genie) |
+| **Snowflake Cortex** | For more info, ask your Prometheux rep | — |
+
+Don't see your client? The remote server exposes a standard MCP endpoint with OAuth — any compliant client can connect using the details in the [Remote MCP Server](/integrations/mcp/remote) page.
+
+## Available Tools
+
+Both MCP servers dynamically expose the following tools to AI agents. The tool catalog is served by the Prometheux backend, so new capabilities are available automatically as they are added to the platform.
+
+### Projects & Data Sources
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `list_projects` | List all projects the user has access to | `scope` |
+| `create_project` | Create a new empty project | `name`, `description`, `scope` |
+| `list_data_sources` | List all data sources with their predicate names, bind annotations, field schemas, and row counts | `scope` |
+
+### Concepts
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `list_concepts` | List all concepts available in a project | `project_id`, `scope` |
+| `get_concept` | Get full detail for a single concept including its Vadalog code | `project_id`, `concept_name`, `scope` |
+| `create_concept` | Save a Vadalog program as a new named concept | `project_id`, `vadalog_code`, `description`, `scope` |
+| `update_concept` | Overwrite the Vadalog code of an existing concept | `project_id`, `concept_name`, `vadalog_code`, `description`, `scope` |
+| `run_concept` | Execute a concept to derive new knowledge through reasoning (supports long-running executions with progress notifications) | `project_id`, `concept_name`, `params`, `scope`, `force_rerun`, `persist_outputs` |
+
+### Vadalog
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `search_vadalog_docs` | Search the Vadalog documentation and return ready-to-use code examples | `query` |
+| `generate_vadalog` | Generate a Vadalog program from a natural language description | `description`, `predicates_and_schemas` |
+| `fix_vadalog` | Fix a Vadalog program that failed to compile or execute | `vadalog_code`, `error_message`, `original_request` |
+| `generate_sample_facts` | Generate realistic sample input or output facts for a set of predicates | `predicates_and_schemas`, `domain_context`, `vadalog_rules`, `fact_type` |
+
+### Ontology
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `get_ontology` | Load the current ontology graph for a project | `project_id`, `scope` |
+| `save_ontology` | Save a complete ontology graph for a project | `project_id`, `ontology_data`, `scope` |
+| `set_concept_ontology_role` | Assign or update a single concept's role in the ontology graph | `project_id`, `concept_name`, `ontology_type`, `edge_source`, `edge_target`, `scope` |
+
+### Dashboards
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `list_dashboards` | List all dashboards across every project in the workspace | `scope` |
+| `get_dashboard` | Load a single dashboard with its full definition | `project_id`, `dashboard_id`, `scope` |
+| `save_dashboard` | Create or update a dashboard for a project | `project_id`, `dashboard`, `scope` |
+| `delete_dashboard` | Permanently delete a dashboard | `project_id`, `dashboard_id`, `scope` |
+
+### Company Knowledge
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `get_company_info` | Search the Prometheux company knowledge base | `query` |
+
+<Tip>
+Most tools accept a `scope` parameter (`"user"` or `"organization"`, default `"user"`). Boolean parameters like `force_rerun` and `persist_outputs` default to `true` and `false` respectively.
+</Tip>
+
+## Example Usage
+
+Once configured, just chat naturally with your AI agent. The agent will automatically use the Prometheux MCP tools when relevant.
+
+**Example queries:**
+> "What projects do I have?"
+
+> "What concepts are available in my customer-analytics project?"
+
+> "Run the churn_prediction concept in the customer-analytics project"
+
+> "Generate a Vadalog program that finds all transitive suppliers for a company"
+
+> "Create a dashboard showing the results of churn_prediction"
+
+> "What does the Vadalog documentation say about recursive rules?"
+
+The AI agent will automatically:
+- Call the appropriate Prometheux MCP tools
+- Parse the results
+- Present them in a readable format
+- Answer follow-up questions about the data
+
+## Learn More
+
+- **MCP Protocol Specification:** [modelcontextprotocol.io](https://modelcontextprotocol.io)
+- **Local MCP Server (GitHub):** [prometheuxresearch/px-mcp-server](https://github.com/prometheuxresearch/px-mcp-server)
+- **Local MCP Server (PyPI):** [prometheux-mcp](https://pypi.org/project/prometheux-mcp/)
+- **Python SDK:** See [Python SDK Reference](/integrations/python-sdk) for alternative integration methods
+- **REST API:** See [REST API Reference](/integrations/rest-api) for direct HTTP access
+
+## Related Resources
+
+- [Concepts API](/integrations/api-endpoints/concepts) - Learn about the concept API
+- [Python SDK](/integrations/python-sdk) - Alternative programmatic access
+- [Chat API](/integrations/chat-api) - Interactive AI chat interface

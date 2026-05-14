@@ -1,0 +1,189 @@
+---
+title: "Explanations"
+description: "Generating natural language and JSON explanations for derived facts using @explain in Vadalog."
+---
+
+# Explanations
+
+The `@explain` annotation enables generating detailed explanations for derived facts, helping to understand their provenance and the rules applied. Explanations can be presented in structured JSON format, natural language, or refined reports via LLM.
+
+## Materializing Explanations
+
+```prolog
+@explain("datasource", "database", "table").
+```
+
+**To CSV:**
+```prolog
+@explain("csv", "disk/my-explanations/", "explanations.csv").
+```
+
+**To PostgreSQL:**
+```prolog
+@explain("postgresql", "explanation_db", "explanation_table").
+```
+
+**To console:**
+```prolog
+@explain("console").
+```
+
+## Explanation Output Structure
+
+Each explanation has three fields:
+
+- `Fact` — the derived fact being explained
+- `JsonExplanation` — a hierarchical JSON representation of the derivation
+- `TextualExplanation` — a natural language explanation
+
+**Example:**
+
+```prolog
+edge(1, 2).
+edge(2, 3).
+edge(3, 4).
+tc(X, Y) <- edge(X, Y).
+tc(X, Z) <- tc(X, Y), edge(Y, Z).
+@output("tc").
+@explain("console").
+```
+
+**JSON Explanation:**
+
+```json
+{
+  "fact": "tc(1,4)",
+  "verbalization": "there is a transitive closure from 1 to 4",
+  "provenances": [
+    {
+      "fact": "edge(3,4)",
+      "verbalization": "there is an edge from 3 to 4"
+    },
+    {
+      "fact": "tc(1,3)",
+      "verbalization": "there is a transitive closure from 1 to 3",
+      "provenances": [
+        {
+          "fact": "tc(1,2)",
+          "verbalization": "there is a transitive closure from 1 to 2",
+          "provenances": [
+            {
+              "fact": "edge(1,2)",
+              "verbalization": "there is an edge from 1 to 2"
+            }
+          ]
+        },
+        {
+          "fact": "edge(2,3)",
+          "verbalization": "there is an edge from 2 to 3"
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Model Annotations for Better Explanations
+
+Without model annotations, explanations use generic fact verbalization:
+
+```
+since edge(1,2) then tc(1,2), and since edge(2,3) then tc(1,3), and since edge(3,4) then tc(1,4).
+```
+
+With model annotations, explanations become more informative:
+
+```prolog
+@model("edge", "['From:string', 'To:string']", "there is an edge from [From] to [To]").
+@model("tc", "['From:string', 'To:string']", "there is a transitive closure from [From] to [To]").
+```
+
+Refined explanation:
+
+```
+since there is an edge from 1 to 2, then there is a transitive closure from 1 to 2, and since there is an edge from 2 to 3, then there is a transitive closure from 1 to 3, and since there is an edge from 3 to 4, then there is a transitive closure from 1 to 4.
+```
+
+## Examples
+
+### Linear Rule with Model Annotations
+
+```prolog
+@model("employee", "['Name:string']", " [Name] is an employee").
+employee("Alice").
+@model("manager", "['Name:string']", "[Name] is manager").
+manager(X) <- employee(X).
+@output("manager").
+@explain("console").
+```
+
+Output: `since Alice is an employee, then Alice is a manager.`
+
+### Join Rule
+
+```prolog
+@model("developer", "['Name:string']", "[Name] is a developer").
+developer("Alice").
+developer("Bob").
+
+@model("project", "['Project:string']", "[Project] project").
+project("ProjectX").
+project("ProjectY").
+
+works_on(X, Y) <- developer(X), project(Y).
+@model("works_on", "['Project:string']", "[X] works on project [Y]").
+@output("works_on").
+@explain("console").
+```
+
+Output:
+```
+since Alice is a developer and ProjectX is a project, then Alice works on ProjectX.
+since Alice is a developer and ProjectY is a project, then Alice works on ProjectY.
+since Bob is a developer and ProjectX is a project, then Bob works on ProjectX.
+since Bob is a developer and ProjectY is a project, then Bob works on ProjectY.
+```
+
+### Explaining Pre-Materialized Chase Results
+
+Use `chase=false` to exploit a pre-materialized chase dataset, avoiding recomputation:
+
+**Step 1: Materialize the chase:**
+
+```prolog
+edge(1, 2). edge(2, 3). edge(3, 4).
+tc(X, Y) <- edge(X, Y).
+tc(X, Z) <- tc(X, Y), edge(Y, Z).
+@output("tc").
+@chase("csv", "datasets", "chase_results").
+```
+
+**Step 2: Explain from pre-materialized data:**
+
+```prolog
+@bind("chase_results", "csv useHeaders=true", "datasets", "chase_results").
+@model("tc", "['From:string', 'To:string']", "there is a transitive closure from [From] to [To]").
+@model("edge", "['From:string', 'To:string']", "there is an edge from [From] to [To]").
+my_explanation(Fact, ProvenanceLeft, ProvenanceRight, RuleDescription) <- 
+    chase_results(Fact, ProvenanceLeft, ProvenanceRight, RuleDescription).
+@output("my_explanation").
+@explain("console chase=false, predicates='tc'").
+```
+
+Use `predicates='pred1,pred2'` to specify which predicates to explain, especially if they are not in `@output`.
+
+### Multiple Connected Chases
+
+When chaining multiple reasoning steps, combine their chase outputs and explain across all predicates:
+
+```prolog
+@model("edge", "['From:string', 'To:string']", "There is an edge from [From] to [To]").
+@model("arc", "['From:string', 'To:string']", "There is an arc from [From] to [To]").
+@model("path", "['From:string', 'To:string']", "There is a path from [From] to [To]").
+@model("tc", "['From:string', 'To:string']", "There is a transitive closure from [From] to [To]").
+@bind("chase", "csv useHeaders=true", "path/to/datasets", "chase").
+explain(Fact, ProvenanceLeft, ProvenanceRight, RuleDescription) <- 
+    chase(Fact, ProvenanceLeft, ProvenanceRight, RuleDescription).
+@output("explain").
+@explain("console chase=false, predicates='path,tc'").
+```

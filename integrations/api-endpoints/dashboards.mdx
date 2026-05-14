@@ -1,0 +1,133 @@
+---
+title: "Dashboards"
+description: "Create, read, update, and delete dashboards within your projects."
+---
+
+# Dashboards
+
+Create, read, update, and delete dashboards within your projects.
+
+## List All Dashboards
+
+List dashboards across all projects in the workspace.
+
+**HTTP Request:**
+
+```
+GET /api/v1/dashboards/list?scope=user
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `scope` | string | No | Database scope. Default: `"user"` |
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "dashboard-uuid",
+      "project_id": "project-uuid",
+      "name": "My Dashboard",
+      "created_at": "2026-01-15T10:30:00Z",
+      "updated_at": "2026-04-10T14:20:00Z"
+    }
+  ],
+  "message": "All dashboards listed successfully",
+  "status": "success"
+}
+```
+
+## List Project Dashboards
+
+List dashboards within a specific project (metadata only, no full definitions).
+
+**HTTP Request:**
+
+```
+GET /api/v1/dashboards/{project_id}/list?scope=user
+```
+
+## Get Dashboard
+
+Load a single dashboard with its full definition.
+
+**HTTP Request:**
+
+```
+GET /api/v1/dashboards/{project_id}/{dashboard_id}?scope=user
+```
+
+## Save Dashboard
+
+Create or update a dashboard. When `dashboard.id` is omitted, a new UUID is generated server-side.
+
+**HTTP Request:**
+
+```
+POST /api/v1/dashboards/{project_id}/save
+```
+
+**Request Body:**
+
+```json
+{
+  "scope": "user",
+  "dashboard": {
+    "id": "existing-dashboard-id",
+    "name": "My Dashboard",
+    "definition": { }
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "data": { "id": "dashboard-uuid" },
+  "message": "Dashboard 'dashboard-uuid' saved successfully",
+  "status": "success"
+}
+```
+
+## Delete Dashboard
+
+Permanently delete a dashboard.
+
+**HTTP Request:**
+
+```
+DELETE /api/v1/dashboards/{project_id}/{dashboard_id}?scope=user
+```
+
+## Complete Workflow Example
+
+```bash
+# 1. List all dashboards
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/dashboards/list?scope=user" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 2. Save a new dashboard
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/dashboards/my-project-id/save" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "scope": "user",
+    "dashboard": {
+      "name": "Sales Overview",
+      "definition": { }
+    }
+  }'
+
+# 3. Load a dashboard
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/dashboards/my-project-id/dashboard-uuid?scope=user" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 4. Delete a dashboard
+curl -X DELETE "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/dashboards/my-project-id/dashboard-uuid?scope=user" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```

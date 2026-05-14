@@ -1,0 +1,195 @@
+---
+title: "Databricks Native App"
+description: "For teams already on Databricks — deploy Prometheux as a native application in your workspace."
+---
+
+# Databricks Native App
+
+> For teams already on Databricks — deploy Prometheux as a native application
+> in your workspace.
+
+## Overview
+
+Prometheux can be deployed as a Databricks native application that runs inside
+your workspace on AWS, Azure, or GCP. The app bundles a React frontend,
+FastAPI backend, and Java services behind a single-port Node.js proxy, with
+persistent storage via Lakebase (Databricks managed PostgreSQL).
+
+## Prerequisites
+
+- Databricks workspace (AWS, Azure, or GCP)
+- Databricks CLI installed and configured (`databricks configure`)
+- AWS credentials for Java services — contact Prometheux to obtain
+
+## Quick Start
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/prometheuxresearch/prometheux-databricks-app.git
+cd prometheux-databricks-app
+```
+
+### 2. Configure Environment Variables
+
+```bash
+cp bundle-vars.example.yml bundle-vars.yml
+```
+
+Edit `bundle-vars.yml` and fill in the AWS credentials provided by Prometheux:
+
+```yaml
+# Data Manager (provided by Prometheux)
+data_manager_s3_bucket: "<provided-by-prometheux>"
+data_manager_s3_key: "<provided-by-prometheux>"
+data_manager_aws_access_key_id: "<provided-by-prometheux>"
+data_manager_aws_secret_access_key: "<provided-by-prometheux>"
+
+# Vadalog Parser (provided by Prometheux)
+vadalog_parser_s3_bucket: "<provided-by-prometheux>"
+vadalog_parser_s3_key: "<provided-by-prometheux>"
+vadalog_parser_aws_access_key_id: "<provided-by-prometheux>"
+vadalog_parser_aws_secret_access_key: "<provided-by-prometheux>"
+```
+
+<Info>
+Contact Prometheux to obtain these credentials (required for full
+functionality).
+</Info>
+
+### 3. Deploy & Run
+
+```bash
+./deploy.sh
+```
+
+The script will:
+
+- Check if you have the Databricks CLI installed
+- Prompt you to set up Lakebase (recommended) or use SQLite
+- Deploy the app to your Databricks workspace
+- Ask if you want to start the app immediately
+
+### 4. Access Your App
+
+Your app will be available at:
+
+```
+https://prometheux-<workspace-id>.databricksapps.com
+```
+
+## Services
+
+The app includes Java services that are downloaded automatically at runtime:
+
+| Service | Description |
+| --- | --- |
+| **Data Manager** | Advanced data processing and integration |
+| **Vadalog Parser** | Parses and validates Vadalog logic programs |
+
+<Warning>
+The **Prometheux Engine** (the full reasoning engine for executing Vadalog
+programs) is NOT included in this app package. It is provided separately by
+Prometheux as a Databricks cluster library — contact Prometheux to request
+access and installation guidance.
+</Warning>
+
+## Configuration
+
+### Database Storage
+
+The app uses Lakebase (Databricks managed PostgreSQL) for persistent data
+storage. The `./deploy.sh` script automatically handles Lakebase setup.
+
+If you decline Lakebase during setup, the app falls back to SQLite (ephemeral —
+data is lost on restart).
+
+### Configuration Variables
+
+All configuration is in `bundle-vars.yml`:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `run_mode` | `development` | `development` (no auth) or `production` |
+| `organization` | — | Your organization name |
+| `username` | — | Default username (development mode only) |
+
+## Management
+
+```bash
+./deploy.sh run      # Start the app
+./deploy.sh restart  # Restart (fast — processes auto-cleanup)
+./deploy.sh stop     # Stop compute (slow — takes minutes to restart)
+./deploy.sh status   # Check app status
+./deploy.sh logs     # View app logs
+./deploy.sh destroy  # Remove the app entirely
+```
+
+### Updating
+
+```bash
+cd prometheux-databricks-app
+git pull
+databricks bundle deploy --var-file bundle-vars.yml
+databricks bundle run prometheux
+```
+
+Your `bundle-vars.yml` configuration will be preserved.
+
+## Troubleshooting
+
+| Symptom | Solution |
+| --- | --- |
+| App won't start | Check that all S3 credentials in `bundle-vars.yml` are correct |
+| 404 errors | Wait for the app to finish starting (can take 2–3 minutes) |
+| Java services not running | Verify that JAR files exist in S3 at the specified paths |
+
+Check status and logs:
+
+```bash
+databricks apps get prometheux
+databricks apps logs prometheux
+```
+
+## Architecture
+
+```
++----------------------------------------------------------------------+
+|                    PROMETHEUX DATABRICKS APP                         |
+|                  (Databricks Apps Container)                         |
++----------------------------------------------------------------------+
+|                                                                      |
+|  Browser --> Node.js Proxy (Port 8000)                               |
+|                    |                                                 |
+|                    +-- /api/*  --> FastAPI Backend                   |
+|                    |                   +-> Data Manager (Java)       |
+|                    |                   +-> Vadalog Parser (Java)     |
+|                    |                   +-> Lakebase (PostgreSQL)     |
+|                    |                                                 |
+|                    +-- /*      --> React Frontend (static files)     |
+|                                                                      |
++----------------------------------------------------------------------+
+                                  |
+                                  v
++----------------------------------------------------------------------+
+|                DATABRICKS WORKSPACE ENVIRONMENT                      |
++----------------------------------------------------------------------+
+|  Spark Clusters                                                      |
+|    +- Prometheux Engine (PX JAR) -- installed via Libraries API      |
+|                                                                      |
+|  Unity Catalog                                                       |
+|    +- Volumes (JARs) + Tables (Input/Output)                        |
++----------------------------------------------------------------------+
+```
+
+**Authentication**: The backend authenticates with Databricks using Bearer
+Token (U2M), OAuth2 M2M, Personal Access Token (PAT), or default App
+credentials. Vadalog jobs are submitted to the engine on the cluster and
+results are retrieved via Spark Connect API.
+
+## Next Steps
+
+- [Installing PX on Databricks & Connectors](/get-started/installation/databricks/connectors) —
+  Connect Prometheux to Databricks via JDBC
+- [Vadalog Reference](/vadalog/overview) — Understand the core building blocks
+- [Python SDK](/integrations/python-sdk) — Connect to Prometheux programmatically

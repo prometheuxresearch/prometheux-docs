@@ -1,0 +1,88 @@
+---
+title: "Connect Genie Code"
+description: "Connect Databricks Genie Code to Prometheux using the Remote MCP Server."
+---
+
+# Connect Genie Code to Prometheux
+
+Connect [Genie Code](https://www.databricks.com/blog/introducing-genie-code) to Prometheux using the [Remote MCP Server](/integrations/mcp/remote). Genie Code is Databricks' autonomous AI agent for data work — it supports [MCP as an extensibility mechanism](https://www.databricks.com/blog/introducing-genie-code), allowing it to securely interact with external tools and APIs.
+
+By registering Prometheux as an external MCP server, Genie Code gains the ability to list concepts, run reasoning, and query knowledge graphs — directly within the Databricks environment.
+
+## Prerequisites
+
+- **Databricks workspace** with access to Genie Code
+- **Prometheux credentials** (username, organization, API token)
+
+## Setup
+
+Navigate to **Agents > MCPs > Register MCP Server > Register External MCP Server** in your Databricks workspace.
+
+### Step 1 — Connection Basics
+
+| Field | Value |
+|-------|-------|
+| **Connection type** | HTTP |
+| **Auth type** | OAuth User-to-Machine Per User |
+| **OAuth provider** | Manual Configuration |
+
+### Step 2 — Authentication
+
+| Field | Value |
+|-------|-------|
+| **Host** | `https://api.prometheux.ai` |
+| **Port** | `443` |
+| **Client ID** | `prometheux` |
+| **Client secret** | Any value (e.g. `secret`) |
+| **Authorization endpoint** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/authorize` |
+| **OAuth scope** | `openid profile` |
+
+### Step 3 — Connection Details
+
+| Field | Value |
+|-------|-------|
+| **Base path** | `/px-remote-mcp-server` |
+| **OAuth credential exchange method** | Body Only |
+| **Token endpoint** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/token` |
+
+### Finalize
+
+1. Click **"Create Connection"**
+2. Click **"Login"**
+3. In the browser tab that opens with the Prometheux login form, enter:
+   - **Username:** Your Prometheux username
+   - **Organization:** Your Prometheux organization
+   - **API Token:** Your Prometheux authentication token
+4. Submit the form — Databricks will receive your session token automatically
+
+## Usage
+
+Once connected, Genie Code can use the Prometheux MCP tools in your agent workflows.
+
+<Tip>
+See the [MCP overview page](/integrations/mcp/overview#available-tools) for the complete list of tools exposed to Genie Code.
+</Tip>
+
+## Troubleshooting
+
+### Login tab doesn't open
+
+**Solution:**
+- Check your browser's popup blocker settings for the Databricks domain
+- Try the connection flow in an incognito/private window
+
+### "Connection failed" error
+
+**Solution:**
+- Verify all fields match the values in the tables above
+- Ensure **OAuth credential exchange method** is set to **Body Only**
+- Check that the host, port, and base path are correct
+
+### Tools not appearing in Genie Code
+
+**Solution:**
+- Ensure the login step completed successfully
+- Try disconnecting and re-creating the connection
+- Verify your Prometheux credentials are valid
+
+For general troubleshooting, see the [Remote MCP Server troubleshooting](/integrations/mcp/remote#troubleshooting) section.

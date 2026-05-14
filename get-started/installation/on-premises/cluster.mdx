@@ -1,0 +1,181 @@
+---
+title: "Cluster"
+description: "For teams running Prometheux on self-managed Yarn or Kubernetes clusters."
+---
+
+# Cluster
+
+> For teams running Prometheux on self-managed Yarn or Kubernetes clusters.
+
+<Warning>
+This is an advanced deployment path. We recommend
+[contacting the Prometheux team](mailto:support@prometheux.co.uk) for guidance
+before proceeding.
+</Warning>
+
+## Overview
+
+Prometheux can run on your own compute infrastructure using Apache Spark as the
+execution layer. This is suited to organisations that require full control over
+their cluster, networking, and storage.
+
+## Architecture
+
+Prometheux enables distributed and parallelised processing by converting its
+primitives (project, select, join) into map, filter, reduce and shuffle
+transformations executed in parallel on a cluster.
+
+### Supported Cluster Managers
+
+#### Yarn
+
+Prometheux integrates with the Yarn resource manager. Two deployment modes are
+available:
+
+- **Client mode** — the Vadalog driver resides on the client machine. The
+  client submits the program to the Yarn Resource Manager, which elects an
+  application master and allocates executors. The driver communicates with
+  executors and returns results to the client.
+- **Cluster mode** — the driver runs inside the cluster on the application
+  master node. The client submits the program and the driver manages executor
+  communication from within the cluster.
+
+#### Kubernetes
+
+Prometheux can also run on a Kubernetes cluster. The client interacts directly
+with the Kubernetes API Server on the control plane, which schedules executor
+pods on worker nodes.
+
+- **Client mode** — the driver runs outside the cluster (inside or outside a
+  pod). It contacts the API Server to schedule executor pods and communicates
+  with them directly.
+- **Cluster mode** — the driver runs inside a pod on a worker node and
+  coordinates with executor pods through the API Server.
+
+#### Local Mode
+
+In local mode, the driver, master, and executor run in a single JVM on the
+workstation where the application runs. This is useful for development and
+testing.
+
+## Prerequisites
+
+- A running Yarn or Kubernetes cluster (or a local workstation for local mode)
+- Java 11 or later
+- Apache Spark (version compatible with your cluster)
+- The Prometheux engine JAR (provided by the Prometheux team)
+
+## Configuration Reference
+
+When configuring database properties such as credentials, settings are applied
+globally to all instances of a database type (e.g., PostgreSQL, Neo4j). If
+specific configurations are defined via the `@bind` annotation, those override
+the global values.
+
+### Database Properties
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `postgresql.url` | `jdbc:postgresql://localhost:5432/postgres` | JDBC URL for PostgreSQL |
+| `postgresql.username` | `postgres` | PostgreSQL username |
+| `postgresql.password` | `postgres` | PostgreSQL password |
+| `sqlite.url` | `jdbc:sqlite:sqlite/testdb.db` | SQLite database URL |
+| `neo4j.url` | `bolt://localhost:7687` | Neo4j Bolt URL |
+| `neo4j.username` | `neo4j` | Neo4j username |
+| `neo4j.password` | `neo4j` | Neo4j password |
+| `neo4j.authentication.type` | `basic` | Auth type: none, basic, kerberos, custom, bearer |
+| `neo4j.relationshipNodesMap` | `false` | Map relationship nodes |
+| `neo4j.chase.url` | `bolt://localhost:7687` | URL for chase data in Neo4j |
+| `neo4j.chase.username` | `neo4j` | Chase storage username |
+| `neo4j.chase.password` | `neo4j` | Chase storage password |
+| `neo4j.chase.authenticationType` | `basic` | Chase storage auth type |
+| `mariadb.platform` | `mariadb` | Platform identifier |
+| `mariadb.url` | `jdbc:mysql://localhost:3306/mariadb` | MariaDB JDBC URL |
+| `mariadb.username` | `mariadb` | MariaDB username |
+| `mariadb.password` | `mariadb` | MariaDB password |
+| `mongodb.url` | `mongodb://localhost:27017` | MongoDB connection URL |
+| `mongodb.username` | `mongo` | MongoDB username |
+| `mongodb.password` | `mongo` | MongoDB password |
+| `csv.withHeader` | `false` | Whether CSV files include a header row |
+
+### Engine Properties
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `decimal_digits` | `3` | Decimal precision |
+| `nullGenerationMode` | `UNIQUE_NULLS` | `UNIQUE_NULLS` or `SAME_NULLS` |
+| `sparkConfFile` | `spark-defaults.conf` | Path to the Spark configuration file |
+| `optimizationStrategy` | `default` | Options: `default`, `snaJoin`, `sna`, `noTermination` |
+| `computeAcceleratorPreference` | `cpu` | `cpu` or `gpu` (GPU-enabled environments only) |
+| `s3aAaccessKey` | `myAccess` | AWS S3 access key |
+| `s3aSecretKey` | `mySecret` | AWS S3 secret key |
+| `restService` | `off` | Set to `livy` to submit jobs via the Livy REST service |
+
+### Spark Configuration
+
+For full details, see the
+[Apache Spark documentation](https://spark.apache.org/docs/latest/configuration.html).
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `appName` | `prometheux` | Spark application name |
+| `spark.master` | `local[*]` | Master URL (`local[*]`, `spark://HOST:PORT`, `yarn`) |
+| `spark.driver.memory` | `4g` | Driver memory |
+| `spark.driver.maxResultSize` | `4g` | Max driver result size |
+| `spark.executor.memory` | `4g` | Executor memory |
+| `spark.submit.deployMode` | `client` | `client` or `cluster` |
+| `spark.executor.instances` | `1` | Number of executors |
+| `spark.executor.cores` | `4` | Cores per executor |
+| `spark.dynamicAllocation.enabled` | `false` | Dynamic executor allocation |
+| `spark.sql.adaptive.enabled` | `true` | Adaptive query execution |
+| `spark.sql.shuffle.partitions` | `4` | Shuffle partition count |
+| `spark.hadoop.defaultFS` | `hdfs://localhost:9000` | Hadoop filesystem URL |
+| `spark.yarn.stagingDir` | `hdfs://localhost:9000/user/` | Yarn staging directory |
+| `spark.hadoop.yarn.resourcemanager.hostname` | `localhost` | Yarn RM hostname |
+| `spark.hadoop.yarn.resourcemanager.address` | `localhost:8032` | Yarn RM address |
+| `spark.serializer` | `org.apache.spark.serializer.KryoSerializer` | Serializer class |
+| `spark.local.dir` | `tmp` | Local scratch directory |
+| `spark.checkpoint.compress` | `true` | Compress RDD checkpoints |
+| `spark.shuffle.compress` | `true` | Compress shuffle data |
+| `spark.sql.autoBroadcastJoinThreshold` | `-1` | Set to -1 for SortMergeJoin |
+| `spark.hadoop.fs.s3a.impl` | `org.apache.hadoop.fs.s3a.S3AFileSystem` | S3 filesystem impl |
+| `spark.hadoop.fs.s3a.path.style.access` | `true` | S3 path-style access |
+| `spark.hadoop.fs.s3a.server-side-encryption-algorithm` | `AES256` | S3 encryption |
+
+### GPU Acceleration
+
+Prometheux supports the Spark-RAPIDS plugin for GPU-accelerated processing.
+See the
+[NVIDIA blog post on Accelerating Neuro-Symbolic AI with RAPIDS and Vadalog Parallel](https://developer.nvidia.com/blog/accelerating-neurosymbolic-ai-with-rapids-and-vadalog-parallel/)
+for details.
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `spark.plugins` | `com.nvidia.spark.SQLPlugin` | Enables Spark-RAPIDS |
+| `spark.kryo.registrator` | `com.nvidia.spark.rapids.GpuKryoRegistrator` | GPU Kryo serialization |
+| `spark.rapids.sql.enabled` | `true` | Enable GPU for SQL ops |
+| `spark.rapids.sql.concurrentGpuTasks` | `2` | Concurrent GPU tasks |
+
+### Livy REST Service
+
+Prometheux jobs can be submitted remotely via
+[Apache Livy](https://livy.incubator.apache.org/), which provides a REST
+interface for Spark clusters. To enable it, set `restService=livy`.
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `livy.uri` | `http://localhost:8998` | Livy REST service URI |
+| `livy.hdfs.jar.files` | — | HDFS path for required JARs |
+| `livy.hdfs.jar.path` | `/home/prometheux/livy` | JAR storage path |
+| `livy.java.security.auth.login.config` | `jaas.conf` | Kerberos login config |
+| `livy.java.security.krb5.conf` | `none` | Kerberos config file |
+| `livy.sun.security.krb5.debug` | `true` | Kerberos debug logging |
+| `livy.javax.security.auth.useSubjectCredsOnly` | `true` | Subject credentials only |
+| `livy.session.logSize` | `0` | Session log size |
+| `livy.shutdownContext` | `true` | Shut down Spark context after job completion |
+
+## Next Steps
+
+- [REST API](/integrations/rest-api) — Engine REST endpoints
+- [Chat API](/integrations/chat-api) — AI-powered Vadalog assistant
+- [Python SDK](/integrations/python-sdk) — Programmatic access via `prometheux_chain`

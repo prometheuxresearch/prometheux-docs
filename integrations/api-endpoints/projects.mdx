@@ -1,0 +1,382 @@
+---
+title: "Projects API"
+description: "Manage projects within workspaces, including creation, import/export, and template management."
+---
+
+# Projects API
+
+The Projects API allows you to manage projects within workspaces, including creation, import/export, and template management.
+
+---
+
+## Save Project
+
+Create or update a project in a workspace.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+# Create a new project
+project_id = px.save_project(project_name="my_project")
+
+# Update an existing project
+updated_project_id = px.save_project(
+    project_id="existing_id", 
+    project_name="updated_name"
+)
+```
+
+**Function Signature**
+
+```python
+def save_project(project_id=None, project_name=None, project_scope="user", description=None)
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | str | No | The project identifier. If None, a new project will be created |
+| `project_name` | str | Yes* | The name of the project. Required when creating a new project |
+| `project_scope` | str | No | The scope of the project. Defaults to "user" |
+| `description` | str | No | Optional project description |
+
+**Returns**
+
+The project ID of the created or updated project.
+
+  </Tab>
+  <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+POST /api/v1/projects/save
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/save" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "project": {
+      "name": "Financial Risk Analysis",
+      "description": "Project for analyzing financial risk factors"
+    }
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## List Projects
+
+List all projects in a workspace.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+# List all user projects
+projects = px.list_projects()
+
+# List projects with specific scopes
+projects = px.list_projects(project_scopes=["user", "shared"])
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/list?scopes=user,organization" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Load Project
+
+Load a specific project by ID.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+project_data = px.load_project(project_id="my_project_id")
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/load?project_id=proj_12345&scope=user" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## List Templates
+
+List all available project templates from the marketplace.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+templates = px.list_templates()
+for template in templates:
+    print(f"Template: {template['name']} (ID: {template['id']})")
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/list-templates" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Import Template
+
+Import a project from a marketplace template.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+result = px.import_template(
+    template_id="template_001", 
+    new_project_name="My Financial Analysis"
+)
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/import-template" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "template_id": "template_001",
+    "new_project_name": "My Financial Analysis",
+    "project_scope": "user"
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Export Project
+
+Export a project including all its data and metadata.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+import json
+
+export_data = px.export_project(project_id="proj_12345")
+
+with open("project_export.json", "w") as f:
+    json.dump(export_data, f)
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/export-project" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"project_id": "proj_12345", "scope": "user"}'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Import Project
+
+Import a previously exported project into a workspace.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+import json
+
+with open("project_export.json", "r") as f:
+    export_data = json.load(f)
+
+result = px.import_project(export_data=export_data)
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/import-project" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"export_data": {...}, "scope": "user"}'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Copy Project
+
+Copy a project within or between workspaces.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+result = px.copy_project(
+    "proj_12345",
+    target_scope="user",
+    new_project_name="Copy of Financial Analysis",
+)
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/copy" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "project_id": "proj_12345",
+    "new_project_name": "Copy of Financial Analysis",
+    "target_scope": "user"
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Cleanup Projects
+
+Delete projects from a workspace.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+# Clean up all user projects
+px.cleanup_projects()
+
+# Clean up a specific project
+px.cleanup_projects(project_id="my_project_id")
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/cleanup" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"project": {"id": "proj_12345", "scope": "user"}}'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Export Workspace
+
+Export all projects and workspace data for the given scope.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+export_data = px.export_workspace(scope="user")
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/export-workspace" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"scope": "user"}'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Import Workspace
+
+Import workspace data previously produced by export workspace.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+result = px.import_workspace(export_data, scope="user")
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/import-workspace" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"export_data": {...}, "scope": "user"}'
+```
+
+  </Tab>
+</Tabs>
