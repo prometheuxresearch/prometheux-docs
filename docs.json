@@ -3,8 +3,8 @@
   "theme": "mint",
   "name": "Prometheux",
   "logo": {
-    "light": "/images/px_logowhite.svg",
-    "dark": "/images/202510-Logo-TransparentBlack.jpg",
+    "light": "/images/202510-Logo-TransparentBlack.jpg",
+    "dark": "/images/202510-Logo-White.png",
     "href": "https://prometheux.ai"
   },
   "favicon": {
