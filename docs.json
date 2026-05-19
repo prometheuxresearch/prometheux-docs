@@ -196,5 +196,9 @@
       "website": "https://prometheux.ai",
       "linkedin": "https://www.linkedin.com/company/prometheux"
     }
+  },
+  "fonts": {
+    "family": "Roboto",
+    "weight": 200
   }
 }
