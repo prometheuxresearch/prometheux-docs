@@ -9,9 +9,9 @@
   },
   "favicon": "/images/prometheux_icon_black_on_white.jpg",
   "colors": {
-    "primary": "#ffdf4b",
+    "primary": "#4a90fd",
     "light": "#40e9a0",
-    "dark": "#4a90fd"
+    "dark": "#0f0f0f"
   },
   "background": {
     "color": {
