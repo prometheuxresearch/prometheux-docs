@@ -22,12 +22,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Mintlify CLI
-        run: npm install -g mintlify
-
       - name: Build website
         run: |-
-          mint export --output export.zip
+          npx --yes mintlify export --output export.zip
           mkdir -p build
           unzip -q export.zip -d build
           # Strip files only useful for offline distribution
