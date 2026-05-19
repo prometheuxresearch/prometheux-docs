@@ -1,0 +1,196 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Prometheux",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://prometheux.ai"
+  },
+  "favicon": "/favicon.ico",
+  "colors": {
+    "primary": "#00e382",
+    "light": "#40e9a0",
+    "dark": "#009e56"
+  },
+  "background": {
+    "color": {
+      "light": "#ffffff",
+      "dark": "#0f0f0f"
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Platform",
+        "href": "https://platform.prometheux.ai"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Started",
+      "href": "https://platform.prometheux.ai/login"
+    }
+  },
+  "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "icon": "github",
+          "href": "https://github.com/prometheuxresearch"
+        },
+        {
+          "anchor": "Community",
+          "icon": "discord",
+          "href": "https://docs.prometheux.ai/community/resources"
+        }
+      ]
+    },
+    "groups": [
+      {
+        "group": "Introduction",
+        "pages": ["introduction"]
+      },
+      {
+        "group": "Get Started",
+        "pages": [
+          "get-started/platform-overview",
+          "get-started/your-first-project",
+          {
+            "group": "Installation",
+            "pages": [
+              "get-started/installation/cloud",
+              "get-started/installation/snowflake",
+              {
+                "group": "On-Premises",
+                "pages": [
+                  "get-started/installation/on-premises/single-node",
+                  "get-started/installation/on-premises/cluster"
+                ]
+              },
+              {
+                "group": "Databricks",
+                "pages": [
+                  "get-started/installation/databricks/overview",
+                  "get-started/installation/databricks/native-app",
+                  "get-started/installation/databricks/connectors"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "group": "Platform",
+        "pages": [
+          "platform/data-connections",
+          "platform/projects",
+          "platform/ontology-graph",
+          "platform/concepts-and-lineage",
+          "platform/dashboards",
+          "platform/ai-assistant",
+          "platform/compute",
+          "platform/settings"
+        ]
+      },
+      {
+        "group": "Integrations",
+        "pages": [
+          "integrations/python-sdk",
+          "integrations/rest-api",
+          "integrations/config",
+          "integrations/chat-api",
+          {
+            "group": "MCP",
+            "pages": [
+              "integrations/mcp/overview",
+              "integrations/mcp/local",
+              "integrations/mcp/remote",
+              "integrations/mcp/claude",
+              "integrations/mcp/databricks-genie",
+              "integrations/mcp/snowflake-cortex"
+            ]
+          },
+          {
+            "group": "API Reference",
+            "pages": [
+              "integrations/api-endpoints/data",
+              "integrations/api-endpoints/projects",
+              "integrations/api-endpoints/concepts",
+              "integrations/api-endpoints/vadalog",
+              "integrations/api-endpoints/rule-inference",
+              "integrations/api-endpoints/dashboards",
+              "integrations/api-endpoints/vadalingo",
+              "integrations/api-endpoints/agent"
+            ]
+          }
+        ]
+      },
+      {
+        "group": "Examples",
+        "pages": [
+          "examples/overview",
+          {
+            "group": "Patterns",
+            "pages": [
+              "examples/patterns/graph-analytics",
+              "examples/patterns/recursion",
+              "examples/patterns/state-machine"
+            ]
+          },
+          {
+            "group": "Finance",
+            "pages": [
+              "examples/finance/banking-supervision",
+              "examples/finance/card-clearing-migration",
+              "examples/finance/non-performing-loans"
+            ]
+          }
+        ]
+      },
+      {
+        "group": "Vadalog Reference",
+        "pages": [
+          "vadalog/overview",
+          "vadalog/grammar",
+          "vadalog/language-primitives",
+          "vadalog/rules",
+          {
+            "group": "Expressions",
+            "pages": [
+              "vadalog/expressions/overview",
+              "vadalog/expressions/operators",
+              "vadalog/expressions/negation",
+              "vadalog/expressions/conditions-assignments",
+              "vadalog/expressions/recursion",
+              "vadalog/expressions/aggregations",
+              "vadalog/expressions/collections",
+              "vadalog/expressions/specialized-functions",
+              "vadalog/expressions/ai-functions"
+            ]
+          },
+          "vadalog/annotations",
+          "vadalog/data-sources",
+          "vadalog/chase-provenance",
+          "vadalog/explanations",
+          "vadalog/graph-analytics",
+          "vadalog/sql-integration"
+        ]
+      },
+      {
+        "group": "Resources",
+        "pages": [
+          "resources/faq",
+          "resources/community"
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/prometheuxresearch",
+      "website": "https://prometheux.ai"
+    }
+  }
+}
