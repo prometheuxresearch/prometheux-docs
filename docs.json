@@ -7,7 +7,10 @@
     "dark": "/images/202510-Logo-TransparentBlack.jpg",
     "href": "https://prometheux.ai"
   },
-  "favicon": "/images/prometheux_icon_black_on_white.jpg",
+  "favicon": {
+    "light": "/images/prometheux_icon_black_on_white.jpg",
+    "dark": "/images/prometheux_icon_black_on_white.jpg"
+  },
   "colors": {
     "primary": "#4a90fd",
     "light": "#40e9a0",
@@ -199,6 +202,6 @@
   },
   "fonts": {
     "family": "Roboto",
-    "weight": 200
+    "weight": 400
   }
 }
