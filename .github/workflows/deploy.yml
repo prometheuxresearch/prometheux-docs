@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+
+jobs:
+  build:
+    name: Build and sync with s3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Mintlify CLI
+        run: npm install -g mintlify
+
+      - name: Build website
+        run: |-
+          mint export --output export.zip
+          mkdir -p build
+          unzip -q export.zip -d build
+          # Strip files only useful for offline distribution
+          rm -f build/serve.js "build/Start Docs.command" "build/Start Docs.bat"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::094284551733:role/GitHubActionsRoleStack-Role-gIAWAFX1UbPp
+          aws-region: us-east-1
+
+      - name: Upload to s3
+        run: aws s3 sync ./build s3://docs.prometheux.ai --delete
+
+      - name: Invalidate cloudfront
+        run: |-
+          aws cloudfront create-invalidation \
+            --distribution-id E2HIWF1TR6OEBH \
+            --paths "/*"
