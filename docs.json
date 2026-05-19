@@ -3,15 +3,15 @@
   "theme": "mint",
   "name": "Prometheux",
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg",
+    "light": "/images/px_logowhite.svg",
+    "dark": "/images/202510-Logo-TransparentBlack.jpg",
     "href": "https://prometheux.ai"
   },
-  "favicon": "/favicon.ico",
+  "favicon": "/images/prometheux_icon_black_on_white.jpg",
   "colors": {
-    "primary": "#00e382",
+    "primary": "#ffdf4b",
     "light": "#40e9a0",
-    "dark": "#009e56"
+    "dark": "#4a90fd"
   },
   "background": {
     "color": {
@@ -41,9 +41,13 @@
           "href": "https://github.com/prometheuxresearch"
         },
         {
-          "anchor": "Community",
+          "anchor": "Community (Coming Soon)",
           "icon": "discord",
-          "href": "https://docs.prometheux.ai/community/resources"
+          "href": "https://docs.prometheux.ai/community/resources",
+          "color": {
+            "light": "#ffee16",
+            "dark": "#ffee16"
+          }
         }
       ]
     },
@@ -189,8 +193,8 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/prometheuxresearch",
-      "website": "https://prometheux.ai"
+      "website": "https://prometheux.ai",
+      "linkedin": "https://www.linkedin.com/company/prometheux"
     }
   }
 }
