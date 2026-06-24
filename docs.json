@@ -39,11 +39,6 @@
     "global": {
       "anchors": [
         {
-          "anchor": "GitHub",
-          "icon": "github",
-          "href": "https://github.com/prometheuxresearch"
-        },
-        {
           "anchor": "Community (Coming Soon)",
           "icon": "discord",
           "href": "https://docs.prometheux.ai/community/resources",
