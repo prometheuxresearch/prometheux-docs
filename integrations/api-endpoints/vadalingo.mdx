@@ -17,6 +17,12 @@ Translate a natural language description into a Vadalog program. You can referen
 POST /api/v1/vadalingo/{project_id}/translate/nl-to-vadalog
 ```
 
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
+
 **Request Body:**
 
 | Field | Type | Required | Description |
@@ -51,6 +57,8 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalingo
 ```
 
 <Tip>
+**Concept References**
+
 When you include `@concept_name` in the description, the API fetches those concepts' schemas and provides them as context to the LLM. If no `@` references are found, all project concepts are used as context.
 </Tip>
 
@@ -64,6 +72,18 @@ Translate a SQL query into a Vadalog program.
 POST /api/v1/vadalingo/{project_id}/translate/sql-to-vadalog
 ```
 
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `sql_data` | string | Yes | SQL query to translate |
+
 **Example:**
 
 ```bash
@@ -75,6 +95,20 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalingo
   }'
 ```
 
+**Response:**
+
+```json
+{
+  "data": {
+    "sql_data": "SELECT c.name, SUM(o.amount) ...",
+    "vadalog_program": "...",
+    "project_id": "my-project-id"
+  },
+  "message": "SQL to Vadalog translation completed successfully",
+  "status": "success"
+}
+```
+
 ## RDF to Vadalog
 
 Translate RDF data into a Vadalog program.
@@ -84,6 +118,18 @@ Translate RDF data into a Vadalog program.
 ```
 POST /api/v1/vadalingo/{project_id}/translate/rdf-to-vadalog
 ```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `rdf_data` | string | Yes | RDF data to translate |
 
 **Example:**
 
@@ -105,6 +151,12 @@ Translate an OWL ontology into Vadalog rules. Supports RDF/XML, Turtle, N3, and 
 ```
 POST /api/v1/vadalingo/{project_id}/translate/owl-to-vadalog
 ```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
 
 **Request Body:**
 

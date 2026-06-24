@@ -1,8 +1,47 @@
 ---
 title: "Dashboards"
-description: "Coming soon."
+description: "Build and manage dashboards to visualize the results of your concepts within a project."
 ---
 
 # Dashboards
 
-This page is coming soon. Content will be added here.
+Dashboards let you collect and visualize the results of your concepts. Each
+dashboard belongs to a project and is stored as a named definition that can be
+created, updated, loaded, and deleted.
+
+<Note>
+This page describes dashboards based on what the platform's dashboard API
+supports. The in-product editing experience (widgets, layout, chart types) is
+managed through the platform UI.
+</Note>
+
+## What a dashboard is
+
+A dashboard is a saved object with:
+
+- A **name** that identifies it within the workspace.
+- A **definition** that holds the dashboard's layout and visual content.
+- A **project** it belongs to (`project_id`).
+
+Dashboards are scoped (for example, to the current `user`) and carry
+`created_at` / `updated_at` timestamps so you can track when they were last
+changed.
+
+## Working with dashboards
+
+You can manage dashboards either through the platform UI or programmatically via
+the API. The platform supports the following operations:
+
+- **List dashboards** across all projects in the workspace, or within a single
+  project.
+- **Open a dashboard** to load its full definition.
+- **Save a dashboard** to create a new one or update an existing one. When no
+  dashboard ID is provided, a new one is generated automatically.
+- **Delete a dashboard** to permanently remove it.
+
+## API reference
+
+For the full request and response details, including endpoints, parameters, and
+example requests, see the dashboards API reference:
+
+- [Dashboards API](/integrations/api-endpoints/dashboards)

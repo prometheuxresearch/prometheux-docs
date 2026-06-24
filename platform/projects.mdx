@@ -1,8 +1,81 @@
 ---
 title: "Projects"
-description: "Coming soon."
+description: "Organize your work in Prometheux with projects: create, share, template, and move them across workspaces."
 ---
 
 # Projects
 
-This page is coming soon. Content will be added here.
+A **project** is the unit of work in Prometheux. It groups everything you build
+around a problem — concepts, ontologies, data source connections, and results —
+so you can manage, share, and move that work as a whole.
+
+{/* NEEDS_REVIEW: This page is derived from the Projects API reference. Confirm exact UI
+labels, buttons, and navigation in the product before publishing. */}
+
+## Project scopes
+
+Every project belongs to a **scope** that controls who can see and use it:
+
+- `user` — private to your own workspace (the default scope).
+- `organization` — shared across your organization.
+
+When listing projects you can filter by one or more scopes, and when copying or
+importing a project you choose the scope it lands in.
+
+## Working with projects
+
+The platform supports the full lifecycle of a project. Each of these operations
+is also available through the SDK and REST API (see the
+[Projects API reference](/integrations/api-endpoints/projects)):
+
+- **Create or update** — save a new project with a name and optional description, or update an existing one.
+- **List** — browse the projects available in your selected scopes.
+- **Load** — open a specific project by its ID.
+- **Copy** — duplicate a project within or between scopes/workspaces.
+- **Export / Import** — export a project (including its data and metadata) to a portable file, and import it back into a workspace later.
+- **Cleanup** — delete a single project or remove all of your project resources.
+
+## Templates
+
+Prometheux ships with a marketplace of **project templates** — pre-built
+starting points for common use cases (for example, financial analysis or
+customer analytics). You can browse the available templates and import one as a
+new project to get going quickly without building from scratch.
+
+## Workspaces
+
+A **workspace** holds all the projects for a given scope. You can export an
+entire workspace — every project and its associated data — and import it back
+elsewhere, which is useful for backups or moving work between environments.
+
+## Quick example (SDK)
+
+The snippet below shows the core project lifecycle using the Python SDK:
+
+```python
+import prometheux_chain as px
+import os
+
+# Set up authentication and configuration
+os.environ['PMTX_TOKEN'] = 'my_pmtx_token'
+px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/my-org/my-user")
+
+# Create a new project
+project_id = px.save_project(project_name="test_project")
+
+# List all projects
+projects = px.list_projects()
+print(f"Available projects: {projects}")
+
+# Load the created project
+project_data = px.load_project(project_id)
+
+# Clean up when done
+px.cleanup_projects(project_id=project_id)
+```
+
+## Next steps
+
+- [Projects API reference](/integrations/api-endpoints/projects) — full SDK and REST details for every project operation.
+- [Concepts and lineage](/platform/concepts-and-lineage) — the building blocks you author inside a project.
+- [Platform overview](/get-started/platform-overview) — how projects fit into the wider platform.

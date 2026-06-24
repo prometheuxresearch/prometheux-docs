@@ -1,8 +1,238 @@
 ---
 title: "Your First Project"
-description: "Coming soon."
+description: "A hands-on walkthrough that builds your first executable ontology in Vadalog, from facts to a recursive rule."
 ---
 
 # Your First Project
 
-This page is coming soon. Content will be added here.
+This walkthrough builds your first Prometheux project from scratch. You will start
+from a handful of facts, model a simple business rule, and end with a small
+executable ontology that reasons recursively over your data.
+
+If you have not installed Prometheux yet, start with
+[Installation](/get-started/installation/overview) and choose the environment that
+fits your team (Cloud, Snowflake, Databricks, or on-premises).
+
+## What you are building
+
+In Prometheux, an ontology is not just documentation — it is a runnable model that
+defines entities, relationships, and the logic used to query and process data.
+You write that logic in **Vadalog**, a declarative language.
+
+For this first project, we will answer a classic question about company ownership:
+
+> A company X **controls** a company Y if:
+>
+> 1. X directly owns more than 50% of Y; or
+> 2. X controls a set of companies that jointly — possibly together with X
+>    itself — own more than 50% of Y.
+
+We will model this with the conglomerate Yum! Brands and its holdings (KFC, Pizza
+Hut, and others), then let Prometheux compute every company Yum! controls, directly
+or indirectly.
+
+## Declare what you want, not how to get it
+
+Unlike traditional data processing, you do not write Vadalog as imperative steps
+("first fetch this, then join that"). Instead, you declare what the output should
+be and let the engine do the work.
+
+For example, deciding whether a user is "engaged" (10+ events in the past 30 days)
+looks like this declaratively:
+
+```prolog
+eventsCountSince(UserId, SinceTime, Count) <-
+  event(EventId, UserId, Timestamp),
+  Timestamp > SinceTime,
+  Count = mcount(EventId).
+
+isEngaged(UserId) <-
+  eventsCountSince(UserId, now() - 30 * 24 * 60 * 60, Count),
+  Count > 10.
+```
+
+Someone who does not write code can still read this and reason about what it does.
+That readability is a core goal of modelling with ontologies.
+
+<Tip>
+New to the language? Skim [Thinking in Vadalog](/vadalog/thinking-in-vadalog) and
+the [Vadalog overview](/vadalog/overview) first. This page assumes only a general
+sense of the syntax — it should be easy enough to follow along.
+</Tip>
+
+## Step 1 — Start with facts
+
+Facts are ground truths that will eventually come from your data sources. For now,
+write them by hand so you can run the program immediately.
+
+```prolog
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+```
+
+Each `owns` fact reads: an owner holds a fraction of shares in a brand.
+
+## Step 2 — Model the first business rule
+
+Rule 1 says a conglomerate controls a brand when it directly owns more than 50% of
+it. Think of relationships between entities as verbs — `owns`, `controls`.
+
+```prolog
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+
+% Yum! controls some brand if it owns more than 50% of the shares of that brand.
+controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
+```
+
+The head atom (`controls(...)`, before `<-`) declares intent; the body (after `<-`)
+is the implementation detail.
+
+## Step 3 — Add indirect ownership
+
+Real ownership is rarely direct. Introduce an intermediary: Yum! owns 70% of
+FastFoodsGroup, which owns 45% of McDonalds, and Yum! also owns 10% of McDonalds
+directly.
+
+```prolog
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+```
+
+By Rule 1 alone, Yum! does not control McDonalds (only a 10% minority stake). To
+capture joint ownership, we sum a conglomerate's direct and indirect shares before
+applying the 50% threshold. We track those shares with a helper, `has_shares`, and
+a summed total, `has_total_shares`.
+
+<Note>
+When aggregating across recursion, use the recursion-specific
+[aggregators](/vadalog/expressions/aggregations) (for example `msum`), which keep
+the running aggregation correct across each recursive call.
+</Note>
+
+## Step 4 — The complete ontology
+
+Putting it together, generalised over any conglomerate, and exposing the result
+with an `@output` annotation:
+
+```prolog
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Rule 1: Conglomerate has `Shares` amount of a brand if it owns that amount of shares
+% in the brand.
+has_shares(Conglomerate, _, SomeBrand, Shares) <-
+  owns(Conglomerate, SomeBrand, Shares).
+
+% Rule 2: Conglomerate has `Shares` amount of a brand if it controls an intermediary
+% who has that amount of shares in the brand.
+has_shares(Conglomerate, Intermediary, SomeBrand, Shares) <-
+  controls(Conglomerate, Intermediary),
+  owns(Intermediary, SomeBrand, Shares).
+
+% Sum all the direct and indirect shares of some brand that the conglomerate has.
+has_total_shares(Conglomerate, SomeBrand, TotalShares) <-
+  has_shares(Conglomerate, Intermediary, SomeBrand, Shares),
+  TotalShares = msum(Shares).
+
+% Conglomerate controls some brand if its joint ownership of that company's
+% shares is above 50%.
+controls(Conglomerate, SomeBrand) <-
+  has_total_shares(Conglomerate, SomeBrand, Shares),
+  Shares > 0.5.
+
+@output("controls").
+```
+
+A couple of details worth noting:
+
+- The two `has_shares` rules must share the **same arity**. We force the first to
+  four arguments with an [anonymous variable `_`](/vadalog/language-primitives#anonymous-variables),
+  so Prometheux treats them as two branches of one predicate rather than two
+  separate predicates.
+- `controls` is recursively defined only at the level of `has_shares`, not as its
+  own base case. Keeping the output to a single atom and recursing one level deeper
+  avoids subtle bugs where indirect relationships more than one hop away go missing.
+
+## Step 5 — Run it and read the output
+
+Running the program produces every control relationship the rules can derive:
+
+```prolog
+controls("Yum", "Pizza Hut")
+controls("Yum", "FastFoodsGroup")
+controls("Yum", "KFC")
+controls("Yum", "McDonalds")
+```
+
+Yum! now controls McDonalds because its direct stake (10%) plus its indirect stake
+via FastFoodsGroup (45%) sums to 55%, above the 50% threshold.
+
+Change one fact — say FastFoodsGroup owns only 20% of McDonalds:
+
+```prolog
+owns("FastFoodsGroup", "McDonalds", 0.2).
+```
+
+Now the joint stake is 10% + 20% = 30%, below the threshold, and the output drops
+McDonalds:
+
+```prolog
+controls("Yum", "Pizza Hut")
+controls("Yum", "FastFoodsGroup")
+controls("Yum", "KFC")
+```
+
+## Why recursion matters
+
+Because Rule 2 builds on `controls` — the very thing we are computing — the model
+naturally follows ownership chains of any depth. Extend the data so Yum! and
+McDonalds are several hops apart:
+
+```prolog
+Yum -> FastFoodsGroup -> DeepFriedFoods -> McDonalds
+```
+
+A non-recursive version that only looks one hop deep would miss the connection.
+The recursive ontology above keeps following the chain until it bottoms out at the
+facts (the base case), so it correctly reports the indirect control. This is why
+thinking recursively often produces simpler, more correct rules with a single
+source of truth for each business rule.
+
+## Connect real data
+
+The facts above were handwritten so you could run the program right away. To bind a
+predicate to a real source instead, replace facts with bindings. For example, the
+same logic backed by PostgreSQL tables:
+
+```prolog
+@qbind("controls", "postgresql", "database", "select controller,controllee from controls").
+@qbind("owns", "postgresql", "database", "select owner,owned,shares from ownership").
+
+has_shares(Conglomerate, Intermediary, SomeBrand, Shares) <-
+  controls(Conglomerate, Intermediary, IntermediateShares),
+  owns(Intermediary, SomeBrand, Shares).
+```
+
+Multiple body predicates separated by commas **are** a join — you combine the rules
+that define each binding rather than reasoning about table joins directly. See
+[Data Sources](/vadalog/data-sources) for the full list of connectors and binding
+options.
+
+## Where to go next
+
+- [Concepts and lineage](/platform/concepts-and-lineage) — knowledge graphs,
+  ontologies, reasoning, and chase graphs
+- [Thinking in Vadalog](/vadalog/thinking-in-vadalog) — the full version of this
+  example, including recursion gotchas and SQL comparisons
+- [Vadalog overview](/vadalog/overview) — language reference
+- [Annotations](/vadalog/annotations) — `@output`, `@qbind`, and more
+- [Aggregations](/vadalog/expressions/aggregations) — recursion-aware aggregators
+- [Recursion](/vadalog/expressions/recursion) — modelling recursive logic
+- [Examples](/examples/overview) — more end-to-end programs

@@ -7,9 +7,9 @@ description: "Constraining values with conditions and generating new values with
 
 ## Conditions
 
-Rules can be enriched with conditions in order to constrain specific values for variables of the body. A condition is the comparison (`>`, `<`, `==`, `>=`, `<=`, `<>`) of a variable of the body and an **expression**.
+Rules can be enriched with conditions in order to constrain specific values for variables of the body. Syntactically, the conditions follow the body of the rule. A condition is the comparison (`>`, `<`, `==`, `>=`, `<=`, `<>`) of a variable (the LHS of the comparison) of the body and an **expression** (the RHS of the comparison).
 
-Notice that although the comparison symbols used in conditions partially overlap with the symbols for comparison operators, they have different semantics. While comparison operators calculate Boolean results, comparison symbols in conditions only specify a filter.
+Notice that although the comparison symbols used in conditions are partially overlapped with the symbols for comparison operators, they have different semantics. While comparison operators calculate Boolean results, comparison symbols in conditions only specify a filter.
 
 Each rule can have multiple comma-separated conditions.
 
@@ -20,11 +20,13 @@ rich(X) <- contract(X,Y),Y>=20.
 @output("rich").
 ```
 
-This individuates contracts for `Y>=20` and classifies the respective employee as rich. The expected result:
+In the example we individuate the contracts for `Y>=20` and classify the respective employee as rich. The expected result is:
 
 ```
 rich("Jeff").
 ```
+
+Consider this next example:
 
 ```prolog
 balanceItem(1, 7, 2, 5).
@@ -33,18 +35,22 @@ error(E, I) <- balanceItem(I, X, Y, Z), X <> Y+Z.
 @output("error").
 ```
 
-This individuates balance items for which X is different from the sum of Y and Z. The expected result:
+Here, we individuate the balance items for which X is different from the sum of Y and Z and report an error E for the identifier I of such an item. The expected result is:
 
 ```
 error(_e, 2).
 ```
 
-This next example selects the senior English players:
+This next example selects the senior English players.
 
 ```prolog
 player(1, "Chelsea").
 age(1, 24).
 player(2, "Bayern").
+team("Chelsea").
+age(2, 25).
+player(2, "Bayern").
+team("Chelsea").
 age(2, 25).
 player(3, "Chelsea").
 age(3, 18).
@@ -54,7 +60,7 @@ seniorEnglish(X) <- player(X, Y), team(Y), age(X, A), Y=="Chelsea", A > 20.
 @output("seniorEnglish").
 ```
 
-Expected result:
+They are those who play with Chelsea with age greater than 20. The expected result is:
 
 ```
 seniorEnglish(1).
@@ -62,7 +68,7 @@ seniorEnglish(1).
 
 ## Assignment
 
-Rules can be enriched with assignments in order to generate specific values for existentially quantified variables of the head. An assignment is the equation (`=`) of a variable of the body and an expression.
+Rules can be enriched with assignments in order to generate specific values for existentially quantified variables of the head. Syntactically, the assignments follow the body of the rule. An assignment is the equation (`=`) of a variable (the LHS of the equation) of the body and an expression (the RHS of the equation).
 
 Each rule can have multiple comma-separated assignments.
 
@@ -76,9 +82,9 @@ operations(Q, Z, A) <- balanceItem(I1,X), balanceItem(I2,Y),
 @output("operations").
 ```
 
-This generates a fact for operations, summing two balance items. Observe that `I1=="loans"` and `I2=="deposits"` are conditions to select the `balanceItems` (as I1 and I2 appear in the body), whereas `Z=X+Y` and `A=(X+Y)/2` are assignments (as Z and A do not appear in the body).
+This example generates a fact for operations, summing two balance items, one for loans and one for deposits. Observe that `I1=="loans"` and `I2=="deposits"` are conditions to select the `balanceItems` (as I1 and I2 appear in the body), whereas `Z=X+Y` and `A=(X+Y)/2` are assignments (as Z and A do not appear in the body).
 
-The expected result:
+The expected result is:
 
 ```
 operations(_q, 43, 21.5).

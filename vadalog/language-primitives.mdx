@@ -20,6 +20,8 @@ Predicates can be thought of as general statements that can be true or false for
 
 The terms of an atom is an ordered list of any [constant](#data-types), [variable](#variables), or [labelled null](#labelled-nulls).
 
+You can think of predicates as general statements that can be true or false for different values. It's like a template. For example, `student(X)` is the predicate `student`, where X can be any name.
+
 An atom is said to be **ground** if it only contains constants. A ground atom is also known as a **fact**, and is always true. Thus `student("Plato")` is the fact that Plato is indeed a student.
 
 ## Rules and Programs
@@ -85,18 +87,42 @@ The table below shows the data types supported by Vadalog, along with the litera
 
 ## Variables
 
-Variables in Vadalog are more like variables in algebra or first-order logic than those of imperative programming languages. They represent a concrete value rather than a memory location.
+Variables have different interpretations in different programming paradigms. In imperative languages, they are essentially memory locations that may have some contents and the contents may change over time.
 
-For example, consider:
+In algebra or physics, a variable represents a concrete value and its function is somewhat similar to a pronoun in natural language. If we were to replace such variables with actual concrete values, we will have concrete statements representing concrete relations between arithmetic expressions.
 
-- "Every father X is a man" → `man(X) <- father(X, Y).`
-- "For any man X there exists a father Y" → `father(X, Y) <- father("Luke Skywalker", Y).`
+Variables in Vadalog are more like variables in algebra than like those of imperative programming languages--they are more like variables in first-order logic.
 
-If a variable appears in the head, but not in the body, then **there exists** at least one value of the variable that makes the head true.
+For example, consider the following statements:
+
+- "Every father X is a man"
+- "For any man X there exists a father Y"
+
+These statements can be true or false depending on how we choose to **instantiate** X and Y, which means, what specific concrete values we choose.
+
+In the first statement, if were to consider every human father, then the statement is true.
+
+```prolog
+man(X) <- father(X, Y).
+```
+
+However, if X were to take the value of the male parent of a pet dog Fluffy, then it will be false.
+
+If a variable appears in the head, but not in the body, then **there exists** at least one value of the variable that makes the head true. Thus for our second statement, if there exists one `X`, namely "Luke Skywalker", who has a father, Y, then our statement would be true.
+
+```prolog
+father(X, Y) <- father("Luke Skywalker", Y).
+```
 
 <Note>
 A Vadalog variable is **local** to the rule in which it occurs. This means that occurrences of the same variable name in different rules refer to different variables.
 </Note>
+
+It follows, naturally, that variables cannot occur in facts.
+
+A variable such as `X` is just a _placeholder_. In order to use it in a computation, we must instantiate it, i.e., replace it with a concrete value. The value is called the _instantiation_ or [**binding**](/vadalog/annotations#bind).
+
+In general, a bound variable should be **positively bound**, i.e., it should have a binding occurrence that is not in the scope of a [negation](/vadalog/expressions/negation).
 
 <Note>
 Variables in Vadalog need to be capitalized, and can contain underscores.
@@ -128,6 +154,8 @@ All nulls that occur during the execution of a Vadalog program are **labelled**.
 2. variables that exist in the head but not the body.
 
 The type of a labelled null is always unknown.
+
+The following two examples show possible uses of labelled nulls. Many more are indeed possible and important in ontological reasoning.
 
 **Example 1:**
 
@@ -164,7 +192,7 @@ contractSigned(X) <- hired(Y,X), manager(Y,Z).
 
 This example states that every employee X has a manager Y. If the manager Y sees that there is a pending contract for the respective employee X, then she hires the employee. Once a manager Y has hired an employee X, the respective contract X is signed.
 
-The expected result:
+If someone has been hired for some reason by an employee who is not a manager, then the contract will not be signed. The expected result:
 
 ```prolog
 contractSigned("Jack").
@@ -172,3 +200,5 @@ contractSigned("Ruth").
 ```
 
 Observe that the name of the manager is unknown throughout the entire processing.
+</content>
+</invoke>

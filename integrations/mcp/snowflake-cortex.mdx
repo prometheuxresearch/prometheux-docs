@@ -1,19 +1,35 @@
 ---
 title: "Connect Snowflake Cortex"
-description: "Connect Snowflake Cortex Agents to Prometheux using the Remote MCP Server."
+description: "Connect Snowflake Cortex to Prometheux using the Remote MCP Server."
 ---
 
 # Connect Snowflake Cortex to Prometheux
 
-Connect [Snowflake Cortex Agents](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents) to Prometheux using the [Remote MCP Server](/integrations/mcp/remote). Cortex Agents support [MCP connectors](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents-mcp-connectors), allowing them to discover and invoke external tools within Snowflake's governed environment.
+Connect Snowflake to Prometheux using the [Remote MCP Server](/integrations/mcp/remote). By registering Prometheux as an [external MCP connector](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents-mcp-connectors), Snowflake's AI features gain the ability to list concepts, run reasoning, and query knowledge graphs — directly within Snowflake.
 
-By registering Prometheux as an external MCP server, Cortex Agents gain the ability to list concepts, run reasoning, and query knowledge graphs — directly within Snowflake Intelligence.
+The same MCP connector works with both:
+
+- **[Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code)** — Snowflake's AI coding assistant in Snowsight
+- **[Snowflake Intelligence](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents)** — Cortex Agents for data exploration and orchestration
+
+<Tip>
+**Native App Users**
+
+If you're using the **Prometheux Snowflake Native App**, Cortex Agents and Snowflake Intelligence
+can access Prometheux tools automatically via the built-in `CUSTOM MCP SERVER` — no external
+MCP connector or OAuth setup needed. See the
+[Native App installation guide](/get-started/installation/snowflake#cortex-agent-integration-mcp)
+for details.
+
+The setup below is for connecting Snowflake to the **cloud-hosted** Prometheux platform
+(SaaS) via the Remote MCP Server.
+</Tip>
 
 ## Prerequisites
 
 - **Snowflake account** with `ACCOUNTADMIN` role
 - **Prometheux credentials** (username, organization, API token)
-- **Cortex Agents with MCP Connectors** enabled on your account
+- **MCP Connectors** enabled on your account (supports Cortex Code and Cortex Agents)
 - **Cross-region inference** enabled (required if no models are available in your region)
 
 <Info>
@@ -75,7 +91,34 @@ CREATE EXTERNAL MCP SERVER prometheux_mcp_server
   API_INTEGRATION = prometheux_mcp_integration;
 ```
 
-### Step 3 — Create an Agent with the MCP Connector
+### Step 3 — Connect and Authenticate
+
+After creating the MCP server object, it appears in the **MCP Connectors** page in Snowsight. You need to authenticate once per user:
+
+1. In Snowsight, go to the **MCP Connectors** page (or open it from Cortex Code / Snowflake Intelligence)
+2. Find **Prometheux** in the list of connectors
+3. Click **Connect** — Snowflake will redirect you to the Prometheux OAuth login page
+4. Enter your credentials:
+   - **Username:** Your Prometheux username
+   - **Organization:** Your Prometheux organization
+   - **API Token:** Your Prometheux authentication token
+5. Submit the form — Snowflake will receive your session token automatically
+
+The connector should now show as **Connected**.
+
+## Using with Cortex Code
+
+Once connected, Prometheux tools are available in [Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code) (Snowflake's AI coding assistant in Snowsight). Interact naturally — Cortex Code will automatically discover and invoke Prometheux tools based on your queries.
+
+Example:
+
+```
+@MCP list all of my projects
+```
+
+## Using with Snowflake Intelligence
+
+To use the connector with Cortex Agents in Snowflake Intelligence, create an agent that references the MCP server:
 
 ```sql
 CREATE AGENT PROMETHEUX.INTEGRATION.prometheux_agent
@@ -91,36 +134,24 @@ CREATE AGENT PROMETHEUX.INTEGRATION.prometheux_agent
 ```
 
 <Tip>
-To add Prometheux to an existing agent, navigate to **AI & ML > Agents** in Snowsight, select your agent, and add the Prometheux connector from the **MCP Connectors** section.
+**Using an existing agent**
+
+To add Prometheux to an existing agent, navigate to **AI & ML → Agents** in Snowsight, select your agent, and add the Prometheux connector from the **MCP Connectors** section.
 </Tip>
 
-### Step 4 — Connect via Snowflake Intelligence
-
-1. Navigate to **AI & ML > Agents** in Snowsight
-2. Select your agent and click **Preview** to open Snowflake Intelligence
-3. Open the **Sources** panel and find **Prometheux** under **Connectors**
-4. Click **Connect** — Snowflake will redirect you to the Prometheux OAuth login page
-5. Enter your credentials:
-   - **Username:** Your Prometheux username
-   - **Organization:** Your Prometheux organization
-   - **API Token:** Your Prometheux authentication token
-6. Submit the form — Snowflake will receive your session token automatically
-
-The connector should now show as **Connected** in the sources panel.
-
-## Usage
-
-Once connected, interact naturally with the agent in Snowflake Intelligence. Cortex will automatically discover and invoke Prometheux tools based on your queries.
+Then open the agent in Snowflake Intelligence and interact with it naturally. The agent will discover and invoke Prometheux tools based on your queries.
 
 <Tip>
-See the [MCP overview page](/integrations/mcp/overview#available-tools) for the complete list of tools exposed to Cortex Agents.
+**Available Tools**
+
+See the [MCP overview page](/integrations/mcp/overview#available-tools) for the complete list of tools exposed via MCP.
 </Tip>
 
 ## Alternative Setup via Snowsight UI
 
 You can also add the connector through the Snowsight UI instead of SQL:
 
-1. Go to **AI & ML > Agents > Settings > Tools and Connectors**
+1. Go to **AI & ML → Agents → Settings → Tools and Connectors**
 2. Click **Add custom**
 3. Select **Standard OAuth** and fill in:
 
@@ -141,9 +172,10 @@ You can also add the connector through the Snowsight UI instead of SQL:
 
 To disconnect the Prometheux connector:
 
-1. In Snowflake Intelligence, open the **Sources** panel
-2. Click **Manage Connections**
-3. Select the Prometheux connector and click **Disconnect**
+1. Go to the **MCP Connectors** page in Snowsight
+2. Select the Prometheux connector and click **Disconnect**
+
+You can also disconnect from within Snowflake Intelligence by opening the **Sources** panel and clicking **Manage Connections**.
 
 ## Cleanup
 

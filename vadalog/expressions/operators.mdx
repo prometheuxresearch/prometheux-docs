@@ -5,24 +5,32 @@ description: "Comparison, arithmetic, boolean, logical, string, and set operator
 
 # Operators
 
-Vadalog supports built-in operations over values of data types. These operations allow comparing values, performing arithmetic, and manipulating strings and datetime values. Operations are supported through symbolic operators, which can be _prefix_, _infix_ or _functional-style_.
+Vadalog supports built-in operations over values of data types. These operations
+allow to compare values, perform arithmetics, manipulate strings and datetime
+values. Operations are supported through symbolic operators, which can be
+_prefix_, _infix_ or _functional-style_.
 
-Vadalog supports _single-fact operators_ (simply called operators) and _multi-facts operators_ (called **aggregation operators**).
+Vadalog supports _single-fact operators_ (simply called operators) and
+_multi-facts operators_ (called **aggregation operators**).
 
-## Single-Fact Operators
+## Single-fact operators
 
-| Data type | Operators |
-| --------- | --------- |
-| all | `==`, `>`, `<`, `>=`, `<=`, `<>`, `!=` |
-| integer | (monadic) `-`, `*`, `/`, `+`, `-`, `( )` |
-| double | (monadic) `-`, `*`, `/`, `+`, `-`, `( )` |
-| boolean | `&&`, `\|\|`, `!`, `not`, `( )` for associativity |
-| string | `substring`, `contains`, `contains_any`, `rlike`, `starts_with`, `ends_with`, `concat`, `concat_ws`, `replace`, `join`, `index_of`, `string_length`, `to_lower`, `to_upper`, `split`, `is_empty`, `strip` |
-| set | `\|` (union), `&` (intersection), `( )` for associativity |
+| Data type     | Operators                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| all           | `==`, `>`, `<`, `>=`, `<=`, `<>`, `!=`                                                                  |
+| integer       | (monadic) `-`, `*`, `/`, `+`, `-`, `( )`                                                                |
+| double        | (monadic) `-`, `*`, `/`, `+`, `-`, `( )`                                                                |
+| boolean       | `&&`, `\|\|`, `!`, `not`, `( )` for associativity                                                    |
+| string        | `substring`, `contains`, `contains_any`, `rlike`, `starts_with`, `ends_with`, `concat`, `concat_ws`, `replace`, `join`, `index_of`, `string_length`, `to_lower`, `to_upper`, `split`, `is_empty`, `strip` |
+| set           | `\|` (union), `&` (intersection), `( )` for associativity                                                  |
 
-## Comparison Operators
 
-The comparison operators are `==`, `>`, `<`, `>=`, `<=`, `<>` (alternate syntax `!=`). They can be used to compare literals of any data type and return a Boolean depending on whether the comparison is satisfied.
+## Comparison operators
+
+The comparison operators are `==`,`>`,`<`,`>=`,`<=`,`<>` (alternate syntax
+`!=`). They can be used to compare literals of any data type and return a
+Boolean, depending whether the comparison is satisfied or not. Only values of
+the same type can be compared.
 
 - `==` : equals to
 - `>` : greater than
@@ -32,288 +40,881 @@ The comparison operators are `==`, `>`, `<`, `>=`, `<=`, `<>` (alternate syntax 
 - `<>` : not equal
 - `!=` : not equal
 
-Marked nulls can be compared only with marked nulls, since they are the only ones having unknown data type. Marked nulls are equal when they have the same identifier.
+Marked nulls can be compared only with marked nulls, since they are the only
+ones having unknown data type. Marked nulls are equal when they have the same
+identifier (i.e. they are the same marked null).
 
-## Arithmetic Operators
+## Arithmetic operators
 
-The arithmetic operators are `*` (multiplication), `/` (division), `+` (addition), `-` (subtraction). Infix `*`, `/`, `+`, `-` can be applied to all numeric (integer and double) operands, with an implicit upcast to double if any double is involved.
+The arithmetic operators are `*` (multiplication), `/` (division), `+`
+(addition), `-` (subtraction). Infix `*`, `/`, `+`, `-` can be applied to all
+numeric (integer and double) operands, with an implicit upcast to double if any
+double is involved.
 
-The operator `+` also performs string concatenation with an implicit upcast to string if any string is involved.
+The operator `+` (plus) also performs string concatenation with an implicit
+upcast to string if any string is involved.
 
-The operator `-` also exists in its monadic version, which simply inverts the sign of a numeric value.
+The operator `-` (minus) also exists in its monadic version, which simply
+inverts the sign of a numeric value.
 
 Division by 0 always fails, causing the program to abort.
 
-Operations associate to the left, except that multiplication and division operators have higher precedence than addition and subtraction operators. Precedence can be altered with parentheses.
+Operations associate to the left, except that multiplication and division
+operators have higher precedence than addition and subtraction operators.
 
-## Boolean Operators
+Precedence can be altered with parentheses.
 
-The Boolean operators are and (`&&`), or (`||`), and `not`. They can be used to combine Boolean data types.
+## Boolean operators
 
-## Logical Operators
+The Boolean operators are and (`&&`), or (`||`) or `not`. They can be used to
+combine Boolean data types.
 
-Vadalog supports **explicit logical operators as functions** in addition to implicit logical operations through rule structure. These explicit operators (`and()`, `or()`, `not()`, etc.) allow for combining and manipulating Boolean expressions within a single rule.
+
+## Logical operators
+
+Vadalog supports **explicit logical operators as functions** in addition to implicit logical operations through rule structure. These explicit operators (`and()`, `or()`, `not()`, etc.) allow for combining and manipulating Boolean expressions within a single rule. The operators can evaluate complex logical conditions and can be assigned to variables for further processing.
 
 **Key distinction:**
 - **Implicit AND/OR**: Multiple conditions in a rule body are implicitly AND-ed. Multiple rules with the same head represent OR.
 - **Explicit operators**: Functions like `and()`, `or()`, `not()`, `xor()`, `if()` allow complex boolean logic within expressions and can be assigned to variables.
 
 **Available explicit logical operators:**
-- `and(args)` — Logical AND of multiple conditions
-- `or(args)` — Logical OR of multiple conditions
-- `not(expression)` — Logical NOT/negation
-- `xor(expression1, expression2)` — Exclusive OR
-- `nand(expression1, expression2)` — NOT AND
-- `nor(expression1, expression2)` — NOT OR
-- `xnor(expression1, expression2)` — Exclusive NOR
-- `implies(expression1, expression2)` — Logical implication
-- `iff(expression1, expression2)` — If and only if
-- `if(condition, true_value, false_value)` — Conditional expression
+- `and(args)` - Logical AND of multiple conditions
+- `or(args)` - Logical OR of multiple conditions  
+- `not(expression)` - Logical NOT/negation
+- `xor(expression1, expression2)` - Exclusive OR
+- `nand(expression1, expression2)` - NOT AND
+- `nor(expression1, expression2)` - NOT OR
+- `xnor(expression1, expression2)` - Exclusive NOR
+- `implies(expression1, expression2)` - Logical implication
+- `iff(expression1, expression2)` - If and only if
+- `if(condition, true_value, false_value)` - Conditional expression
 
 ### `and(args)`
+The `and(args)` operator evaluates to true if all the conditions in `args` are true. You can assign the result to a variable and use `==#T` to enforce that all conditions must be true.
+
+**Example 1: Basic `and(args)` usage**
+
+This example shows the use of the `and(args)` operator to evaluate multiple conditions on the variable `X`. The rule `b(X, IsIn)` checks if `X` is greater than 2, less than 5, and equal to 3. The result of this conjunction is stored in `IsIn`.
 
 ```prolog
 @output("b").
-a(1). a(2). a(3). a(4). a(5).
+a(1).
+a(2).
+a(3).
+a(4).
+a(5).
 b(X, IsIn) <- a(X), IsIn=and(X>2, X<5, X==3).
 ```
 
-Output: `b(3, #T)` (all others `#F`)
-
-To enforce that all conditions must be true:
+**Expected output:**
 
 ```prolog
-b(X) <- a(X), IsIn=and(X>2, X<5, X==3), IsIn==#T.
+b(1, #F).
+b(2, #F).
+b(3, #T).
+b(4, #F).
+b(5, #F).
 ```
 
-Output: `b(3).`
-
 ### `or(args)`
+The `or(args)` operator evaluates to true if any of the conditions in `args` are true. You can assign the result to a variable and use `==#T` to enforce that at least one condition must be true.
+
+**Example 2: Basic `or(args)` usage**
+
+This example illustrates the use of the `or(args)` operator to evaluate multiple conditions on the variable `X`. The rule `b(X, IsIn)` checks if `X` is less than 2, equal to 4, or equal to 6. The result of this disjunction is stored in `IsIn`.
 
 ```prolog
 @output("b").
-a(1). a(2). a(3). a(4). a(5).
+a(1).
+a(2).
+a(3).
+a(4).
+a(5).
 b(X, IsIn) <- a(X), IsIn=or(X<2, X==4, X==6).
 ```
 
-Output: `b(1, #T).` and `b(4, #T).` (others `#F`)
+**Expected output:**
+
+```prolog
+b(1, #T).
+b(2, #F).
+b(3, #F).
+b(4, #T).
+b(5, #F).
+```
 
 ### `not(expression)`
+The `not(expression)` operator negates the Boolean value of the expression. It returns `#T` if the expression is `#F`, and `#F` if the expression is `#T`.
+
+**Example 3: Basic `not(expression)` usage**
+
+This example demonstrates the use of the `not` operator to negate a condition.
 
 ```prolog
 @output("b").
-a(1). a(2). a(3).
+a(1).
+a(2).
+a(3).
 b(X, IsNotTwo) <- a(X), IsNotTwo=not(X==2).
 ```
 
-Output: `b(1, #T). b(2, #F). b(3, #T).`
-
-### `xor(expression1, expression2)`
-
-Evaluates to true if exactly one of the two expressions is true.
+**Expected output:**
 
 ```prolog
-b(X, IsExclusive) <- a(X), IsExclusive=xor(X>1, X<3).
+b(1, #T).
+b(2, #F).
+b(3, #T).
 ```
 
-### `nand(expression1, expression2)`
+### `xor(expression1, expression2)`
+The `xor(expression1, expression2)` operator (exclusive or) evaluates to true if exactly one of the two expressions is true, but not both.
 
-Evaluates to true if at least one of the expressions is false.
+**Example 4: Basic `xor(expression1, expression2)` usage**
 
-### `nor(expression1, expression2)`
-
-Evaluates to true only if both expressions are false.
-
-### `xnor(expression1, expression2)`
-
-Evaluates to true if both expressions have the same Boolean value.
-
-### `implies(expression1, expression2)`
-
-Evaluates to false only if the first expression is true and the second is false.
-
-### `iff(expression1, expression2)`
-
-Evaluates to true if both expressions have the same Boolean value.
-
-### `if(condition, true_value, false_value)`
-
-Returns `true_value` if the condition is true, otherwise `false_value`.
+This example shows the exclusive or operation between two conditions.
 
 ```prolog
 @output("b").
-a(1). a(-1).
+a(1).
+a(2).
+a(3).
+b(X, IsExclusive) <- a(X), IsExclusive=xor(X>1, X<3).
+```
+
+**Expected output:**
+
+```prolog
+b(1, #F).
+b(2, #F).
+b(3, #T).
+```
+
+### `nand(expression1, expression2)`
+The `nand(expression1, expression2)` operator (not and) evaluates to true if at least one of the expressions is false.
+
+**Example 5: Basic `nand(expression1, expression2)` usage**
+
+This example demonstrates the NAND operation.
+
+```prolog
+@output("b").
+a(1).
+a(2).
+a(3).
+b(X, IsNand) <- a(X), IsNand=nand(X>1, X<3).
+```
+
+**Expected output:**
+
+```prolog
+b(1, #T).
+b(2, #F).
+b(3, #T).
+```
+
+### `nor(expression1, expression2)`
+The `nor(expression1, expression2)` operator (not or) evaluates to true only if both expressions are false.
+
+**Example 6: Basic `nor(expression1, expression2)` usage**
+
+This example demonstrates the NOR operation.
+
+```prolog
+@output("b").
+a(1).
+a(2).
+a(3).
+b(X, IsNor) <- a(X), IsNor=nor(X>1, X<3).
+```
+
+**Expected output:**
+
+```prolog
+b(1, #F).
+b(2, #F).
+b(3, #F).
+```
+
+### `xnor(expression1, expression2)`
+The `xnor(expression1, expression2)` operator (exclusive nor) evaluates to true if both expressions have the same Boolean value.
+
+**Example 7: Basic `xnor(expression1, expression2)` usage**
+
+This example demonstrates the XNOR operation.
+
+```prolog
+@output("b").
+a(1).
+a(2).
+a(3).
+b(X, IsXnor) <- a(X), IsXnor=xnor(X>1, X<3).
+```
+
+**Expected output:**
+
+```prolog
+b(1, #T).
+b(2, #T).
+b(3, #F).
+```
+
+### `implies(expression1, expression2)`
+The `implies(expression1, expression2)` operator (implication) evaluates to false only if the first expression is true and the second is false.
+
+**Example 8: Basic `implies(expression1, expression2)` usage**
+
+This example demonstrates logical implication.
+
+```prolog
+@output("b").
+a(1).
+a(2).
+a(3).
+b(X, IsImplied) <- a(X), IsImplied=implies(X>1, X<3).
+```
+
+**Expected output:**
+
+```prolog
+b(1, #T).
+b(2, #T).
+b(3, #F).
+```
+
+### `iff(expression1, expression2)`
+The `iff(expression1, expression2)` operator (if and only if) evaluates to true if both expressions have the same Boolean value.
+
+**Example 9: Basic `iff(expression1, expression2)` usage**
+
+This example demonstrates the if and only if operation.
+
+```prolog
+@output("b").
+a(1).
+a(2).
+a(3).
+b(X, IsIff) <- a(X), IsIff=iff(X>1, X<3).
+```
+
+**Expected output:**
+
+```prolog
+b(1, #T).
+b(2, #T).
+b(3, #F).
+```
+
+### `if(condition, true_value, false_value)`
+The `if(condition, true_value, false_value)` operator provides conditional logic. It returns `true_value` if the condition is true, otherwise it returns `false_value`.
+
+**Example 10: Basic `if(condition, true_value, false_value)` usage**
+
+This example demonstrates conditional logic using the `if` operator to classify numbers as positive or non-positive.
+
+```prolog
+@output("b").
+a(1).
+a(-1).
 b(Result, Value) <- a(Value), GTZero=Value>0, Result=if(GTZero, "positive", "non-positive").
 ```
 
-Output: `b("positive", 1). b("non-positive", -1).`
-
-Nested `if` for credit rating:
+**Expected output:**
 
 ```prolog
+b("positive", 1).
+b("non-positive", -1).
+```
+
+**Example 11: String condition with `if` operator**
+
+This example uses the `if` operator to check if a string is empty and return appropriate labels.
+
+```prolog
+@output("b").
+a("").
+a("NonEmpty").
+a(" ").
+b(El, IsEmpty) <- a(El), IsEmpty=if(is_empty(El), "is_empty", "is_not_empty").
+```
+
+**Expected output:**
+
+```prolog
+b("", "is_empty").
+b("NonEmpty", "is_not_empty").
+b(" ", "is_not_empty").
+```
+
+**Example 12: Null check with `if` operator**
+
+This example uses the `if` operator to check if a string is not null and return appropriate labels.
+
+```prolog
+@output("b").
+a("hello").
+a("not_null").
+b(El, State) <- a(El), State=if(is_not_null(El), "not_null", "is_null").
+```
+
+**Expected output:**
+
+```prolog
+b("hello", "not_null").
+b("not_null", "not_null").
+```
+
+**Example 13: Nested `if` statements for credit rating**
+
+This example demonstrates complex nested `if` statements to implement a credit rating system based on credit scores. Each nested `if` evaluates a range of credit scores and assigns a corresponding rating value.
+
+```prolog
+@output("credit_rating").
+credit_score(450.0).
+credit_score(580.0).
+credit_score(720.0).
+credit_score(780.0).
+credit_score(820.0).
+credit_score(850.0).
+credit_score(920.0).
+
 credit_rating(Val) <- credit_score(Score), Val = if(Score < 500.0, -3.250,
                                                     if(and(Score >= 500.0, Score < 600.0), -2.150,
                                                     if(and(Score >= 600.0, Score < 700.0), -1.200,
-                                                    ...
-                                                    3.000))).
+                                                    if(and(Score >= 700.0, Score < 750.0), -0.500,
+                                                    if(and(Score >= 750.0, Score < 800.0), 0.250,
+                                                    if(and(Score >= 800.0, Score < 850.0), 0.750,
+                                                    if(and(Score >= 850.0, Score < 900.0), 1.200,
+                                                    if(and(Score >= 900.0, Score < 950.0), 1.650,
+                                                    if(and(Score >= 950.0, Score < 1000.0), 2.100,
+                                                    if(and(Score >= 1000.0, Score < 1100.0), 2.550, 
+                                                                                            3.000)))))))))).
 ```
 
-## String Operators
-
-### `substring`
+**Expected output:**
 
 ```prolog
+credit_rating(-3.250).
+credit_rating(-2.150).
+credit_rating(-1.200).
+credit_rating(-0.500).
+credit_rating(0.250).
+credit_rating(0.750).
+credit_rating(1.200).
+```
+
+**Example 14: Using `and(args)` with condition enforcement**
+
+In this example, the `and(args)` operator is used to evaluate conditions on `X`, and the result is compared to `#T` to enforce that all conditions must be true. The rule `b(X)` only succeeds if `X` is greater than 2, less than 5, and equal to 3.
+
+```prolog
+@output("b").
+a(1).
+a(2).
+a(3).
+a(4).
+a(5).
+b(X) <- a(X), IsIn=and(X>2, X<5, X==3), IsIn==#T.
+```
+
+**Expected output:**
+
+```prolog
+b(3).
+```
+
+## String operators
+
+The String operators are `substring`, `contains`, `contains_any`, `rlike`, `starts_with`, `ends_with`, `concat`, `concat_ws`, `+`, `index_of`, `string_length`, `to_lower`, `to_upper`, `split`, `replace`, `join`, `is_empty`, and `strip`. These operators allow manipulation and comparison of `String` values.
+
+### `substring`
+A rule using `substring` returns a substring from the specified `start` to `end` index, using zero-based indexing:
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = substring(x, start, end).
+```
+
+Example:
+
+```prolog showLineNumbers {3}
 a("prometheux").
 b("oxford").
 q(Y,J) <- a(X), b(Y), J = substring(X,4,10).
 @output("q").
-% Output: q("oxford", "metheux").
 ```
 
-Also supports single parameter (substring from start to end):
+Expected output:
 
 ```prolog
-a("Elizabeth").
-b(Name, Substring) <- a(Name), Substring = substring(Name, 6).
-% Output: b("Elizabeth", "beth").
+q("oxford", "metheux").
 ```
 
 ### `contains`
+A rule with `contains` returns true if the `string` contains `substring`:
 
 ```prolog
-q(X, Y, J) <- a(X), b(Y), J = contains(X, Y).
+q(K1, K2, Kn, J) <- body, J = contains(string, substring).
 ```
 
-### `starts_with` / `ends_with`
+Example:
+
+```prolog showLineNumbers {3}
+a("prometheux engine").
+b("engine").
+q(X, Y, J) <- a(X), b(Y), J = contains(X, Y).
+@output("q").
+```
+
+Expected output:
 
 ```prolog
+q("prometheux engine", "engine", #T).
+```
+
+`contains` can also be used directly as a boolean condition in the rule body (see [Implicit Boolean Conditions](#implicit-boolean-conditions)).
+
+### `starts_with`
+A rule with `starts_with` returns true if the `string` starts with `start_string`:
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = starts_with(string, start_string).
+```
+
+Example:
+
+```prolog showLineNumbers {3}
+a("prometheux").
+b("prom").
 q(X,Y,J) <- a(X), b(Y), J = starts_with(X,Y).
+@output("q").
+```
+
+Expected output:
+
+```prolog
+q("prometheux", "prom", #T).
+```
+
+### `ends_with`
+A rule with `ends_with` returns true if the `string` ends with `end_string`:
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = ends_with(string, end_string).
+```
+
+Example:
+
+```prolog showLineNumbers {3}
+a("prometheux").
+b("theux").
 q(X, Y, J) <- a(X), b(Y), J = ends_with(X,Y).
+@output("q").
+```
+
+Expected output:
+
+```prolog
+q("prometheux", "theux", #T).
 ```
 
 ### `contains_any`
+A rule with `contains_any` returns true if the `string` contains any of the keywords in the `keywords_array`:
 
 ```prolog
+q(K1, K2, Kn, J) <- body, J = contains_any(string, keywords_array).
+```
+
+Example:
+
+```prolog showLineNumbers {4-5}
+a("hello world", ["world", "foo"]).
+b("hello world", ["bar", "baz"]).
 c(Result) <- a(Text, Keywords), Result = contains_any(Text, Keywords).
+d(Result) <- b(Text, Keywords), Result = contains_any(Text, Keywords).
+@output("c").
+@output("d").
+```
+
+Expected output:
+
+```prolog
+c(#T).
+d(#F).
 ```
 
 ### `rlike`
-
-Checks if a string matches a regular expression pattern:
+A rule with `rlike` returns true if the `string` matches the given regular expression `pattern`:
 
 ```prolog
-b(Name, Matches) <- a(Name), keyword(K), Matches = rlike(Name, concat("(^| )", K, "( |$)")).
+q(K1, K2, Kn, J) <- body, J = rlike(string, pattern).
 ```
 
-### `concat` / `concat_ws`
+Example:
+
+```prolog showLineNumbers {4}
+a("foo bar").
+a("the foobar case").
+keyword("foo").
+b(Name, Matches) <- a(Name), keyword(K), Matches = rlike(Name, concat("(^| )", K, "( |$)")).
+@output("b").
+```
+
+Expected output:
 
 ```prolog
+b("foo bar", #T).
+b("the foobar case", #F).
+```
+
+### `concat`
+A rule with `concat` returns the concatenation of `string` and `concat_string`:
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = concat(string, concat_string).
+```
+
+Example:
+
+```prolog showLineNumbers {3}
+a("prometheux").
+b("engine").
 q(X,Y,J) <- a(X), b(Y), J = concat(X,Y).
-b(First, Last, Full) <- a(First, Last), Full = concat_ws(" ", First, Last).
+@output("q").
+```
+
+Expected output:
+
+```prolog
+q("prometheux", "engine", "prometheuxengine").
 ```
 
 ### `string_length`
+A rule with `string_length` returns an integer representing the length of the `string`:
 
 ```prolog
-q(X, J) <- a(X), J = string_length(X).
+q(K1, K2, Kn, J) <- body, J = string_length(string).
 ```
 
-### `to_lower` / `to_upper`
+Example:
+
+```prolog showLineNumbers {2}
+a("prometheux").
+q(X, J) <- a(X), J = string_length(X).
+@output("q").
+```
+
+Expected output:
 
 ```prolog
+q("prometheux", 10).
+```
+
+### `to_lower`
+A rule with `to_lower` converts `string` to lowercase:
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = to_lower(string).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("Prometheux").
 q(X, J) <- a(X), J = to_lower(X).
+@output("q").
+```
+
+Expected output:
+
+```prolog
+q("Prometheux", "prometheux").
+```
+
+### `to_upper`
+A rule with `to_upper` converts `string` to uppercase:
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = to_upper(string).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("prometheux").
 q(X, J) <- a(X), J = to_upper(X).
+@output("q").
+```
+
+Expected output:
+
+```prolog
+q("prometheux", "PROMETHEUX").
 ```
 
 ### `split`
+A rule with `split` divides `string` by a specified delimiter, producing a list of substrings:
 
 ```prolog
+q(K1, K2, Kn, J) <- body, J = split(string, delimiter).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("prometheux engine").
 q(X, J) <- a(X), J = split(X, " ").
-% "prometheux engine" → ["prometheux", "engine"]
+@output("q").
+```
+
+Expected output:
+
+```prolog
+q("prometheux engine", ["prometheux", "engine"]).
 ```
 
 ### `index_of`
-
-Returns the index of a substring within a string, or -1 if not found:
+A rule with `index_of` finds the index of `substring` within `string`, returning -1 if not found:
 
 ```prolog
+q(K1, K2, Kn, J) <- body, J = index_of(string, substring).
+```
+
+Example:
+
+```prolog showLineNumbers {3}
+a("prometheux").
+b("theux").
 q(X, Y, J) <- a(X), b(Y), J = index_of(X,Y).
+@output("q").
+```
+
+Expected output:
+
+```prolog
+q("prometheux", "theux", 4).
+```
+
+### `substring` (single parameter)
+You can also use `substring` with a single parameter to get the substring from a starting position to the end:
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = substring(string, start).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("Elizabeth").
+b(Name, Substring) <- a(Name), Substring = substring(Name, 6).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b("Elizabeth", "beth").
+```
+
+### `concat_ws`
+A rule with `concat_ws` concatenates strings with a specified separator:
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = concat_ws(separator, string1, string2, ...).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("Laura", "Wilson").
+b(FirstName, LastName, FullName) <- a(FirstName, LastName), FullName = concat_ws(" ", FirstName, LastName).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b("Laura", "Wilson", "Laura Wilson").
 ```
 
 ### `replace`
+A rule with `replace` replaces occurrences of a substring with another string:
 
 ```prolog
+q(K1, K2, Kn, J) <- body, J = replace(string, search, replacement).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("The quick brown fox").
 b(Result) <- a(Input), Result = replace(Input, "fox", "dog").
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b("The quick brown dog").
 ```
 
 ### `join`
+A rule with `join` joins array elements into a string with a specified delimiter:
 
 ```prolog
+q(K1, K2, Kn, J) <- body, J = join(array, delimiter).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a(["apple", "banana", "cherry"]).
 b(JoinedString) <- a(Array), JoinedString = join(Array, ";").
-% ["apple", "banana", "cherry"] → "apple;banana;cherry"
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b("apple;banana;cherry").
 ```
 
 ### `is_empty`
-
-Returns `#T` if the string is empty or contains only whitespace:
+A rule with `is_empty` checks if a string is empty or contains only whitespace:
 
 ```prolog
+q(K1, K2, Kn, J) <- body, J = is_empty(string).
+```
+
+Example:
+
+```prolog showLineNumbers {4}
+a("").
+a("NonEmpty").
+a(" ").
 b(El, IsEmpty) <- a(El), IsEmpty = is_empty(El).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b("", #T).
+b("NonEmpty", #F).
+b(" ", #T).
 ```
 
 ### `strip`
-
-Removes leading and trailing whitespace:
+A rule with `strip` removes leading and trailing whitespace from a `string`:
 
 ```prolog
-b(Original, Stripped) <- a(Original), Stripped = strip(Original).
+q(K1, K2, Kn, J) <- body, J = strip(string).
 ```
 
-## Set Operators
+Example:
 
-### Union (`|`)
+```prolog showLineNumbers {3}
+a("  hello world  ").
+a("no_spaces").
+b(Original, Stripped) <- a(Original), Stripped = strip(Original).
+@output("b").
+```
 
-Combines two arrays, removing duplicates:
+Expected output:
 
 ```prolog
+b("  hello world  ", "hello world").
+b("no_spaces", "no_spaces").
+```
+
+## Set operators
+
+Vadalog supports set operations on arrays using the union (`|`) and intersection (`&`) operators.
+
+### Union (`|`)
+The union operator combines two arrays, removing duplicates:
+
+```prolog showLineNumbers {2}
 a([1, 2, 3], 4).
 b(Result) <- a(Set1, Value), Result = Set1 | Value.
-% Output: b([4, 1, 2, 3]).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b([4, 1, 2, 3]).
 ```
 
 ### Intersection (`&`)
+The intersection operator finds common elements between two arrays:
 
-Finds common elements between two arrays:
-
-```prolog
+```prolog showLineNumbers {2}
 a([1, 2, 3], [2, 3, 4]).
 b(Result) <- a(Set1, Set2), Result = Set1 & Set2.
-% Output: b([2, 3]).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b([2, 3]).
 ```
 
 ## Implicit Boolean Conditions
 
-Boolean-returning functions can be used directly as conditions in rule bodies without explicit comparison to `#T`:
+Boolean-returning functions can be used directly as conditions in rule bodies without explicit comparison to `#T`. This provides a more natural syntax for filtering.
 
-```prolog
+### Direct Boolean Functions as Conditions
+
+```prolog showLineNumbers {3}
 a(1, "Alice").
 a(2, "Bob").
 out(X) <- a(X, Y), contains(Y, "Alice").
-% Output: out(1).
+@output("out").
 ```
 
-Use `!` to negate boolean expressions directly:
+Expected output:
 
 ```prolog
-out(X) <- a(X, Y), !contains(Y, "Alice").
-% Output: out(2).
+out(1).
 ```
 
-**Distinction between `not` and `!`:**
+### Negated Boolean Conditions with `!`
+
+Use `!` to negate boolean expressions directly in conditions:
+
+```prolog showLineNumbers {4}
+a(1, "Alice").
+a(2, "Bob").
+out(X) <- a(X, Y), !contains(Y, "Alice").
+@output("out").
+```
+
+Expected output:
+
+```prolog
+out(2).
+```
+
+### Distinction: `not` vs `!`
+
 - **`not`**: Used for negating atoms (checking if a predicate doesn't exist)
 - **`!`**: Used for negating boolean expressions
 
-```prolog
+```prolog showLineNumbers {5-6}
+person(1, "Alice").
+person(2, "Bob").
+blocked(2).
 activeAlice(ID, Name) <- person(ID, Name), not blocked(ID), starts_with(Name, "Ali").
 activeNonAlice(ID, Name) <- person(ID, Name), not blocked(ID), !starts_with(Name, "Ali").
+@output("activeAlice").
+@output("activeNonAlice").
 ```
+
+Expected output:
+
+```prolog
+activeAlice(1, "Alice").
+```
+
+Note: Bob is blocked, so doesn't appear in either output.

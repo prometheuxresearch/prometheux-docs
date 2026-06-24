@@ -62,11 +62,13 @@
           {
             "group": "Installation",
             "pages": [
+              "get-started/installation/overview",
               "get-started/installation/cloud",
               "get-started/installation/snowflake",
               {
                 "group": "On-Premises",
                 "pages": [
+                  "get-started/installation/on-premises/overview",
                   "get-started/installation/on-premises/single-node",
                   "get-started/installation/on-premises/cluster"
                 ]
@@ -99,6 +101,7 @@
       {
         "group": "Integrations",
         "pages": [
+          "integrations/overview",
           "integrations/python-sdk",
           "integrations/rest-api",
           "integrations/config",
@@ -110,6 +113,9 @@
               "integrations/mcp/local",
               "integrations/mcp/remote",
               "integrations/mcp/claude",
+              "integrations/mcp/claude-code",
+              "integrations/mcp/chatgpt",
+              "integrations/mcp/cursor",
               "integrations/mcp/databricks-genie",
               "integrations/mcp/snowflake-cortex"
             ]
@@ -155,6 +161,7 @@
         "group": "Vadalog Reference",
         "pages": [
           "vadalog/overview",
+          "vadalog/thinking-in-vadalog",
           "vadalog/grammar",
           "vadalog/language-primitives",
           "vadalog/rules",
