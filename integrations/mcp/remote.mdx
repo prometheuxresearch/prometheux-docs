@@ -25,6 +25,8 @@ It uses OAuth 2.0 authentication with PKCE, so users log in through a browser an
 - Suitable for production cloud deployments
 
 <Info>
+**Looking for a Simpler Local Setup?**
+
 If you prefer a local installation that doesn't require a deployed server, check out the [Local MCP Server](/integrations/mcp/local) documentation.
 </Info>
 
@@ -82,8 +84,17 @@ We provide step-by-step guides for connecting specific MCP clients:
 | Client | Guide |
 |--------|-------|
 | **Claude** (Desktop & Web) | [Connect Claude](/integrations/mcp/claude) |
+| **ChatGPT** (OpenAI) | [Connect ChatGPT](/integrations/mcp/chatgpt) |
 | **Genie Code** (Databricks) | [Connect Genie Code](/integrations/mcp/databricks-genie) |
-| **Snowflake Cortex** | For more info, ask your Prometheux rep |
+| **Snowflake Cortex** (Cortex Code & Intelligence) | [Connect Snowflake Cortex](/integrations/mcp/snowflake-cortex) |
+| **Cursor** | [Connect Cursor](/integrations/mcp/cursor) |
+| **Claude Code** (Terminal CLI) | [Connect Claude Code](/integrations/mcp/claude-code) |
+
+<Tip>
+**Coding Agents**
+
+For coding agents like **Cursor** and **Claude Code**, we recommend using the [Local MCP Server](/integrations/mcp/local) instead. It uses stdio transport with direct credentials, which avoids the OAuth browser flow and is more reliable in IDE and terminal environments.
+</Tip>
 
 For other MCP-compatible clients, use the [Server Details](#server-details) and [OAuth Endpoints](#oauth-endpoints) above to configure the connection manually.
 
@@ -160,3 +171,5 @@ The remote MCP server is taking too long to respond.
 - [Concepts API](/integrations/api-endpoints/concepts) - Learn about the concept API
 - [Python SDK](/integrations/python-sdk) - Alternative programmatic access
 - [Chat API](/integrations/chat-api) - Interactive AI chat interface
+</content>
+</invoke>

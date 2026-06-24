@@ -51,6 +51,18 @@ List dashboards within a specific project (metadata only, no full definitions).
 GET /api/v1/dashboards/{project_id}/list?scope=user
 ```
 
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `scope` | string | No | Database scope. Default: `"user"` |
+
 ## Get Dashboard
 
 Load a single dashboard with its full definition.
@@ -61,6 +73,19 @@ Load a single dashboard with its full definition.
 GET /api/v1/dashboards/{project_id}/{dashboard_id}?scope=user
 ```
 
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
+| `dashboard_id` | string | Yes | The ID of the dashboard |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `scope` | string | No | Database scope. Default: `"user"` |
+
 ## Save Dashboard
 
 Create or update a dashboard. When `dashboard.id` is omitted, a new UUID is generated server-side.
@@ -70,6 +95,12 @@ Create or update a dashboard. When `dashboard.id` is omitted, a new UUID is gene
 ```
 POST /api/v1/dashboards/{project_id}/save
 ```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
 
 **Request Body:**
 
@@ -83,6 +114,11 @@ POST /api/v1/dashboards/{project_id}/save
   }
 }
 ```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `scope` | string | No | Database scope. Default: `"user"` |
+| `dashboard` | object | Yes | The dashboard definition object |
 
 **Response:**
 
@@ -103,6 +139,19 @@ Permanently delete a dashboard.
 ```
 DELETE /api/v1/dashboards/{project_id}/{dashboard_id}?scope=user
 ```
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
+| `dashboard_id` | string | Yes | The ID of the dashboard |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `scope` | string | No | Database scope. Default: `"user"` |
 
 ## Complete Workflow Example
 

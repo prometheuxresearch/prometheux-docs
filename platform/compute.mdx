@@ -1,8 +1,78 @@
 ---
 title: "Compute"
-description: "Coming soon."
+description: "How Prometheux runs reasoning workloads across Databricks, self-managed clusters, and local execution."
 ---
 
 # Compute
 
-This page is coming soon. Content will be added here.
+Prometheux executes Vadalog reasoning on a configurable compute layer. Depending on
+your deployment, workloads can run on Databricks, on a self-managed Yarn or
+Kubernetes cluster, or locally in a single JVM for development and testing.
+
+Under the hood, the engine converts its primitives (project, select, join) into
+map, filter, reduce, and shuffle transformations executed in parallel on
+Apache Spark.
+
+## Compute options
+
+| Option | Best for | Reference |
+| --- | --- | --- |
+| **Databricks** | Teams already on Databricks | [Databricks installation](/get-started/installation/databricks/overview) |
+| **Self-managed cluster (Yarn / Kubernetes)** | Full control over compute, networking, and storage | [Cluster installation](/get-started/installation/on-premises/cluster) |
+| **Local mode** | Development and testing | See below |
+
+## Databricks
+
+Prometheux integrates with Databricks in two ways — as a native application in
+your workspace, or by installing the engine directly on your clusters.
+
+| Method | Best for | Description |
+| --- | --- | --- |
+| [**Databricks Native App**](/get-started/installation/databricks/native-app) | Full platform experience | Deploy the complete Prometheux UI, backend, and services as a Databricks app |
+| [**Installing PX on Databricks & Connectors**](/get-started/installation/databricks/connectors) | Engine-level integration | Connect Prometheux to Databricks via JDBC and install the engine JAR on clusters |
+
+## Self-managed clusters
+
+Prometheux can run on your own compute infrastructure using Apache Spark as the
+execution layer. This suits organisations that require full control over their
+cluster, networking, and storage.
+
+<Warning>
+This is an advanced deployment path. We recommend
+[contacting the Prometheux team](mailto:support@prometheux.co.uk) for guidance
+before proceeding.
+</Warning>
+
+### Supported cluster managers
+
+- **Yarn** — supports both *client mode* (the driver resides on the client
+  machine and submits the program to the Yarn Resource Manager) and *cluster
+  mode* (the driver runs inside the cluster on the application master node).
+- **Kubernetes** — supports *client mode* (the driver runs outside the cluster
+  and schedules executor pods via the API Server) and *cluster mode* (the driver
+  runs inside a pod on a worker node).
+- **Local mode** — the driver, master, and executor run in a single JVM on the
+  workstation. Useful for development and testing.
+
+For full prerequisites and the complete configuration reference (Spark settings,
+database properties, GPU acceleration, and the Livy REST service), see the
+[Cluster installation guide](/get-started/installation/on-premises/cluster).
+
+## Tuning Spark resources
+
+Compute behaviour is controlled through Spark configuration. A few of the most
+common properties:
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `spark.master` | `local[*]` | Master URL (`local[*]`, `spark://HOST:PORT`, `yarn`) |
+| `spark.submit.deployMode` | `client` | `client` or `cluster` |
+| `spark.driver.memory` | `4g` | Driver memory |
+| `spark.executor.memory` | `4g` | Executor memory |
+| `spark.executor.instances` | `1` | Number of executors |
+| `spark.executor.cores` | `4` | Cores per executor |
+| `spark.dynamicAllocation.enabled` | `false` | Dynamic executor allocation |
+| `computeAcceleratorPreference` | `cpu` | `cpu` or `gpu` (GPU-enabled environments only) |
+
+For the full set of Spark, database, GPU (Spark-RAPIDS), and Livy properties, see
+the [Cluster installation guide](/get-started/installation/on-premises/cluster).

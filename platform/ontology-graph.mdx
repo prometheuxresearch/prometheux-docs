@@ -1,8 +1,50 @@
 ---
 title: "Ontology Graph"
-description: "Coming soon."
+description: "Model how the entities in your business relate to each other and connect to your data."
 ---
 
 # Ontology Graph
 
-This page is coming soon. Content will be added here.
+At the core of Prometheux is an **ontology**: the set of business rules that
+define how the entities in your system relate to each other, and how those
+entities connect to your real data. These rules are written in
+[Vadalog](/vadalog/overview).
+
+## Knowledge graphs and ontologies
+
+A knowledge graph is a graph in which the entities in your business (for
+example Users, Companies, Wallets) are connected to other entities via
+relationships. For instance, user "Alice" "works at" the company "Acme Corp",
+and "Alice" has a "Wallet" for storing currency.
+
+Using a knowledge graph, you can answer questions by traversing relationships —
+for example, finding how much currency "Acme Corp" holds by summing the wallets
+of every user who works there.
+
+Knowledge graphs are typically stored as triples — (Entity A, Relationship,
+Entity B). Prometheux does not force you to model your data this way, letting
+you express relationships that involve multiple properties and entities.
+
+## Binding entities to data
+
+Your ontology also describes which [data sources](/vadalog/data-sources) power
+the entities in your ruleset. In Vadalog, specific
+[annotations](/vadalog/annotations#bind-mappings-and-qbind) bind your rules to
+your data.
+
+## Reasoning over the ontology
+
+By processing the rules and data in your ontology, Prometheux deduces new facts
+and outcomes. This processing is called **reasoning**. The steps Prometheux
+takes to reach an answer form a
+[Chase Graph](/vadalog/chase-provenance) — itself a knowledge graph of the
+rules and data that contributed to each result, which can be explored and
+analysed.
+
+## Learn more
+
+- [Concepts and lineage](/platform/concepts-and-lineage)
+- [Vadalog overview](/vadalog/overview)
+- [Annotations](/vadalog/annotations)
+- [Data sources](/vadalog/data-sources)
+- [Chase and provenance](/vadalog/chase-provenance)

@@ -1,8 +1,127 @@
 ---
 title: "Data Connections"
-description: "Coming soon."
+description: "Connect files, databases, warehouses, and APIs to Prometheux so your concepts can read from and write to them."
 ---
 
 # Data Connections
 
-This page is coming soon. Content will be added here.
+Prometheux connects to a wide range of data sources — local and cloud files, relational and graph databases, data warehouses, vector stores, and HTTP APIs — so you can read source data into your concepts and write results back out. Connections also work across cloud and distributed file systems such as **S3** and **HDFS**, supporting modern data lake and data migration scenarios.
+
+Under the hood, every connection is expressed as a `@bind` annotation that ties a concept to a data source for reading or writing. The connection covers the source type, its options (host, credentials, file path, query, etc.), the database or path, and the table or file name.
+
+<Info>
+For the complete syntax, every supported option, and end-to-end examples, see the full reference: [Connecting to data sources](/vadalog/data-sources).
+</Info>
+
+## Supported connectors
+
+### Files and object storage
+
+| Connector | Use it for |
+| --- | --- |
+| `csv` | CSV files (reading and writing big CSV files) |
+| `parquet` | Parquet columnar files, well suited to data lakes |
+| `iceberg` | Apache Iceberg tables (catalog-managed, time travel, branches/tags) |
+| `excel` | Excel spreadsheets, including specific sheets |
+| `json` | JSON files with nested structures, queryable via SQL or `struct:get` |
+| `cobol` | Legacy COBOL / EBCDIC mainframe extracts (with a copybook) |
+| `text` | Plain text files |
+| `binary` | Binary files (PDF, images, etc.) |
+
+### Relational databases
+
+| Connector | Database |
+| --- | --- |
+| `postgresql` | PostgreSQL (including Supabase via the Transaction Pooler) |
+| `mysql` | MySQL |
+| `mariadb` | MariaDB |
+| `oracle` | Oracle |
+| `sqlserver` | SQL Server |
+| `db2` | DB2 |
+| `sqlite` | SQLite |
+| `h2` | H2 |
+| `sybase` | Sybase |
+| `teradata` | Teradata |
+
+### Warehouses, query engines, and cloud
+
+| Connector | Source |
+| --- | --- |
+| `snowflake` | Snowflake |
+| `databricks` | Databricks |
+| `redshift` | Amazon Redshift |
+| `bigquery` | Google BigQuery |
+| `hive` | Hive |
+| `presto` | Presto |
+| `dynamodb` | Amazon DynamoDB |
+
+### Graph, vector, and APIs
+
+| Connector | Source |
+| --- | --- |
+| `neo4j` | Neo4j graph database (query with Cypher) |
+| `qdrant` | Qdrant vector database |
+| `api` | HTTP APIs (e.g. consuming data over REST) |
+
+## How a connection works
+
+A connection binds a concept to a data source. The same `@bind` mechanism is used both to read source data into a concept and to write a concept's results back to a destination.
+
+```prolog
+@bind("concept_name",
+      "datasource_type option_1='value_1', option_2='value_2', …, option_n='value_n'",
+      "database_name",
+      "table_name").
+```
+
+Common connection options across database connectors include:
+
+- `url` — connection URL (e.g. `jdbc:postgresql://localhost:5432/prometheux`)
+- `protocol` — connection protocol (`jdbc`, `odbc`, `jdbc-odbc`, `bolt`)
+- `host` — database host
+- `port` — database port (e.g. `5432` for PostgreSQL, `7687` for Neo4j)
+- `database` — database name
+- `username` / `password` — credentials
+
+<Warning>
+**Syntax matters.** Options must be comma-separated and each value must be quoted (`host='localhost'`, not `host=localhost`). Use `username=` rather than `user=`, and end the annotation with a dot. See [Connecting to data sources](/vadalog/data-sources) for correct and incorrect examples.
+</Warning>
+
+### Example: reading a CSV file
+
+```prolog
+@bind("myCsv", "csv useHeaders=true", "/path_to_csv/folder", "csv_name.csv").
+myAtom(X,Y,Z) <- myCsv(X,Y,Z).
+@output("myAtom").
+```
+
+### Example: connecting to PostgreSQL
+
+```prolog
+@bind("customer_postgres", "postgresql host='postgres-host', port=5432, username='prometheux', password='myPassw'",
+      "prometheux", "customer").
+
+customer_postgres_test(CustomerID, Name, Surname, Email) <-
+        customer_postgres(CustomerID, Name, Surname, Email).
+
+@output("customer_postgres_test").
+```
+
+## Managing credentials
+
+Sensitive credentials (database usernames and passwords, AWS access/secret keys, API keys) can be supplied directly as options in the connection, which keeps everything self-contained in one place.
+
+For better security and reusability, credentials can instead be stored externally:
+
+- In a `px.properties` file, centralizing sensitive information without hardcoding it in each connection.
+- Via REST APIs for dynamic configuration management, setting individual credentials or updating many at once through [API endpoints](/integrations/rest-api).
+
+<Tip>
+When connecting to a database you only need to read from, create a dedicated read-only user scoped to the specific tables you need. This follows the principle of least privilege and limits exposure.
+</Tip>
+
+## Learn more
+
+- [Connecting to data sources](/vadalog/data-sources) — full connector reference, every option, and complete examples for each source type
+- [Annotations](/vadalog/annotations) — `@bind`, `@qbind`, `@mapping`, and `@model`
+- [SQL integration](/vadalog/sql-integration) — querying bound sources with SQL in rule bodies

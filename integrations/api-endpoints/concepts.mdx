@@ -19,6 +19,7 @@ Save or update a concept with Vadalog logic and optional Python scripts.
 ```python
 import prometheux_chain as px
 
+# Define the concept in Vadalog
 concept_def = """
 company("Apple", "Redwood City, CA").
 company("Google", "Mountain View, CA").
@@ -29,6 +30,7 @@ location(Location) <- company(_,Location).
 @output("location").
 """
 
+# Save the concept
 result = px.save_concept(
     project_id="my_project_id",
     definition=concept_def
@@ -49,15 +51,51 @@ def save_concept(project_id, definition, python_scripts=None, scope="user",
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `project_id` | str | Yes | The project identifier |
-| `definition` | str | Yes | The Vadalog rules, SQL query, or Python logic defining the concept |
-| `python_scripts` | dict | No | Dictionary of Python scripts to inject |
+| `definition` | str | Yes | The Vadalog rules, SQL query, or Python logic defining the concept (depending on `concept_type`) |
+| `python_scripts` | dict | No | Dictionary of Python scripts to inject. Keys are script names, values are script content |
 | `scope` | str | No | The scope of the concept. Defaults to `"user"` |
 | `description` | str | No | Human-readable description of the concept |
 | `concept_type` | str | No | `"logic"` or `"sql"`. Defaults to `"logic"` |
 | `concept_name` | str | Conditional | Required for SQL concepts |
+| `binds` | dict | No | Optional binding parameters |
+| `output_predicate` | str | No | Output predicate name. Defaults to `""` |
+| `existing_name` | str | No | When updating, the name of the existing concept |
+| `position` | object | No | Optional layout position metadata |
+| `group` | str | No | Concept group identifier. Defaults to `"group_id"` |
+| `compute` | dict | No | Optional compute configuration |
+
+**Returns**
+
+The response data from saving the concept.
 
   </Tab>
   <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+POST /api/v1/concepts/{project_id}/save
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| project_id | string | Yes | The project ID (in URL path) |
+| definition | string | Yes | Vadalog rules, SQL query, or Python logic with annotations |
+| scope | string | No | Concept scope (default: "user") |
+| python_scripts | object | No | Python scripts as name->code pairs |
+| description | string | No | Optional description |
+| concept_type | string | No | `"logic"` or `"sql"` (default: `"logic"`) |
+| concept_name | string | Conditional | Required for SQL concepts |
+| binds | object | No | Optional bindings |
+| output_predicate | string | No | Default empty string |
+| existing_name | string | No | Existing concept name when updating |
+| position | object | No | Optional position metadata |
+| group | string | No | Group id (default: `"group_id"`) |
+| compute | object | No | Optional compute configuration |
+
+### cURL Example
 
 ```bash
 curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/1921d58a6g2/save" \
@@ -65,7 +103,82 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "definition": "@output(\"ordered_products\").\nordered_products(Product, Price) <- products(Product, Price), Price > 100.",
-    "scope": "user"
+    "scope": "user",
+    "python_scripts": {
+      "data_processor": "def process_data(df):\n    return df.sort_values(\"price\")"
+    }
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+### Example with Python Script Injection
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+# Define a Python script with proper structure
+python_script = """
+import json
+
+def main():
+    # Simple calculations
+    numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    
+    # Calculate basic statistics
+    total = sum(numbers)
+    average = total / len(numbers)
+    maximum = max(numbers)
+    minimum = min(numbers)
+    
+    # Create results as a list of dictionaries (tabular format)
+    results = [
+        {
+            "Numbers": numbers,
+            "Total": total,
+            "Average": round(average, 2),
+            "Maximum": maximum,
+            "Minimum": minimum,
+            "Count": len(numbers)
+        }
+    ]
+    
+    return results
+"""
+
+# Define the concept that uses Python script execution
+concept_def = """
+@output("test_python").
+test_python(Numbers,Total,Average,Maximum,Minimum,Count) <- python:run("python_script").
+"""
+
+# Save the concept with Python script injection
+result = px.save_concept(
+    project_id="my_project_id",
+    definition=concept_def,
+    python_scripts={
+        "python_script": python_script
+    }
+)
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/project_id/save" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "definition": "@output(\"test_python\").\ntest_python(Numbers,Total,Average,Maximum,Minimum,Count) <- python:run(\"python_script\").",
+    "scope": "user",
+    "python_scripts": {
+      "python_script": "import json\n\ndef main():\n    numbers = [1, 2, 3, 4, 5]\n    return [{\"Numbers\": numbers, \"Total\": sum(numbers)}]"
+    }
   }'
 ```
 
@@ -76,23 +189,36 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/
 
 ## Python Script Injection Requirements
 
-When using Python script injection with `save_concept`, there are specific requirements:
+When using Python script injection with `save_concept`, there are specific requirements that must be followed:
 
 ### 1. Main Function Requirement
-Every Python script **must** contain a `main()` function:
+Every Python script **must** contain a `main()` function that serves as the entry point.
+The function can optionally accept a `params` argument to receive `@param` values (see [Using Parameters](#using-parameters-in-python-scripts) below).
+Scripts with a zero-argument `main()` continue to work as before.
 
 ```python
 def main():
     # Your script logic here
     return results
+
+# Or, to receive @param values:
+def main(params):
+    city = params["city"]
+    return results
 ```
 
 ### 2. Tabular Output Format
-The `main()` function must return results as a list of dictionaries:
+The `main()` function must return results in a tabular format, as a list of dictionaries:
 
 ```python
 def main():
-    results = [{"Column1": value1, "Column2": value2}]
+    results = [
+        {
+            "Column1": value1,
+            "Column2": value2,
+            "Column3": value3
+        }
+    ]
     return results
 ```
 
@@ -108,23 +234,72 @@ test_python(Numbers, Total, Average) <- python:run("python_script").
 ```
 
 ### 4. Standalone Concept Rule
-Python script concepts must be standalone:
+Python script concepts must be **standalone**:
 
 ```python
-# Correct - standalone Python script concept
+# ✅ Correct - standalone Python script concept
 @output("my_python_concept").
 my_python_concept(Col1, Col2) <- python:run("my_script").
 
-# Incorrect - cannot combine with other logic
+# ❌ Incorrect - cannot combine with other logic
 @output("mixed_concept").
 mixed_concept(Col1, Col2) <- python:run("my_script"), other_predicate(Col1).
 ```
+
+### 5. Using Parameters in Python Scripts {#using-parameters-in-python-scripts}
+
+Python concepts support `@param` annotations, the same mechanism used by Vadalog and SQL concepts.
+Declare default values in the concept definition, and the script receives them as a dictionary:
+
+```python
+# Concept definition
+@param("city", "Rome").
+@param("year", 2024).
+weather(City, Year, Temp) :- python:run("fetch_weather").
+@output("weather").
+```
+
+```python
+# Python script — main(params) receives the merged parameters
+def main(params):
+    city = params["city"]   # "Rome" (from @param default)
+    year = params["year"]   # 2024
+    return [
+        {"City": city, "Year": year, "Temp": "22C"},
+        {"City": city, "Year": year, "Temp": "30C"},
+    ]
+```
+
+**Runtime overrides** work the same way as other concept types — pass `params` in the run call to override stored defaults:
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+# Stored @param("city","Rome") is overridden by runtime param
+result = px.run_concept("my_project_id", "weather", params={"city": "Milan"})
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+curl -X POST ".../api/v1/concepts/project_id/run/weather" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"params": {"city": "Milan"}}'
+```
+
+  </Tab>
+</Tabs>
+
+**Parameter propagation:** when a concept with `@param` annotations is run, its parameters propagate to all dependency concepts in the execution chain. This means you can declare parameters at the top-level concept and have them flow to Python (and other) dependencies automatically, without redeclaring them on each dependency.
 
 ---
 
 ## Run Concept
 
-Execute a concept with specified parameters.
+Execute a concept with specified parameters. This is the main endpoint for running Vadalog logic.
 
 <Tabs>
   <Tab title="Python SDK">
@@ -132,6 +307,7 @@ Execute a concept with specified parameters.
 ```python
 import prometheux_chain as px
 
+# Run a concept with parameters
 results = px.run_concept(
     project_id="my_project_id",
     concept_name="location",
@@ -156,10 +332,35 @@ def run_concept(project_id, concept_name, params=None, scope="user",
 | `params` | dict | No | Parameters to pass to the concept execution |
 | `scope` | str | No | The scope of the project. Defaults to `"user"` |
 | `force_rerun` | bool | No | Force rerun even if results exist. Defaults to `True` |
-| `persist_outputs` | bool | No | Persist the outputs. Defaults to `False` |
+| `persist_outputs` | bool | No | Persist the outputs. Defaults to `False` (SDK) / `True` (REST) |
+| `compute` | dict | No | Optional compute configuration |
+
+**Returns**
+
+The execution results data.
 
   </Tab>
   <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+POST /api/v1/concepts/{project_id}/run/{concept_name}
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| project_id | string | Yes | The project ID (in URL path) |
+| concept_name | string | Yes | Name of the concept to execute (in URL path, not in body) |
+| params | object | No | Parameters to pass to the concept (request body) |
+| force_rerun | boolean | No | Force re-execution (default: true) |
+| persist_outputs | boolean | No | Persist execution outputs (default: true) |
+| scope | string | No | Project scope (default: "user") |
+| compute | object | No | Optional compute configuration |
+
+### cURL Example
 
 ```bash
 curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/1921d58a6g2/run/shortest_routes" \
@@ -175,6 +376,21 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/
 
   </Tab>
 </Tabs>
+
+### Response
+
+```json
+{
+  "data": {
+    "execution_id": "exec_12345",
+    "results": [...],
+    "execution_time": 1.23,
+    "rows_processed": 1500
+  },
+  "message": "Concept executed successfully",
+  "status": "success"
+}
+```
 
 ---
 
@@ -194,11 +410,53 @@ rows = px.fetch_results(
     page=1,
     page_size=10,
     scope="user",
+    order_by=None,
 )
 ```
 
+**Function Signature**
+
+```python
+def fetch_results(project_id, output_predicate, page=1, page_size=10,
+                  scope="user", order_by=None)
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | str | Yes | The project identifier |
+| `output_predicate` | str | Yes | Output predicate name to fetch results for |
+| `page` | int | No | Page number. Defaults to `1` |
+| `page_size` | int | No | Page size. Defaults to `10` |
+| `scope` | str | No | Project scope. Defaults to `"user"` |
+| `order_by` | str | No | Optional ordering expression |
+
+**Returns**
+
+Paginated result data for the output predicate.
+
   </Tab>
   <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+GET /api/v1/concepts/{project_id}/fetch
+```
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| project_id | string | Yes | The project ID (in URL path) |
+| output_predicate | string | Yes | Output predicate to fetch |
+| page | integer | No | Page number (default: 1) |
+| page_size | integer | No | Page size (default: 30) |
+| project_scope | string | No | Project scope (default: "user") |
+| order_by | string | No | Optional ordering |
+
+### cURL Example
 
 ```bash
 curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/1921d58a6g2/fetch?output_predicate=location&page=1&page_size=10&project_scope=user" \
@@ -220,12 +478,45 @@ List all concepts in a project.
 ```python
 import prometheux_chain as px
 
+# List all concepts in a project
 concepts = px.list_concepts(project_id="my_project_id")
 print(f"Available concepts: {concepts}")
 ```
 
+**Function Signature**
+
+```python
+def list_concepts(project_id, scope="user")
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | str | Yes | The project identifier |
+| `scope` | str | No | The scope of the project. Defaults to `"user"` |
+
+**Returns**
+
+List of concept information dictionaries.
+
   </Tab>
   <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+GET /api/v1/concepts/{project_id}/list?scope=user
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| project_id | string | Yes | The project ID (in URL path) |
+| scope | string | No | Concept scope (default: "user") |
+
+### cURL Example
 
 ```bash
 curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/1921d58a6g2/list?scope=user" \
@@ -257,8 +548,38 @@ result = px.cleanup_concepts(
 )
 ```
 
+**Function Signature**
+
+```python
+def cleanup_concepts(project_id, scope="user", concept_names=None)
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | str | Yes | The project identifier |
+| `scope` | str | No | The scope of the project. Defaults to `"user"` |
+| `concept_names` | list | No | Specific concept names to delete; if omitted, deletes all matching concepts in scope |
+
   </Tab>
   <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+POST /api/v1/concepts/{project_id}/cleanup
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| project_id | string | Yes | The project ID (in URL path) |
+| scope | string | No | Concept scope (default: "user") |
+| concept_names | array | No | Specific concept names to delete (if not provided, deletes all) |
+
+### cURL Example
 
 ```bash
 curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/1921d58a6g2/cleanup" \
@@ -268,6 +589,101 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/
     "scope": "user",
     "concept_names": ["ordered_bom", "product_analysis"]
   }'
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+## Complete Workflow Example
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+import os
+
+# Set up authentication and configuration
+os.environ['PMTX_TOKEN'] = 'my_pmtx_token'
+px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/my-org/my-user")
+
+# Create a project
+project_id = px.save_project(project_name="concept_demo")
+
+# Define and save a concept
+concept_def = """
+company("Apple", "Redwood City, CA").
+company("Google", "Mountain View, CA").
+company("Microsoft", "Redmond, WA").
+
+location(Location) <- company(_,Location).
+
+@output("location").
+"""
+
+px.save_concept(project_id=project_id, definition=concept_def)
+
+# List all concepts
+concepts = px.list_concepts(project_id=project_id)
+print(f"Available concepts: {concepts}")
+
+# Run the concept
+results = px.run_concept(project_id=project_id, concept_name="location")
+print(f"Results: {results}")
+
+# Fetch paginated results for the output predicate
+fetched = px.fetch_results(
+    project_id=project_id,
+    output_predicate="location",
+    page=1,
+    page_size=10,
+)
+print(f"Fetched rows: {fetched}")
+
+# Clean up when done
+px.cleanup_concepts(project_id=project_id)
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+```bash
+# Create a project
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/save" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"project": {"name": "concept_demo"}}'
+
+# Save a concept
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/project_id/save" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "definition": "company(\"Apple\", \"Redwood City, CA\").\ncompany(\"Google\", \"Mountain View, CA\").\nlocation(Location) <- company(_,Location).\n@output(\"location\").",
+    "scope": "user"
+  }'
+
+# List concepts
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/project_id/list?scope=user" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Run a concept (concept_name in URL path)
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/project_id/run/location" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"scope": "user", "force_rerun": true, "persist_outputs": true}'
+
+# Fetch results
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/project_id/fetch?output_predicate=location&page=1&page_size=10&project_scope=user" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Cleanup
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/concepts/project_id/cleanup" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"scope": "user"}'
 ```
 
   </Tab>

@@ -5,146 +5,323 @@ description: "Built-in graph algorithms in Vadalog including transitive closure,
 
 # Graph Analytics and Pre-Defined Functions
 
-Many real-world knowledge management tasks (supply-chain optimisation, fraud detection, recommendation, etc.) are both graph-shaped and rule-driven. Vadalog lets you run industrial-strength graph algorithms and logical reasoning in the same declarative program. Execution is automatically parallel and distributed.
+## Why graph analytics inside a reasoning language?
+
+Many real-world knowledge-management tasks (supply-chain optimisation, fraud detection, recommendation, etc.) are **both** graph-shaped **and** rule-driven.
+Vadalog lets you run industrial-strength **graph algorithms** and **logical reasoning** in the same declarative program.
+Execution is automatically parallel and distributed.
 
 ## Using Graph Functions
 
-A graph algorithm appears as a function literal that starts with `#` and lives in a rule body:
+A graph algorithm appears as a *function literal* that starts with `#` and lives in a rule body:
 
 ```prolog
-tc_function(X,Y)    <- #TC(edge).      % transitive closure on edge/2
-paths_function(X,Y) <- #PATHS(edge).   % all paths with default options
-asp_function(X,Y,Z) <- #ASP(edge).     % all-shortest paths on weighted edge/3
+tc_function(X,Y)  <-  #TC(edge).           % transitive closure on edge/2
+paths_function(X,Y) <- #PATHS(edge).       % all paths with default options
+asp_function(X,Y,Z) <-  #ASP(edge).        % all‑shortest paths on weighted edge/3
 ```
 
-Variables on the head of the rule receive the algorithm's results.
+Variables on the head of the rule with the function receive the algorithm's results.
 
 ## Built-in Graph Function Catalogue
 
-| Function | Problem | Input (arity) | Output variables | Notes |
-|----------|---------|---------------|------------------|-------|
-| `#TC(P)` | Transitive Closure | `P/2` `edge(U,V)` | `(X,Y)` | Directed. Includes self-loops from cycles. |
-| `#PATHS(P[,options])` | All Paths | `P/2` + optional string | `(X,Y,Visited)` or `(X,Y)` | Options: `visited`, `self_loops`, `all_paths`, `max_depth`, `source`, `target` |
-| `#ASP(P)` | All-Shortest Paths (weighted) | `P/3` `edge(U,V,W)` | `(X,Y,Z)` | Parallel multi-source Dijkstra |
-| `#SSSP(P[,options])` | Single-Source Shortest Path | `P/3` + optional string | `(Y,Dist)` | Required: `source=N` |
-| `#BFS(P)` | Breadth-First Levels | `P/2` | `(X,Level)` | Unweighted tiers |
-| `#CC(P[,options])` | Connected Components | `P/2` + optional string | `(X,Comp)` or `(X,ID,Comp)` | For undirected graphs. Options: `sort_component`, `component_id` |
-| `#WCC(P)` | Weakly Connected Components | `P/2` | `(X,Comp)` | Directed graphs — ignores edge direction |
-| `#TRI(P)` | Triangle Enumeration | `P/2` | `(X,Y,Z)` | Unordered triangles |
-| `#DC(P[,options])` | Degree Centrality | `P/2` | `(X,Score)` | Normalized by (N-1). Options: `type=in/out/total` |
-| `#BC(P[,options])` | Betweenness Centrality | `P/2` | `(X,Score)` | Normalized by (N-1)(N-2). Options: `sample=K` |
-| `#PR(P[,options])` | PageRank | `P/2` | `(X,Score)` | Options: `damping`, `tolerance`. Scores sum to 1.0 |
+| Function | Problem solved | Input predicate (arity) | Output variables | Notes |
+|----------|----------------|-------------------------|------------------|-------|
+| `#TC(P)` | **Transitive Closure** – reachability. | `P/2` `edge(U,V)` | `(X,Y)` | Directed graph. Includes self-loops from cycles. |
+| `#PATHS(P[,options])` | **All Paths** with configurable options. | `P/2` `edge(U,V)` + optional string | `(X,Y,Visited)` or `(X,Y)` | Optional parameters: `visited=true/false` (default `false`), `self_loops=true/false` (default `false`), `all_paths=true/false` (default `false`), `max_depth=N` (default `-1` = unlimited), `source=X` (only paths from node X), `target=Y` (only paths to node Y). Format: `"visited=true,max_depth=5,source=A,target=D"`. |
+| `#ASP(P)` | **All‑Shortest Paths** (weighted). | `P/3` `edge(U,V,W)` | `(X,Y,Z)` | Parallel multi‑source Dijkstra. Can include self-loops from cycles. |
+| `#SSSP(P[,options])` | **Single‑Source Shortest Path**. | `P/3` `edge(U,V,W)` + optional string | `(Y,Dist)` | Required parameter: `source=N` to specify the source node. Format: `"source=1"`. |
+| `#BFS(P)` | **Breadth‑First Levels**. | `P/2` | `(X,Level)` | Unweighted tiers. |
+| `#CC(P[,options])` | **Connected Components** with optional sorting and ID. | `P/2` `edge(U,V)` + optional string | `(X,Comp)` or `(X,ID,Comp)` | Optional parameters: `sort_component=true/false` (default `false`), `component_id=true/false` (default `false`). Format: `"sort_component=true,component_id=true"`. For undirected graphs (assumes edges are symmetric). |
+| `#WCC(P)` | **Weakly Connected Components**. | `P/2` | `(X,Comp)` | For directed graphs – ignores edge direction. |
+| `#TRI(P)` | **Triangle Enumeration**. | `P/2` | `(X,Y,Z)` | Unordered triangles. |
+| `#DC(P[,options])` | **Degree Centrality** | `P/2` `edge(U,V)` | `(X,Score)` | Normalized by (N-1). Optional parameters: `type=in/out/total` (default `total`). Format: `"type=in"`. Scores range 0.0–1.0. |
+| `#BC(P[,options])` | **Betweenness Centrality** | `P/2` `edge(U,V)` | `(X,Score)` | Optional sampling for large graphs. Normalized by (N-1)(N-2). Optional parameters: `sample=K` for approximate BC using K random sources. Format: `"sample=500"`. Scores range 0.0–1.0. |
+| `#PR(P[,options])` | **PageRank** | `P/2` `edge(U,V)` | `(X,Score)` | Optional parameters: `damping=d` (default 0.85), `tolerance=t` (default 0.0001). Format: `"damping=0.85,tolerance=0.0001"`. Scores sum to 1.0. |
 
 ## Examples
 
-### Transitive Closure
+### 1  Transitive closure
 
 ```prolog
-edge(1,2). edge(2,3). edge(3,4). edge(4,1).
+edge(1,2).
+edge(2,3).
+edge(3,4).
+edge(4,1).
 
 tc_function(X,Y) <- #TC(edge).
 @output("tc_function").
 ```
 
-Output: All reachable pairs including self-loops from cycles (16 tuples).
+**Output**: All reachable pairs including self-loops from cycles: `(1,2), (2,3), (3,4), (4,1), (1,3), (2,4), (3,1), (4,2), (1,4), (2,1), (3,2), (4,3), (1,1), (2,2), (3,3), (4,4)` – 16 tuples total.
 
-### PATHS with Options
+### 2  PATHS function with configurable options
 
 ```prolog
-edge(1,2). edge(2,3). edge(3,1).
+edge(1,2).
+edge(2,3).
+edge(3,1).
 
-% Default behavior
+% Default behavior (no parameters)
 paths_default(X,Y) <- #PATHS(edge).
 
-% Track visited nodes (simple paths only)
+% Paths with visited nodes tracking (simple paths only)
 paths_visited(X,Y,Visited) <- #PATHS(edge, "visited=true").
 
-% Limit depth
+% Paths with self-loops enabled
+paths_with_loops(X,Y) <- #PATHS(edge, "self_loops=true").
+
+% Paths with max depth limit (only 1 hop)
 paths_depth1(X,Y) <- #PATHS(edge, "max_depth=1").
 
-% Only paths from A to F
-paths_a_to_f(X,Y,V) <- #PATHS(edge, "visited=true,all_paths=true,source=A,target=F").
+% Paths with visited tracking and max depth 2
+paths_visited_depth2(X,Y,V) <- #PATHS(edge, "visited=true,max_depth=2").
+
+% All options specified
+paths_custom(X,Y,V) <- #PATHS(edge, "visited=true,self_loops=false,all_paths=true,max_depth=10").
+
+@output("paths_default").
+@output("paths_visited").
+@output("paths_with_loops").
+@output("paths_depth1").
+@output("paths_visited_depth2").
+@output("paths_custom").
 ```
 
-### All-Shortest Paths
+**`paths_default` Output**: All reachable pairs including self-loops from cycles (using defaults): `(1,2), (2,3), (3,1), (1,3), (2,1), (3,2), (1,1), (2,2), (3,3)` – 9 tuples.
+
+**`paths_visited` Output**: Only simple acyclic paths: `(1,2,[1,2]), (2,3,[2,3]), (3,1,[3,1]), (1,3,[1,2,3]), (2,1,[2,3,1]), (3,2,[3,1,2])` – 6 tuples. Each includes visited nodes.
+
+**`paths_with_loops` Output**: Same as `paths_default` – 9 tuples (self-loops already included by default).
+
+**`paths_depth1` Output**: Only direct edges: `(1,2), (2,3), (3,1)` – 3 tuples.
+
+**`paths_visited_depth2` Output**: Paths up to 2 hops with visited tracking: `(1,2,[1,2]), (2,3,[2,3]), (3,1,[3,1]), (1,3,[1,2,3]), (2,1,[2,3,1]), (3,2,[3,1,2])` – 6 tuples.
+
+### 2b  PATHS with source and target filtering
+
+The `source` and `target` parameters restrict path enumeration to specific endpoints. This is particularly useful for large graphs where you only care about paths between two known nodes.
 
 ```prolog
-edge(1,2,9). edge(2,3,5). edge(3,4,6). edge(4,1,8).
+edge("A","B").
+edge("A","C").
+edge("B","D").
+edge("C","D").
+edge("B","E").
+edge("D","F").
+
+% Only paths starting from node A
+paths_from_a(X,Y,V) <- #PATHS(edge, "visited=true,source=A").
+
+% Only paths ending at node F
+paths_to_f(X,Y,V) <- #PATHS(edge, "visited=true,target=F").
+
+% Only paths from A to F (all distinct routes)
+paths_a_to_f(X,Y,V) <- #PATHS(edge, "visited=true,all_paths=true,source=A,target=F").
+
+@output("paths_from_a").
+@output("paths_to_f").
+@output("paths_a_to_f").
+```
+
+**`paths_from_a` Output**: All paths originating at A: `(A,B,[A,B]), (A,C,[A,C]), (A,D,[A,B,D]), (A,D,[A,C,D]), (A,E,[A,B,E]), (A,F,[A,B,D,F]), (A,F,[A,C,D,F])` – 7 tuples. All start from A.
+
+**`paths_to_f` Output**: All paths ending at F: `(A,F,[A,B,D,F]), (A,F,[A,C,D,F]), (B,F,[B,D,F]), (C,F,[C,D,F]), (D,F,[D,F])` – 5 tuples. All end at F.
+
+**`paths_a_to_f` Output**: Only paths from A to F: `(A,F,[A,B,D,F]), (A,F,[A,C,D,F])` – 2 tuples. Two distinct routes from A to F.
+
+### 3  All shortest paths
+
+```prolog
+edge(1,2,9).
+edge(2,3,5).
+edge(3,4,6).
+edge(4,1,8).
 
 asp_function(X,Y,Z) <- #ASP(edge).
 @output("asp_function").
 ```
 
-### Single-Source Shortest Path
+### 3a  Single-Source Shortest Path
+
+Compute shortest paths from a single source node:
 
 ```prolog
-edge(1,2,10). edge(1,3,5). edge(2,3,2). edge(2,4,1). edge(3,4,9).
+edge(1,2,10).
+edge(1,3,5).
+edge(2,3,2).
+edge(2,4,1).
+edge(3,4,9).
 
+% Find shortest paths from node 1 to all other nodes
 sssp_from_node1(Target, Distance) <- #SSSP(edge, "source=1").
 @output("sssp_from_node1").
 ```
 
-Output:
+**Output:**
 ```
-sssp_from_node1(1, 0)
-sssp_from_node1(2, 10)
-sssp_from_node1(3, 5)
-sssp_from_node1(4, 11)
+sssp_from_node1(1, 0)    % Distance from 1 to itself
+sssp_from_node1(2, 10)   % Shortest path 1 → 2
+sssp_from_node1(3, 5)    % Shortest path 1 → 3
+sssp_from_node1(4, 11)   % Shortest path 1 → 2 → 4
 ```
 
-### Connected Components
+### 4  Connected Components
+
+### 4a. Simple disconnected graph
 
 ```prolog
-% Two components: {1,2,3} and {4,5}
-edge_raw(1,2). edge_raw(2,3). edge_raw(4,5).
+% Two separate components: {1,2,3} and {4,5}
+edge_raw(1,2).
+edge_raw(2,3).
+edge_raw(4,5).
 
-% Make undirected
+% Make edges undirected (symmetric)
 edge(X,Y) <- edge_raw(X,Y).
 edge(Y,X) <- edge_raw(X,Y).
 
-% Default
+% Default: no sorting, no component ID
 cc_default(X,C) <- #CC(edge).
 
-% With component ID (minimum node — deterministic in distributed execution)
+% With sorted components for determinism
+cc_sorted(X,C) <- #CC(edge, "sort_component=true").
+
+% With component ID (minimum node in component)
+cc_with_id(X,ID,C) <- #CC(edge, "component_id=true").
+
+% With both sorting and ID for full determinism
+cc_full(X,ID,C) <- #CC(edge, "sort_component=true,component_id=true").
+
+@output("cc_default").
+@output("cc_sorted").
+@output("cc_with_id").
+@output("cc_full").
+```
+
+**`cc_default` Output**: Each node mapped to its component array (order may vary): `(1, [1,2,3]), (2, [1,2,3]), (3, [1,2,3]), (4, [4,5]), (5, [4,5])`.
+
+**`cc_sorted` Output**: Same but arrays are sorted: `(1, [1,2,3]), (2, [1,2,3]), (3, [1,2,3]), (4, [4,5]), (5, [4,5])`.
+
+**`cc_with_id` Output**: Includes component ID (minimum node): `(1, 1, [1,2,3]), (2, 1, [1,2,3]), (3, 1, [1,2,3]), (4, 4, [4,5]), (5, 4, [4,5])`.
+
+**`cc_full` Output**: Both sorted and with ID: `(1, 1, [1,2,3]), (2, 1, [1,2,3]), (3, 1, [1,2,3]), (4, 4, [4,5]), (5, 4, [4,5])`.
+
+### 4b. Cyclic graph
+
+```prolog
+% Single component with cycle: {1,2,3,4}
+edge(1,2).
+edge(2,3).
+edge(3,4).
+edge(4,1).
+
+cc(X,C) <- #CC(edge).
+@output("cc").
+```
+
+**Output**: All nodes in one component: `(1, [1,2,3,4]), (2, [1,2,3,4]), (3, [1,2,3,4]), (4, [1,2,3,4])`.
+
+### 4c. Multiple disconnected components
+
+```prolog
+% Three separate components
+edge(1,2).
+edge(3,4).
+edge(5,6).
+
+cc(X,C) <- #CC(edge).
+@output("cc").
+```
+
+**Output**: Three components: `(1, [1,2]), (3, [3,4]), (5, [5,6])`.
+
+### 4d. Why use `component_id=true`?
+
+The component ID (minimum node) is crucial for **deterministic results** in distributed execution:
+
+```prolog
+% Large graph processed across multiple partitions
+@bind("large_graph.csv")
+edge(X,Y).
+
+% Without ID: each partition might output the same component differently
+cc_no_id(X,C) <- #CC(edge).
+
+% With ID: all partitions agree on component identity (minimum node)
 cc_with_id(X,ID,C) <- #CC(edge, "component_id=true").
 
 % Deduplicate by component ID
 unique_components(ID,C) <- cc_with_id(X,ID,C), X = ID.
 
-@output("cc_with_id").
+@output("unique_components").
 ```
 
-### CC vs WCC
+**Key insight**: Since components are **disjoint sets** (cannot overlap), all partitions discovering the same component will find the **same minimum node**, guaranteeing deterministic component IDs across the cluster.
 
-- **`#CC`**: Expects edges to already be symmetric (undirected). You must explicitly create `edge(X,Y)` and `edge(Y,X)`.
-- **`#WCC`**: Designed for directed graphs. Automatically treats directed edges as undirected.
+### 5  Connected Components: CC vs WCC
 
 ```prolog
-directed_edge(1,2). directed_edge(3,4).
+% Directed edges forming two components: {1,2} and {3,4}
+directed_edge(1,2).
+directed_edge(3,4).
 
+% For CC: make the graph undirected by adding symmetric edges
 undirected_edge(X,Y) <- directed_edge(X,Y).
 undirected_edge(X,Y) <- directed_edge(Y,X).
 
+% CC expects undirected (symmetric) edges
 cc_result(X,C) <- #CC(undirected_edge).
+
+% WCC works directly on directed edges (ignores direction)
 wcc_result(X,C) <- #WCC(directed_edge).
+
+@output("cc_result").
+@output("wcc_result").
 ```
+
+**Both outputs** produce the same components: `{1,2}` and `{3,4}`.
+
+**Key difference**:
+- **`#CC`**: Expects edges to already be symmetric (undirected). You must explicitly create `edge(X,Y)` and `edge(Y,X)` for each undirected edge.
+- **`#WCC`**: Designed for directed graphs. Automatically treats `edge(1,2)` as if `edge(2,1)` also exists (ignores direction).
+
+**When to use each**:
+- Use **`#CC`** when your graph is naturally undirected (friendships, co-authorship, etc.) and you've made edges symmetric.
+- Use **`#WCC`** when your graph is naturally directed (web links, citations, follows) but you want to find components ignoring direction.
 
 ## Graph Analytics with Struct Nodes
 
-All graph functions automatically support **struct nodes**, allowing you to attach rich metadata (properties, attributes) to graph nodes while preserving them throughout computation.
+All graph functions (`#TC`, `#PATHS`, `#ASP`, `#CC`) automatically support **struct nodes**, allowing you to attach rich metadata (properties, attributes) to graph nodes while preserving them throughout computation.
 
-The first field of the struct is used as the node ID for comparison and deduplication.
+### Why Struct Nodes?
 
-### Transitive Closure with Struct Nodes
+In real-world graphs, nodes often have multiple properties:
+- **People**: ID, name, age, department
+- **Companies**: ID, name, industry, country
+- **Cities**: ID, name, population, coordinates
+
+Struct nodes let you keep this metadata attached during graph traversal instead of just tracking node IDs.
+
+### How It Works
+
+**Key requirements:**
+1. Both source and destination nodes **must be structs** (or both simple)
+2. The **first field** of the struct is used as the **node ID** for comparison and deduplication
+3. The **full struct** is preserved in the output
+
+### Example 1: Transitive Closure with Struct Nodes
 
 ```prolog
+% Define node properties
 node(1, "Alice", "Engineering").
 node(2, "Bob", "Sales").
 node(3, "Charlie", "Engineering").
 
-edge_simple(1, 2). edge_simple(2, 3).
+% Define simple edges (just IDs)
+edge_simple(1, 2).
+edge_simple(2, 3).
 
-% Create struct edges
+% Create struct edges by joining nodes with edges
 edge_struct(X, Y) <- 
     edge_simple(Id1, Id2),
     node(Id1, Name1, Dept1),
@@ -152,20 +329,76 @@ edge_struct(X, Y) <-
     X = struct("id", Id1, "name", Name1, "dept", Dept1),
     Y = struct("id", Id2, "name", Name2, "dept", Dept2).
 
-% TC preserves full struct properties
+% Apply TC on struct edges - properties are preserved!
 tc(X, Y) <- #TC(edge_struct).
+
 @output("tc").
 ```
 
-### Weighted Struct Edges (All-Shortest Paths)
+**Output** includes full structs with all properties preserved:
+```
+(struct(id=1, name="Alice", dept="Engineering"), 
+ struct(id=2, name="Bob", dept="Sales"))
+
+(struct(id=2, name="Bob", dept="Sales"), 
+ struct(id=3, name="Charlie", dept="Engineering"))
+
+(struct(id=1, name="Alice", dept="Engineering"), 
+ struct(id=3, name="Charlie", dept="Engineering"))
+```
+
+### Example 2: PATHS with Struct Nodes and Visited Tracking
 
 ```prolog
+% Person nodes with metadata
+person(1, "Alice", 28).
+person(2, "Bob", 35).
+person(3, "Charlie", 42).
+
+% Social connections
+knows(1, 2).
+knows(2, 3).
+
+% Create struct edges
+knows_struct(X, Y) <- 
+    knows(Id1, Id2),
+    person(Id1, Name1, Age1),
+    person(Id2, Name2, Age2),
+    X = struct("id", Id1, "name", Name1, "age", Age1),
+    Y = struct("id", Id2, "name", Name2, "age", Age2).
+
+% Find all paths with visited nodes (visited nodes are also full structs!)
+paths_with_metadata(X, Y, Visited) <- 
+    #PATHS(knows_struct, "visited=true").
+
+@output("paths_with_metadata").
+```
+
+**Output** includes full structs in visited arrays:
+```
+(struct(id=1, name="Alice", age=28), 
+ struct(id=2, name="Bob", age=35), 
+ [struct(id=1, name="Alice", age=28), struct(id=2, name="Bob", age=35)])
+
+(struct(id=1, name="Alice", age=28), 
+ struct(id=3, name="Charlie", age=42), 
+ [struct(id=1, name="Alice", age=28), struct(id=2, name="Bob", age=35), struct(id=3, name="Charlie", age=42)])
+```
+
+### Example 3: All-Shortest Paths with Weighted Struct Edges
+
+```prolog
+% City nodes with coordinates
 city(1, "New York", 40.7128, -74.0060).
 city(2, "London", 51.5074, -0.1278).
 city(3, "Tokyo", 35.6762, 139.6503).
 
-flight(1, 2, 5570.0). flight(2, 3, 9560.0). flight(1, 3, 10850.0).
+% Weighted flights (with distance)
+flight(1, 2, 5570.0).  % NYC to London: 5570 km
+flight(2, 3, 9560.0).  % London to Tokyo: 9560 km
+flight(1, 3, 10850.0). % NYC to Tokyo (direct): 10850 km
 
+% Create weighted struct edges
 flight_struct(X, Y, Dist) <- 
     flight(Id1, Id2, Dist),
     city(Id1, Name1, Lat1, Lon1),
@@ -173,6 +406,239 @@ flight_struct(X, Y, Dist) <-
     X = struct("id", Id1, "name", Name1, "lat", Lat1, "lon", Lon1),
     Y = struct("id", Id2, "name", Name2, "lat", Lat2, "lon", Lon2).
 
+% Find shortest paths with city metadata preserved
 asp(X, Y, Distance) <- #ASP(flight_struct).
+
 @output("asp").
+```
+
+**Output** shows shortest paths with full city information:
+```
+(struct(id=1, name="New York", lat=40.7128, lon=-74.0060),
+ struct(id=3, name="Tokyo", lat=35.6762, lon=139.6503),
+ 10850.0)  % Direct flight is shorter than via London
+```
+
+### Example 4: Connected Components with Struct Nodes
+
+```prolog
+% Company nodes
+company(1, "Acme Inc", "Technology").
+company(2, "Global Corp", "Technology").
+company(3, "Local Ltd", "Retail").
+company(4, "Small Co", "Retail").
+
+% Partnerships (undirected)
+partner_raw(1, 2).
+partner_raw(3, 4).
+
+% Make undirected and create struct edges
+partner(X, Y) <- partner_raw(A, B), company(A, N1, I1), company(B, N2, I2),
+                 X = struct("id", A, "name", N1, "industry", I1),
+                 Y = struct("id", B, "name", N2, "industry", I2).
+partner(X, Y) <- partner_raw(B, A), company(A, N1, I1), company(B, N2, I2),
+                 X = struct("id", A, "name", N1, "industry", I1),
+                 Y = struct("id", B, "name", N2, "industry", I2).
+
+% Find components with company metadata and IDs
+cc(Node, ComponentId, Component) <- 
+    #CC(partner, "component_id=true,sort_component=true").
+
+@output("cc").
+```
+
+**Output** includes full company structs:
+```
+(struct(id=1, name="Acme Inc", industry="Technology"),
+ struct(id=1, name="Acme Inc", industry="Technology"),  % Component ID
+ [struct(id=1, name="Acme Inc", industry="Technology"), 
+  struct(id=2, name="Global Corp", industry="Technology")])
+
+(struct(id=3, name="Local Ltd", industry="Retail"),
+ struct(id=3, name="Local Ltd", industry="Retail"),  % Component ID
+ [struct(id=3, name="Local Ltd", industry="Retail"), 
+  struct(id=4, name="Small Co", industry="Retail")])
+```
+
+### Benefits of Struct Nodes
+
+1. **Rich Context**: Keep all node metadata throughout graph traversal
+2. **Type Safety**: First field must be unique ID; all other fields are arbitrary
+3. **Query Flexibility**: Filter/aggregate on any struct field in downstream rules
+4. **Join Elimination**: No need to join back with node tables to get properties
+5. **Automatic**: Functions auto-detect struct vs simple nodes
+
+### Performance Notes
+
+- **Lightweight internals**: Graph algorithms work with IDs only (first field)
+- **Full reconstruction**: Complete structs are rebuilt for output
+- **Memory efficient**: ~50% savings vs storing full edges in adjacency lists
+- **Type validation**: Both source and destination must be the same type (both structs or both simple)
+
+## Centrality Measures
+
+Centrality measures quantify the importance of nodes in a graph. Vadalog provides multiple centrality algorithms, all optimized for distributed computation.
+
+### 6  Degree Centrality
+
+**Degree Centrality** measures node importance by counting connections, normalized by the maximum possible degree.
+
+```prolog
+edge("a","b").
+edge("a","e").
+edge("a","f").
+edge("b","d").
+edge("c","b").
+edge("c","e").
+edge("d","c").
+edge("d","h").
+edge("f","g").
+
+% Total degree (in + out, normalized)
+dc_total(N, DC) <- #DC(edge).
+
+% In-degree only (incoming edges)
+dc_in(N, DC) <- #DC(edge, "type=in").
+
+% Out-degree only (outgoing edges)
+dc_out(N, DC) <- #DC(edge, "type=out").
+
+@output("dc_total").
+@output("dc_in").
+@output("dc_out").
+```
+
+**Output**: Normalized scores between 0.0 and 1.0. For `dc_total`:
+```
+(a, 0.375)  % 3 connections / 8 nodes = 3/8
+(b, 0.375)
+(c, 0.375)
+(d, 0.375)
+(e, 0.25)
+(f, 0.25)
+(g, 0.125)
+(h, 0.125)
+```
+
+**Features**:
+- Always normalized by (N-1) where N is total nodes
+- Three degree types: `in`, `out`, `total` (default)
+
+### 7  Betweenness Centrality
+
+**Betweenness Centrality** measures how often a node lies on shortest paths between other nodes. High betweenness indicates "bridge" nodes.
+
+```prolog
+% Simple chain: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+edge(1,2).
+edge(2,3).
+edge(3,4).
+edge(4,5).
+edge(5,6).
+
+% Exact betweenness (all sources)
+bc_exact(N, BC) <- #BC(edge).
+
+% Approximate betweenness (sample 100 sources for large graphs)
+bc_approx(N, BC) <- #BC(edge, "sample=100").
+
+@output("bc_exact").
+@output("bc_approx").
+```
+
+**Output** for `bc_exact` (linear chain):
+```
+(1, 0.0)    % Endpoints have zero betweenness
+(2, 0.2)    % Node 2 is on 20% of shortest paths
+(3, 0.3)    % Node 3 is on 30% of shortest paths
+(4, 0.3)
+(5, 0.2)
+(6, 0.0)
+```
+
+**Features**:
+- Normalized by (N-1)(N-2)
+- **Sampling support**: Use `sample=K` for approximate results on large graphs
+  - `sample=500`: Compute from 500 random sources instead of all N
+  - Provides unbiased estimates with significant speedup
+  - Recommended for graphs >10M edges
+
+### 8  PageRank
+
+**PageRank** computes node importance using link structure. Originally used by Google for web search ranking.
+
+```prolog
+% Directed cycle: 1 -> 2 -> 3 -> 4 -> 1
+edge(1,2).
+edge(2,3).
+edge(3,4).
+edge(4,1).
+
+% Default PageRank (damping=0.85, tolerance=0.0001)
+pr_default(N, PR) <- #PR(edge).
+
+% Custom damping factor
+pr_custom(N, PR) <- #PR(edge, "damping=0.9").
+
+% High precision
+pr_precise(N, PR) <- #PR(edge, "damping=0.85,tolerance=0.00001").
+
+@output("pr_default").
+@output("pr_custom").
+@output("pr_precise").
+```
+
+**Output** for `pr_default` (cycle):
+```
+(1, 0.25)  % All nodes equal in symmetric cycle
+(2, 0.25)
+(3, 0.25)
+(4, 0.25)
+```
+
+**Features**:
+- Scores always sum to 1.0 (probability distribution)
+- Handles dangling nodes (no outgoing edges) correctly
+- Parameters:
+  - `damping`: Probability of following a link (default 0.85)
+  - `tolerance`: Convergence threshold (default 0.0001)
+
+### 9  Centrality Comparison Example
+
+```prolog
+% Same graph for all three measures
+edge(1,2).
+edge(2,3).
+edge(3,4).
+edge(1,3).
+
+% Compute all centralities
+dc(N, Score) <- #DC(edge).
+bc(N, Score) <- #BC(edge).
+pr(N, Score) <- #PR(edge).
+
+@output("dc").
+@output("bc").
+@output("pr").
+```
+
+## Reasoning + Graph Analytics
+
+```prolog
+edge_large(1,2,9).
+edge_large(3,4,6).
+
+edge_short(2,3,2).
+edge_short(4,1,1).
+
+unweighted_edge(1,5).
+unweighted_edge(5,2).
+
+edge(X,Y,Z) <- edge_large(X,Y,Z).
+edge(X,Y,Z) <- edge_short(X,Y,Z).
+edge(X,Y,1) <- unweighted_edge(X,Y). % We assign a default distance = 1
+
+asp_function(X,Y,Z) <- #ASP(edge).
+max_asp(X,Y,M) <- asp_function(X,Y,Z), M = mmax(Z).
+@output("max_asp").
 ```

@@ -1,0 +1,102 @@
+---
+title: Connect ChatGPT
+description: Connect ChatGPT to Prometheux via the Remote MCP Server using Developer Mode connectors.
+---
+
+# Connect ChatGPT to Prometheux
+
+Connect ChatGPT to Prometheux using the [Remote MCP Server](/integrations/mcp/remote). ChatGPT supports remote MCP servers via its Developer Mode connectors feature.
+
+## Prerequisites
+
+- **ChatGPT paid plan** (Plus, Pro, Team, Enterprise, or Education)
+- **Developer Mode** enabled in your ChatGPT account
+- **Prometheux credentials** (username, organization, API token)
+
+## Setup
+
+1. **Enable Developer Mode:**
+   - Open [ChatGPT](https://chatgpt.com) on the web
+   - Click your profile icon → **Settings**
+   - Go to **Apps & Connectors** → **Advanced settings**
+   - Toggle **Developer Mode** on
+
+2. **Create the connector:**
+   - Go back to **Settings** → **Apps & Connectors**
+   - Click **"Create"** (next to "Advanced settings")
+   - Fill in the connector details:
+     - **Name:** `Prometheux`
+     - **Description:** e.g., `Query and reason over your Prometheux ontologies`
+     - **MCP Server URL:** `https://api.prometheux.ai/px-remote-mcp-server/mcp`
+   - Select **OAuth** as the authentication method
+   - Check **"I trust this application"**
+   - Click **"Create"**
+
+3. **Authenticate:**
+   - ChatGPT will redirect you to the Prometheux OAuth login page
+   - Enter your credentials:
+     - **Username:** Your Prometheux username
+     - **Organization:** Your Prometheux organization
+     - **API Token:** Your Prometheux authentication token
+   - Click **"Authorize Access"**
+
+4. **Start using:** Open a new chat, and the Prometheux tools will be available. You can mention `@Prometheux` in your prompt or ChatGPT will automatically use the tools when relevant.
+
+## Usage
+
+Once connected, interact naturally with ChatGPT. The model will automatically invoke Prometheux tools when your queries relate to knowledge graphs, ontologies, or concept execution.
+
+<Tip>
+**Example Conversations & Available Tools**
+
+See the [MCP overview page](/integrations/mcp/overview#available-tools) for example conversations and a complete list of available tools.
+</Tip>
+
+## Using with Deep Research
+
+If you have ChatGPT Pro or Enterprise, you can also use Prometheux as a source for **Deep Research**:
+
+1. In a new chat, click **"Tools"** under the input field
+2. Select **"Run Deep Research"**
+3. Click **"Add Sources"** → **"Connect More"**
+4. Select your Prometheux connector
+5. Ask a research question — ChatGPT will query your Prometheux ontologies alongside web results
+
+## Disconnecting
+
+To remove the connector:
+1. Go to **Settings** → **Apps & Connectors**
+2. Find the Prometheux connector
+3. Click the connector, then **"Delete"**
+
+## Troubleshooting
+
+### "Create" button not visible
+
+**Solution:**
+- Ensure Developer Mode is toggled on under Advanced settings
+- Verify you're on a paid plan (Plus, Pro, Team, Enterprise, or Education)
+- For Team/Enterprise workspaces, ask your admin to enable custom connectors
+
+### OAuth login page doesn't load
+
+**Solution:**
+- Check that popup blockers are not preventing the OAuth window
+- Try in an incognito/private window
+- Verify the MCP Server URL is correct: `https://api.prometheux.ai/px-remote-mcp-server/mcp`
+
+### "Failed to connect" or timeout errors
+
+**Solution:**
+- The MCP server URL must use `/mcp` at the end (not just the base URL)
+- Ensure your Prometheux credentials are valid and the API token hasn't expired
+- Try disconnecting and recreating the connector
+
+### Tools not appearing in conversations
+
+**Solution:**
+- After creating the connector, open a **new** chat (existing chats won't pick it up)
+- Check that the connector shows as connected in Settings → Apps & Connectors
+- Try being explicit: "Use Prometheux tools to list my projects"
+
+For general troubleshooting, see the [Remote MCP Server troubleshooting](/integrations/mcp/remote#troubleshooting) section.
