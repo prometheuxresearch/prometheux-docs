@@ -283,6 +283,51 @@ curl -X POST "$BASE_URL/data/preview" \
 }
 ```
 
+## Joins
+
+### All-pairs join
+
+Discover join relationships across a set of data sources. Given a list of source
+connection descriptors, the platform analyzes every pair to find candidate join
+keys, and optionally evaluates the resulting joins.
+
+```
+POST /data/all-pairs-join
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `database_payloads` | body | yes | — | Array of connection descriptors (each with at least a `databaseType`) to analyze pairwise. |
+| `to_evaluate` | body | no | `false` | When `true`, evaluate the discovered joins rather than only detecting them. |
+| `parallel` | body | no | `true` | Analyze source pairs in parallel. |
+
+```bash
+curl -X POST "$BASE_URL/data/all-pairs-join" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "database_payloads": [
+      { "databaseType": "csv", "host": "disk/orders.csv" },
+      { "databaseType": "csv", "host": "disk/customers.csv" }
+    ],
+    "to_evaluate": false,
+    "parallel": true
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "All pairs join completed successfully",
+  "data": { /* discovered join keys and (optionally) evaluated results */ }
+}
+```
+
+<Note>
+At least two sources are needed to produce any pairs — a single descriptor in
+`database_payloads` yields no joins.
+</Note>
+
 ## Files
 
 All file operations are scoped to the server-side `disk/` storage directory. Paths are relative to that root; path traversal (`..`) is rejected.
