@@ -1,6 +1,6 @@
 ---
 title: "Project Workspace"
-description: "A tour of the project workspace (the Lineage view) — the Explorer tree, the Concepts and Data library, and the lineage canvas."
+description: "A tour of the project workspace (the Lineage view) — the Explorer tree, the Concepts and Data tabs, and the lineage canvas."
 ---
 
 Opening a project takes you into the **project workspace** — the Lineage view.
@@ -8,7 +8,7 @@ It has three regions:
 
 - The **Explorer** on the left — the navigation tree of every concept in the project.
 - The **lineage canvas** in the center — a visual graph of how your concepts and data sources depend on one another.
-- The **Library** on the right — two tabs, **Concepts** and **Data**, for browsing what's available to build with.
+- The **Concepts** and **Data** tabs on the right — for browsing the concepts and data sources you can build with.
 
 Clicking a concept opens it in the **editor** — documented in detail on
 [The Concept Editor](/platform/concept-editor).
@@ -52,27 +52,28 @@ A small **green dot** next to a concept means it has **unsaved changes**.
 | Delete | Right-click → **Delete** (asks for confirmation). |
 | Organize into groups | Create a **New group**, then drag concepts in, or use a group's right-click menu (**New cell in …**, **Rename group**, **Delete group**). A count badge shows how many concepts each group holds. |
 
-## The Library — Concepts and Data
+## Concepts
 
-The Library on the right edge has two tabs. Click a tab to open it; click it again
-to close. Each tab's header has **Search**, **Collapse all / Expand all**, and
-**Refresh**.
-
-### Concepts tab
-
-Browse every concept in the project (including those defined as ontology nodes) as
-a reference. Each entry is expandable and shows the concept's **fields and types**.
+The **Concepts** tab on the right edge lists every concept in the project
+(including those defined as ontology nodes) as a browsable reference. Click the tab
+to open or close it; it has its own **Search**, **Collapse all / Expand all**, and
+**Refresh** controls. Each entry is expandable and shows the concept's **fields and
+types**.
 
 - **Click** an entry to jump to its concept in the editor.
 - **Copy concept** copies the concept's signature — `name(field1, field2, …)` —
   to your clipboard, ready to paste into a rule.
-  
 
-### Data tab
+<Frame caption="The Concepts tab — every concept in the project with its fields and types, each one expandable and ready to copy or jump to in the editor.">
+  <img src="/images/project-workspace/concepts_panel.png" alt="The Concepts tab" />
+</Frame>
 
-Browse the data sources connected to your workspace, grouped by location (for
-example **Local Files** and an **S3** bucket). Each source shows its **column
-count** and expands to reveal its schema, row count, and path.
+## Data
+
+The **Data** tab on the right edge lists the data sources connected to your
+workspace, grouped by location (for example **Local Files** and an **S3** bucket).
+Each source shows its **column count** and expands to reveal its schema, row count,
+and path.
 
 | Action | How |
 |---|---|
@@ -81,8 +82,8 @@ count** and expands to reveal its schema, row count, and path.
 | Reuse a source | **Copy predicate signature** copies the source's `name(col1, col2, …)` for use in a rule. |
 | Add a source | Connect new sources from the [Data Sources](/platform/data-connections) page; they appear here automatically. |
 
-<Frame caption="The Library on the Data tab — sources grouped by location (Local Files, S3), each showing its column count and expandable schema. The Concepts / Data tabs are on the right edge.">
-  <img src="/images/project-workspace/data_panel.png" alt="The Data library panel" />
+<Frame caption="The Data tab — sources grouped by location (Local Files, S3), each showing its column count and expandable schema.">
+  <img src="/images/project-workspace/data_panel.png" alt="The Data tab" />
 </Frame>
 
 ## The lineage canvas
