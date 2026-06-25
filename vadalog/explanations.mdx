@@ -3,15 +3,17 @@ title: "Explanations"
 description: "Generating natural language and JSON explanations for derived facts using @explain in Vadalog."
 ---
 
-# Explanations
+The `@explain` annotation enables generating detailed explanations for derived facts, helping to understand their provenance and the rules applied. Explanations can be presented in structured JSON format, natural language, or refined reports via LLM, enhancing transparency and aiding debugging.
 
-The `@explain` annotation enables generating detailed explanations for derived facts, helping to understand their provenance and the rules applied. Explanations can be presented in structured JSON format, natural language, or refined reports via LLM.
+## Materializing Explanations to External Data Sources
 
-## Materializing Explanations
+The `@explain` annotation configures how the explanations are stored. Its syntax is as follows:
 
 ```prolog
 @explain("datasource", "database", "table").
 ```
+
+The explanations storage format varies based on the selected datasource.
 
 **To CSV:**
 ```prolog
@@ -30,11 +32,11 @@ The `@explain` annotation enables generating detailed explanations for derived f
 
 ## Explanation Output Structure
 
-Each explanation has three fields:
+The explanation output has three fields:
 
-- `Fact` — the derived fact being explained
-- `JsonExplanation` — a hierarchical JSON representation of the derivation
-- `TextualExplanation` — a natural language explanation
+- `Fact` — the derived fact being explained.
+- `JsonExplanation` — a hierarchical JSON representation of the fact's derivation.
+- `TextualExplanation` — a natural language explanation based on model annotations or default verbalization.
 
 **Example:**
 
@@ -48,7 +50,7 @@ tc(X, Z) <- tc(X, Y), edge(Y, Z).
 @explain("console").
 ```
 
-**JSON Explanation:**
+### Json Explanation Example
 
 ```json
 {
@@ -83,15 +85,19 @@ tc(X, Z) <- tc(X, Y), edge(Y, Z).
 }
 ```
 
-## Model Annotations for Better Explanations
+### Textual Explanation Examples
 
-Without model annotations, explanations use generic fact verbalization:
+**Without Model Annotations**
+
+In the absence of model annotations, the explanation uses fact:
 
 ```
 since edge(1,2) then tc(1,2), and since edge(2,3) then tc(1,3), and since edge(3,4) then tc(1,4).
 ```
 
-With model annotations, explanations become more informative:
+**With Model Annotations**
+
+With model annotations, explanations become more informative and context-specific:
 
 ```prolog
 @model("edge", "['From:string', 'To:string']", "there is an edge from [From] to [To]").
@@ -104,9 +110,24 @@ Refined explanation:
 since there is an edge from 1 to 2, then there is a transitive closure from 1 to 2, and since there is an edge from 2 to 3, then there is a transitive closure from 1 to 3, and since there is an edge from 3 to 4, then there is a transitive closure from 1 to 4.
 ```
 
-## Examples
+## Explanation Scenarios and Use Cases
 
-### Linear Rule with Model Annotations
+### Example 1: Linear Rule Explanation without Model Annotations
+
+```prolog
+b(1).
+a(X) <- b(X).
+@output("a").
+@explain("console").
+```
+
+Prometheux generates a generic explanation:
+
+```
+since b(1), then a(1).
+```
+
+### Example 2: Linear Rule Explanation with Model Annotations
 
 ```prolog
 @model("employee", "['Name:string']", " [Name] is an employee").
@@ -117,9 +138,13 @@ manager(X) <- employee(X).
 @explain("console").
 ```
 
-Output: `since Alice is an employee, then Alice is a manager.`
+Prometheux generates the explanation verbalizing facts according to the specified models:
 
-### Join Rule
+```
+since Alice is an employee, then Alice is a manager.
+```
+
+### Example 3: Join Rule Explanation
 
 ```prolog
 @model("developer", "['Name:string']", "[Name] is a developer").
@@ -136,7 +161,8 @@ works_on(X, Y) <- developer(X), project(Y).
 @explain("console").
 ```
 
-Output:
+Prometheux generates the explanation verbalizing facts according to the specified models:
+
 ```
 since Alice is a developer and ProjectX is a project, then Alice works on ProjectX.
 since Alice is a developer and ProjectY is a project, then Alice works on ProjectY.
@@ -144,21 +170,25 @@ since Bob is a developer and ProjectX is a project, then Bob works on ProjectX.
 since Bob is a developer and ProjectY is a project, then Bob works on ProjectY.
 ```
 
-### Explaining Pre-Materialized Chase Results
+### Example 4: Explaining Pre-Materialized Chase Results
 
-Use `chase=false` to exploit a pre-materialized chase dataset, avoiding recomputation:
+By setting `chase=false`, Prometheux exploits a pre-materialized chase data for explanations, avoiding recomputation.
+Explanations are related to the predicates specified in the @output annotation.
+To explain specific predicates not in `@output`, use the `predicates='predicate1,predicate2'` option.
 
-**Step 1: Materialize the chase:**
+**Chase Materialization:**
 
 ```prolog
-edge(1, 2). edge(2, 3). edge(3, 4).
+edge(1, 2).
+edge(2, 3).
+edge(3, 4).
 tc(X, Y) <- edge(X, Y).
 tc(X, Z) <- tc(X, Y), edge(Y, Z).
 @output("tc").
 @chase("csv", "datasets", "chase_results").
 ```
 
-**Step 2: Explain from pre-materialized data:**
+**Explanation of Pre-Materialized Data:**
 
 ```prolog
 @bind("chase_results", "csv useHeaders=true", "datasets", "chase_results").
@@ -170,11 +200,52 @@ my_explanation(Fact, ProvenanceLeft, ProvenanceRight, RuleDescription) <-
 @explain("console chase=false, predicates='tc'").
 ```
 
-Use `predicates='pred1,pred2'` to specify which predicates to explain, especially if they are not in `@output`.
+Prometheux generates the following explanation:
 
-### Multiple Connected Chases
+```
+since there is an edge from 1 to 2, then there is a transitive closure from 1 to 2.
+since there is an edge from 2 to 3, then there is a transitive closure from 1 to 3.
+since there is an edge from 3 to 4, then there is a transitive closure from 1 to 4.
+```
 
-When chaining multiple reasoning steps, combine their chase outputs and explain across all predicates:
+### Example 7: Explaining Multiple Connected Chases
+
+Multiple chases are connected by using the results of the first in the second.
+Model annotations provide detailed descriptions for each predicate.
+Explanations are generated for both path and tc predicates.
+
+By setting chase=false, explanations are generated based on pre-materialized chase data.
+The predicates='path,tc' option specifies the predicates to explain, especially if they are not in @output.
+
+Prometheu will generate comprehensive explanations that cover derivations across multiple connected chases.
+
+**Step 1: First Chase - Computing Transitive Closure**
+
+```prolog
+edge(1, 2).
+edge(2, 3).
+edge(3, 4).
+tc(X, Y) <- edge(X, Y).
+tc(X, Z) <- tc(X, Y), edge(Y, Z).
+@output("tc").
+@bind("tc", "csv", "path/to/datasets", "tc").
+@chase("csv saveMode=append", "path/to/datasets", "chase").
+```
+
+**Step 2: Second Chase - Computing Paths Using Previous Results**
+
+```prolog
+arc(1, 2).
+arc(2, 3).
+arc(3, 4).
+@bind("tc", "csv", "path/to/datasets", "tc").
+path(X, Y) <- tc(X, Y).
+path(X, Z) <- path(X, Y), arc(Y, Z).
+@output("path").
+@chase("csv saveMode=append", "path/to/datasets", "chase").
+```
+
+**Step 3: Explaining the Combined Results**
 
 ```prolog
 @model("edge", "['From:string', 'To:string']", "There is an edge from [From] to [To]").

@@ -3,14 +3,13 @@ title: "AI Agent Integration via MCP"
 description: "Connect AI agents to Prometheux using the Model Context Protocol (MCP)."
 ---
 
-# AI Agent Integration via MCP
-
 Connect AI agents to Prometheux using the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) — an open standard that enables AI assistants to interact with external tools and data sources.
 
-Prometheux offers two MCP integration options:
+Prometheux offers three MCP integration options:
 
-- **[Local MCP Server](/integrations/mcp/local)** (`prometheux-mcp`): Runs on your machine alongside Claude Desktop
+- **[Local MCP Server](/integrations/mcp/local)** (`prometheux-mcp`): Runs on your machine — works with Claude Desktop, Claude Code, Cursor, and any stdio-capable client. **Recommended for coding agents.**
 - **[Remote MCP Server](/integrations/mcp/remote)** (`px-remote-mcp-server`): Cloud-hosted option that works with any MCP-compatible client via OAuth authentication
+- **Built-in MCP Server** (Snowflake Native App only): Automatically registered when the app starts — Cortex Agents and Snowflake Intelligence can discover Prometheux tools with no external setup. See the [Native App guide](/get-started/installation/snowflake#cortex-agent-integration-mcp) for details.
 
 ## What is MCP?
 
@@ -26,24 +25,31 @@ With Prometheux's MCP integration, you can use natural language to interact with
 <Tabs>
   <Tab title="Local MCP Server">
 
-**Best for:** Claude Desktop users, development environments, on-premise deployments
+**Best for:** Coding agents (Claude Code, Cursor), Claude Desktop, development environments, on-premise deployments
 
 **Pros:**
-- Simple pip install
-- Runs locally (no external dependencies)
-- Full control over credentials
-- Works with any Prometheux instance (cloud or on-premise)
+<ul>
+<li>Simple pip install</li>
+<li>Runs locally (no external dependencies)</li>
+<li>Full control over credentials — no OAuth flow required</li>
+<li>Works with any Prometheux instance (cloud or on-premise)</li>
+<li>Compatible with Claude Desktop, Claude Code, Cursor, and any stdio-capable client</li>
+</ul>
 
 **Cons:**
-- Requires Claude Desktop app
-- Needs to be installed on each machine
+<ul>
+<li>Needs to be installed on each machine</li>
+</ul>
 
 **Use this when:**
-- You're using Claude Desktop
-- You want a simple, local installation
-- You're developing or testing locally
+<ul>
+<li>You're using a coding agent (Claude Code, Cursor)</li>
+<li>You're using Claude Desktop</li>
+<li>You want a simple, local installation</li>
+<li>You're developing or testing locally</li>
+</ul>
 
-**[Get Started with Local MCP](/integrations/mcp/local)**
+**[Get Started with Local MCP →](/integrations/mcp/local)**
 
   </Tab>
   <Tab title="Remote MCP Server">
@@ -51,38 +57,83 @@ With Prometheux's MCP integration, you can use natural language to interact with
 **Best for:** Multi-client deployments, enterprise environments, browser-based AI agents
 
 **Pros:**
-- Works with any MCP-compatible client (Claude, Genie Code, and more)
-- OAuth authentication with browser login flow
-- Centralized deployment (one server, many users)
-- Handles authentication and session management
-- No local installation required
+<ul>
+<li>Works with any MCP-compatible client (Claude, Genie Code, and more)</li>
+<li>OAuth authentication with browser login flow</li>
+<li>Centralized deployment (one server, many users)</li>
+<li>Handles authentication and session management</li>
+<li>No local installation required</li>
+</ul>
 
 **Cons:**
-- Requires a deployed server instance
-- Suitable for production cloud deployments
+<ul>
+<li>Requires a deployed server instance</li>
+<li>Suitable for production cloud deployments</li>
+</ul>
 
 **Use this when:**
-- You want to connect from Genie Code, Claude Web, or other MCP clients
-- You want centralized authentication for multiple users
-- You're deploying for an organization
-- You prefer not to install anything locally
+<ul>
+<li>You want to connect from Genie Code, Claude Web, or other MCP clients</li>
+<li>You want centralized authentication for multiple users</li>
+<li>You're deploying for an organization</li>
+<li>You prefer not to install anything locally</li>
+</ul>
 
-**[Get Started with Remote MCP](/integrations/mcp/remote)**
+**[Get Started with Remote MCP →](/integrations/mcp/remote)**
+
+  </Tab>
+  <Tab title="Built-in (Native App)">
+
+**Best for:** Snowflake Native App users who want Cortex Agents to interact with Prometheux
+
+**Pros:**
+<ul>
+<li>Zero setup — automatically registered when the app starts</li>
+<li>No OAuth, no API keys, no external access needed</li>
+<li>Secured by Snowflake RBAC</li>
+<li>Works with Cortex Agents and Snowflake Intelligence</li>
+</ul>
+
+**Cons:**
+<ul>
+<li>Only available within the Snowflake Native App</li>
+<li>Not visible in the MCP Connectors UI (use SQL to reference it)</li>
+<li>Cortex Code uses the Remote MCP Server instead</li>
+</ul>
+
+**Use this when:**
+<ul>
+<li>You have the Prometheux Native App installed</li>
+<li>You want Cortex Agents to call Prometheux tools</li>
+<li>You want everything to stay within Snowflake</li>
+</ul>
+
+**[Get Started with Native App MCP →](/get-started/installation/snowflake#cortex-agent-integration-mcp)**
 
   </Tab>
 </Tabs>
 
 ## Supported MCP Clients
 
-The remote MCP server supports any client that implements the MCP standard. We provide step-by-step connection guides for:
+We provide step-by-step connection guides for the following clients:
+
+### Coding Agents (Local Server Recommended)
 
 | Client | Status | Guide |
 |--------|--------|-------|
-| **Claude** (Desktop & Web) | Supported | [Connect Claude](/integrations/mcp/claude) |
-| **Genie Code** (Databricks) | Supported | [Connect Genie Code](/integrations/mcp/databricks-genie) |
-| **Snowflake Cortex** | For more info, ask your Prometheux rep | — |
+| **Cursor** | ✅ Supported | [Connect Cursor →](/integrations/mcp/cursor) |
+| **Claude Code** (Terminal CLI) | ✅ Supported | [Connect Claude Code →](/integrations/mcp/claude-code) |
 
-Don't see your client? The remote server exposes a standard MCP endpoint with OAuth — any compliant client can connect using the details in the [Remote MCP Server](/integrations/mcp/remote) page.
+### Chat & Enterprise Clients (Remote Server)
+
+| Client | Status | Guide |
+|--------|--------|-------|
+| **Claude** (Desktop & Web) | ✅ Supported | [Connect Claude →](/integrations/mcp/claude) |
+| **ChatGPT** (OpenAI) | ✅ Supported | [Connect ChatGPT →](/integrations/mcp/chatgpt) |
+| **Genie Code** (Databricks) | ✅ Supported | [Connect Genie Code →](/integrations/mcp/databricks-genie) |
+| **Snowflake Cortex** (Cortex Code & Intelligence) | ✅ Supported | [Connect Snowflake Cortex →](/integrations/mcp/snowflake-cortex) (Native App users: [built-in MCP](/get-started/installation/snowflake#cortex-agent-integration-mcp)) |
+
+Don't see your client? For stdio-capable clients (IDEs, terminal agents), use the [Local MCP Server](/integrations/mcp/local). For browser-based clients, the [Remote MCP Server](/integrations/mcp/remote) exposes a standard OAuth endpoint.
 
 ## Available Tools
 
@@ -139,6 +190,8 @@ Both MCP servers dynamically expose the following tools to AI agents. The tool c
 | `get_company_info` | Search the Prometheux company knowledge base | `query` |
 
 <Tip>
+**Parameter Defaults**
+
 Most tools accept a `scope` parameter (`"user"` or `"organization"`, default `"user"`). Boolean parameters like `force_rerun` and `persist_outputs` default to `true` and `false` respectively.
 </Tip>
 

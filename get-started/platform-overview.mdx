@@ -1,8 +1,87 @@
 ---
 title: "Platform Overview"
-description: "Coming soon."
+description: "A high-level overview of the Prometheux ontology-native data processing platform and what you can do with it."
 ---
 
-# Platform Overview
+## What is Prometheux?
 
-This page is coming soon. Content will be added here.
+Prometheux is an ontology-native data processing engine. It allows you to define ontologies that are executable—meaning they can be used directly to query and process data across multiple systems.
+
+An ontology in Prometheux is not just documentation. It is a runnable model that defines:
+
+- Entities and relationships
+- Semantics and constraints
+- Query and processing logic
+
+Once defined, the same ontology can be used consistently across analytics, applications, and AI systems.
+
+## How Prometheux Works
+
+Prometheux introduces an ontology layer that sits above your existing data systems.
+
+Instead of moving or transforming data into a single location, Prometheux:
+
+- Connects to data where it already lives
+- Applies ontology-defined logic at query or execution time
+- Produces results with full lineage and traceability
+
+This allows teams to work across databases, warehouses, and platforms without requiring mandatory migrations or ETL pipelines.
+
+![Prometheux architecture](/images/prometheux-architecture.png)
+
+*Figure: Prometheux architecture.*
+
+## Key Concepts
+
+### Executable Ontologies
+Ontologies in Prometheux are directly executable. They can be queried, composed, and used to drive data processing workflows.
+
+### Ontology-Native Queries
+Queries are expressed in terms of ontology concepts rather than physical schemas, reducing coupling to underlying data structures.
+
+### Distributed Data Access
+Prometheux can operate across multiple data sources simultaneously, resolving semantics at runtime.
+
+### Lineage and Traceability
+All results retain explicit links back to the ontology definitions and underlying data sources.
+
+## Core Building Blocks
+
+These are the fundamental ideas you'll work with across the platform. For the full treatment, see [Concepts and Lineage](/platform/concepts-and-lineage).
+
+- **Knowledge Graph** — A graph in which entities in your business (e.g. Users, Companies, Wallets) are connected to other entities via relationships. Prometheux lets you model relationships that involve multiple properties and entities, rather than forcing a strict triple representation.
+- **Data Source** — Any structured or semistructured data that you wish to connect into a knowledge graph.
+- **Ontology** — The set of business rules that define how entities relate to each other and how they connect to your real data. These rules are written in [Vadalog](/vadalog/overview).
+- **Data Binding** — A way to tell Prometheux which data sources power the entities in your ruleset, using Vadalog [binding annotations](/vadalog/annotations#bind-mappings-and-qbind).
+- **Reasoning** — By processing the rules and data in your ontology, Prometheux deduces new facts or specific outcomes.
+- **Chase Graph** — The steps Prometheux takes to reach an answer, captured as a [chase graph](/vadalog/chase-provenance) of the rules and data that contributed to the result. This graph is itself a knowledge graph that can be explored and analysed.
+
+## Supported Environments
+
+Prometheux is designed to run in modern data stacks and can be deployed alongside existing platforms.
+
+- Native integrations with Databricks and Snowflake
+- Deployable in cloud or on-prem environments
+- Works with structured data across multiple storage and compute systems
+
+## Who This Documentation Is For
+
+This documentation is intended for:
+
+- Data engineers integrating Prometheux into existing platforms
+- Analytics and BI teams querying ontology-defined data
+- AI and application developers requiring consistent semantics
+- Architects designing ontology-driven data systems
+
+No prior ontology tooling is required, but familiarity with data modeling concepts is recommended.
+
+## What's Next
+
+Start by installing Prometheux in the environment that fits your team:
+
+- [Installation](/get-started/installation/overview) — Choose between Cloud, Snowflake, Databricks, or on-premises
+
+Then explore the fundamentals:
+
+- [Concepts and Lineage](/platform/concepts-and-lineage) — Knowledge graphs, ontologies, reasoning, and chase graphs
+- [Thinking in Vadalog](/vadalog/thinking-in-vadalog) — Write your first executable ontology

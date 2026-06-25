@@ -1,0 +1,138 @@
+---
+title: Connect Cursor
+description: Connect Cursor to Prometheux using the local MCP server.
+---
+
+Connect [Cursor](https://cursor.com) to Prometheux using the [Local MCP Server](/integrations/mcp/local). This guide covers the Cursor-specific setup steps.
+
+<Tip>
+**Recommended: Use the Local Server**
+
+We recommend using the **local MCP server** (stdio) with Cursor for the most reliable experience. The remote server uses OAuth 2.0 which may not work reliably in all Cursor versions.
+</Tip>
+
+## Prerequisites
+
+- **Cursor** installed on your machine ([download here](https://cursor.com))
+- **Prometheux credentials** (username, organization, API token)
+- **prometheux-mcp** package installed (see [installation instructions](/integrations/mcp/local#installation))
+
+## Setup (Local Server — Recommended)
+
+### 1. Install the MCP Package
+
+If you haven't already, install `prometheux-mcp`:
+
+**macOS:**
+```bash
+brew install pipx
+pipx ensurepath
+pipx install prometheux-mcp
+```
+
+**Windows/Linux:**
+```bash
+pip install pipx
+pipx ensurepath
+pipx install prometheux-mcp
+```
+
+### 2. Configure Cursor
+
+Create or edit the MCP configuration file:
+
+| Scope | Path | Notes |
+|-------|------|-------|
+| **Project-specific** | `.cursor/mcp.json` (inside your project root) | Shared with your team via git |
+| **Global** (all projects) | `~/.cursor/mcp.json` (your home directory) | Available everywhere |
+
+Add the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "prometheux": {
+      "command": "/Users/YOUR_USERNAME/.local/bin/prometheux-mcp",
+      "args": ["--url", "https://api.prometheux.ai"],
+      "env": {
+        "PROMETHEUX_TOKEN": "your_token_here",
+        "PROMETHEUX_USERNAME": "your_username",
+        "PROMETHEUX_ORGANIZATION": "your_organization"
+      }
+    }
+  }
+}
+```
+
+<Tip>
+**Finding Your Path**
+
+Run `which prometheux-mcp` (macOS/Linux) or `where prometheux-mcp` (Windows) to find the correct path for the `command` field.
+
+**Common paths after pipx install:**
+- **macOS:** `/Users/YOUR_USERNAME/.local/bin/prometheux-mcp`
+- **Windows:** `C:\\Users\\YOUR_USERNAME\\.local\\bin\\prometheux-mcp.exe`
+- **Linux:** `/home/YOUR_USERNAME/.local/bin/prometheux-mcp`
+</Tip>
+
+### 3. Activate the Server
+
+1. Open **Cursor Settings** (Cmd+Shift+J on macOS, Ctrl+Shift+J on Windows/Linux)
+2. Click **Tools & MCP** in the sidebar
+3. Toggle the **prometheux** server on
+4. The server should show a green status indicator
+
+<Info>
+**New Chat Required**
+
+MCP tools are loaded when a chat session starts. After enabling the server, open a **new chat** (Cmd+N) to use the Prometheux tools.
+</Info>
+
+## Alternative: Remote Server
+
+You can also use the remote server, though the local server is more reliable with Cursor:
+
+```json
+{
+  "mcpServers": {
+    "prometheux": {
+      "url": "https://api.prometheux.ai/px-remote-mcp-server"
+    }
+  }
+}
+```
+
+This requires completing an OAuth flow in your browser. See the [Remote MCP Server](/integrations/mcp/remote) page for details.
+
+## Usage
+
+Once connected, interact naturally with Cursor's AI agent. It will automatically use the Prometheux MCP tools when relevant.
+
+<Tip>
+**Example Conversations & Available Tools**
+
+See the [MCP overview page](/integrations/mcp/overview#available-tools) for example conversations and a complete list of available tools.
+</Tip>
+
+## Troubleshooting
+
+### Server shows as "failed" in Tools & MCP
+
+**Solution:**
+- Verify the path to `prometheux-mcp` is correct — run `which prometheux-mcp` in your terminal
+- Check that your credentials are valid
+- Toggle the server off and on again
+- Restart Cursor completely (Cmd+Q, then reopen)
+
+### Tools not appearing in chat
+
+**Solution:**
+- MCP tools are loaded when a chat starts — open a **new chat** after enabling the server
+- Check that the server shows a green indicator in Settings → Tools & MCP
+- Be more explicit in your query: "Use the prometheux tools to list concepts in project X"
+
+### OAuth flow not working (remote server)
+
+If using the remote server, the OAuth browser redirect may fail silently in some Cursor versions. Switch to the local server configuration instead (see [Setup](#setup-local-server--recommended) above).
+
+For general troubleshooting, see the [Local MCP Server troubleshooting](/integrations/mcp/local#troubleshooting) section.

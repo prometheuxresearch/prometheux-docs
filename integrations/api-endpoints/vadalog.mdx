@@ -3,8 +3,6 @@ title: "Vadalog API"
 description: "Analyze programs, manage bind annotations, and evaluate logic against the Vadalog engine."
 ---
 
-# Vadalog API
-
 The Vadalog API exposes JarvisPy routes for analyzing programs, managing bind annotations, and evaluating logic against the Vadalog engine.
 
 **Python SDK:** There are no dedicated Vadalog helpers in `prometheux_chain`. Call these endpoints with your HTTP client (for example `httpx` or `requests`) against your JarvisPy base URL, with a valid JWT.
@@ -22,8 +20,15 @@ Inspect a Vadalog program without executing it. Returns predicate structure deri
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `program` | string | Yes | Vadalog program source |
-| `conceptType` | string | No | When `"sql"`, `program` is treated as SQL |
-| `conceptName` | string | No | Concept name when using SQL mode |
+| `conceptType` | string | No | When `"sql"`, `program` is treated as SQL (use with `conceptName`) |
+| `conceptName` | string | No | Concept / output predicate name when using SQL mode |
+
+**Response (`data`)**
+
+| Field | Description |
+|-------|-------------|
+| `headPredicates` | Head predicates in the program |
+| `inputPredicates` | Input predicates |
 
 ```bash
 curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/analyze" \
@@ -34,13 +39,36 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/a
   }'
 ```
 
+Example shape of `data`:
+
+```json
+{
+  "headPredicates": ["expensive_products"],
+  "inputPredicates": ["products"]
+}
+```
+
 ---
 
 ## Parse Binds
 
-Parse `@bind` / `@qbind` annotations from a program.
+Parse `@bind` / `@qbind` annotations from a program and separate rule code from datasource bindings.
 
 **HTTP:** `POST /api/v1/vadalog/parse-binds`
+
+**Body (JSON)**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `program` | string | Yes | Full Vadalog source including annotations |
+| `outputPredicate` | string | No | Extra predicate name to treat as output when classifying binds |
+
+**Response (`data`)**
+
+| Field | Description |
+|-------|-------------|
+| `code` | Program text without annotation lines |
+| `binds` | `{ "input": [...], "output": [...] }` — each entry includes `predicate`, `annotation`, and parsed fields when available |
 
 ```bash
 curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/parse-binds" \
@@ -56,9 +84,23 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/p
 
 ## Build Bind
 
-Rewrite an existing bind annotation for a new predicate name.
+Rewrite an existing bind annotation for a new predicate name. When `isOutput` is true, the output target (e.g. CSV filename or query name) is updated for output usage.
 
 **HTTP:** `POST /api/v1/vadalog/build-bind`
+
+**Body (JSON)**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `bindAnnotation` | string | Yes | Full `@bind(...)` or `@qbind(...)` annotation |
+| `predicateName` | string | Yes | New predicate name |
+| `isOutput` | boolean | No | Default `false`. If `true`, adjust output table/query naming |
+
+**Response (`data`)**
+
+| Field | Description |
+|-------|-------------|
+| `annotation` | Updated annotation string |
 
 ```bash
 curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/build-bind" \
@@ -75,15 +117,33 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/b
 
 ## Evaluate Program
 
-Run a Vadalog program with optional parameters and compute hints.
+Run a Vadalog program with optional parameters and compute hints. JarvisPy parses the program and delegates execution to the engine (local or configured compute).
 
 <Tabs>
   <Tab title="Python SDK">
 
 **Not available in SDK — use REST API directly.**
 
+There is no `evaluate_vadalog` (or similar) in the Python SDK. Use `POST /api/v1/vadalog/evaluate` with `requests`, `httpx`, or another HTTP client.
+
   </Tab>
   <Tab title="REST API">
+
+### HTTP Request
+
+```http
+POST /api/v1/vadalog/evaluate
+```
+
+### Body (JSON)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `program` | string | Yes | Vadalog program source |
+| `params` | object | No | Parameter map passed to evaluation (default `{}`) |
+| `compute` | object | No | Optional compute overrides (resolved with the authenticated user's compute configuration) |
+
+### cURL Example
 
 ```bash
 curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/evaluate" \
@@ -100,11 +160,46 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/e
   </Tab>
 </Tabs>
 
+### Response
+
+Successful responses use the standard JarvisPy envelope: `status`, `message`, and `data`. The `data` field contains the evaluation payload returned by the Vadalog client (structure depends on the program and engine).
+
+```json
+{
+  "data": {},
+  "message": "Vadalog program evaluated successfully",
+  "status": "success"
+}
+```
+
+---
+
+## Evaluate with parameters (engine proxy)
+
+Proxy to the Vadalog engine's `evaluateWithParams` endpoint. Uses **multipart form** data (`application/x-www-form-urlencoded` / `multipart/form-data`), not JSON.
+
+**HTTP:** `POST /api/v1/vadalog/evaluateWithParams`
+
+| Input | Description |
+|-------|-------------|
+| Form: `program` | Required. Vadalog program text |
+| Query: `measureElapsedTime` | Optional. Default `false` |
+
+JarvisPy forwards `program` and `measureElapsedTime` to the engine and supplies empty default `params` and `databricksConfigs` in the proxied request.
+
+The response body is whatever the engine returns (not necessarily the same envelope as `POST /evaluate`).
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/evaluateWithParams?measureElapsedTime=false" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  --form-string 'program=@input("x").@output("y").y(1).'
+```
+
 ---
 
 ## Stop Evaluation
 
-Signals the engine to stop the current evaluation.
+Signals the engine to stop the current evaluation and breaks any in-flight wait on the JarvisPy side.
 
 **HTTP:** `GET /api/v1/vadalog/stop`
 
@@ -117,16 +212,23 @@ curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/st
 
 ## Get Engine Status
 
-Lightweight health check for the evaluation service.
+Lightweight JarvisPy health-style check for the evaluation service (not per-execution polling).
 
 **HTTP:** `GET /api/v1/vadalog/status`
+
+**Response (`data`)**
+
+| Field | Description |
+|-------|-------------|
+| `status` | Service readiness indicator (e.g. `"ready"`) |
+| `timestamp` | ISO timestamp |
 
 ```bash
 curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/status" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-Example response:
+Example:
 
 ```json
 {
@@ -138,3 +240,31 @@ Example response:
   "status": "success"
 }
 ```
+
+---
+
+## Complete Workflow Example
+
+REST-only flow: analyze structure, optionally parse binds, then evaluate.
+
+```bash
+# 1. Analyze structure
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/analyze" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"program": "@input(\"products\").\n@output(\"expensive_products\").\nexpensive_products(Product, Price) <- products(Product, Price), Price > ?threshold."}'
+
+# 2. Parse binds (skip if the program has no @bind / @qbind)
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/parse-binds" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"program": "@input(\"products\").\n@output(\"expensive_products\").\nexpensive_products(Product, Price) <- products(Product, Price), Price > ?threshold.", "outputPredicate": "expensive_products"}'
+
+# 3. Evaluate with parameters
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalog/evaluate" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"program": "@input(\"products\").\n@output(\"expensive_products\").\nexpensive_products(Product, Price) <- products(Product, Price), Price > ?threshold.", "params": {"threshold": 100}}'
+```
+
+Replace `YOUR_JWT_TOKEN` and the org/user path with your values.

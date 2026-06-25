@@ -3,8 +3,6 @@ title: "AI Agent"
 description: "A streaming conversational interface that autonomously plans and executes data workflows."
 ---
 
-# AI Agent
-
 The Vadalog AI Agent is a streaming conversational interface that can autonomously plan and execute data workflows — generating Vadalog programs, running concepts, inspecting results, and iterating based on outcomes.
 
 ## Chat
@@ -80,6 +78,12 @@ Clear the conversation history for a session.
 POST /api/v1/agent/{project_id}/reset
 ```
 
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_id` | string | Yes | The ID of the project |
+
 **Request Body:**
 
 | Field | Type | Required | Description |
@@ -96,5 +100,7 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/agent/my-
 ```
 
 <Tip>
+**Session Management**
+
 Sessions are maintained server-side and keyed by username + session ID. Use different `session_id` values to run parallel conversations. Sessions are automatically evicted (LRU) when the server reaches capacity.
 </Tip>

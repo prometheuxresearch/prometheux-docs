@@ -3,8 +3,6 @@ title: "Collections"
 description: "Working with arrays, lists, maps, and sets in Vadalog."
 ---
 
-# Collections
-
 Manipulate arrays and maps efficiently in Vadalog programs.
 
 ## Array Operations
@@ -33,6 +31,7 @@ collections:is_empty(arr: array<any>) → boolean
 ```
 
 ```prolog
+% Find all records with empty lists using implicit boolean condition
 emptyList(ID) <- 
     data(ID, List), 
     collections:is_empty(List).
@@ -112,6 +111,8 @@ first_skill(Name, FirstSkill) <-
     FirstSkill = collections:get(Skills, 1).
 ```
 
+---
+
 ## Set Operations on Arrays
 
 ### `collections:union()`
@@ -122,12 +123,26 @@ Combine two arrays, removing duplicates:
 collections:union(a: array<T>, b: array<T>) → array<T>
 ```
 
+```prolog
+combined_skills(Dept, AllSkills) <- 
+    dept_skills(Dept, Skills1), 
+    other_dept_skills(Dept, Skills2), 
+    AllSkills = collections:union(Skills1, Skills2).
+```
+
 ### `collections:difference()`
 
 Get elements in first array but not in second:
 
 ```prolog
 collections:difference(a: array<T>, b: array<T>) → array<T>
+```
+
+```prolog
+unique_skills(Name, UniqueSkills) <- 
+    employee(Name, Skills), 
+    common_skills(CommonSkills), 
+    UniqueSkills = collections:difference(Skills, CommonSkills).
 ```
 
 ### `collections:intersection()`
@@ -137,6 +152,15 @@ Get common elements between two arrays:
 ```prolog
 collections:intersection(a: array<T>, b: array<T>) → array<T>
 ```
+
+```prolog
+shared_skills(Name1, Name2, SharedSkills) <- 
+    employee(Name1, Skills1), 
+    employee(Name2, Skills2), 
+    SharedSkills = collections:intersection(Skills1, Skills2).
+```
+
+---
 
 ## Array Transformations
 
@@ -149,32 +173,57 @@ collections:sort(arr: array<T>) → array<T>
 collections:sort(arr: array<T>, order: string) → array<T>
 ```
 
-The optional second parameter specifies sort order: `"asc"` (default) or `"desc"`.
+The optional second parameter specifies the sort order:
+- `"asc"` - Sort in ascending order (default)
+- `"desc"` - Sort in descending order
 
 ```prolog
+% Sort in ascending order (default)
+sorted_asc(Name, SortedScores) <- 
+    test_scores(Name, Scores), 
+    SortedScores = collections:sort(Scores).
+
+% Sort numbers in ascending order
 data([3, 1, 4, 2]).
-sorted_asc(Result) <- data(List), Result = collections:sort(List, "asc").
+sorted_desc(Result) <- 
+    data(List), 
+    Result = collections:sort(List, "asc").
 % Result: [1, 2, 3, 4]
 
+% Sort strings in descending order
 fruits(["mango", "apple", "zebra", "banana"]).
-sorted_desc(Result) <- fruits(List), Result = collections:sort(List, "desc").
+sorted_strings(Result) <- 
+    fruits(List), 
+    Result = collections:sort(List, "desc").
 % Result: ["zebra", "mango", "banana", "apple"]
 ```
 
 ### `collections:distinct()`
 
-Remove duplicate elements from an array:
+Remove duplicate elements from array:
 
 ```prolog
 collections:distinct(arr: array<T>) → array<T>
 ```
 
+```prolog
+unique_categories(Product, UniqueCategories) <- 
+    product_tags(Product, Tags), 
+    UniqueCategories = collections:distinct(Tags).
+```
+
 ### `collections:remove_nulls()`
 
-Remove all null values from an array:
+Remove all null values from array:
 
 ```prolog
 collections:remove_nulls(arr: array<T>) → array<T>
+```
+
+```prolog
+clean_data(Name, CleanedValues) <- 
+    data_with_nulls(Name, Values), 
+    CleanedValues = collections:remove_nulls(Values).
 ```
 
 ### `collections:shuffle()`
@@ -185,11 +234,19 @@ Randomly shuffle array elements:
 collections:shuffle(arr: array<T>) → array<T>
 ```
 
+```prolog
+randomized_questions(Quiz, RandomOrder) <- 
+    quiz_questions(Quiz, Questions), 
+    RandomOrder = collections:shuffle(Questions).
+```
+
+---
+
 ## Advanced Array Operations
 
 ### `collections:explode()`
 
-Expand an array into multiple rows (one per element):
+Expand array into multiple rows (one per element):
 
 ```prolog
 collections:explode(arr: array<T>) → T
@@ -204,7 +261,7 @@ exploded(Element) <-
 
 ### `collections:flatten()`
 
-Transform an array of arrays into a single array:
+Transforms an array of arrays into a single array:
 
 ```prolog
 collections:flatten(arr: array<T>) → T
@@ -215,7 +272,7 @@ nested_elements([[1, 2], [3, 4]])
 flattened(Element) <- 
     nested_elements(X), 
     Element = collections:flatten(X).
-% Result: [1, 2, 3, 4]
+% Results in a single array: [1, 2, 3, 4]
 ```
 
 ### `collections:slice()`
@@ -235,10 +292,16 @@ slice_example(Result) <-
 
 ### `collections:sub_array()`
 
-Get first N elements from an array:
+Get first N elements from array:
 
 ```prolog
 collections:sub_array(arr: array<T>, length: int) → array<T>
+```
+
+```prolog
+top_three(List, TopThree) <- 
+    ranked_items(List), 
+    TopThree = collections:sub_array(List, 3).
 ```
 
 ### `collections:transform()`
@@ -284,6 +347,8 @@ filter_odd_indices(Filtered) <-
     Filtered = collections:filter([10, 20, 30, 40], "(x, i) -> i % 2 != 0").
 % Result: [20, 40]
 ```
+
+---
 
 ## Map Operations
 

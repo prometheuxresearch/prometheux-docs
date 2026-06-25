@@ -1,0 +1,127 @@
+---
+title: Connect Claude Code
+description: Connect Claude Code (Anthropic's terminal-based coding agent) to Prometheux via the MCP server.
+---
+
+Connect [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Anthropic's terminal-based coding agent) to Prometheux using the MCP server. This guide covers both the local and remote setup options.
+
+<Tip>
+**Recommended: Use the Local Server**
+
+We recommend using the **local MCP server** (stdio) with Claude Code for the most reliable experience. It avoids the OAuth browser flow and passes credentials directly.
+</Tip>
+
+## Prerequisites
+
+- **Claude Code** installed (`npm install -g @anthropic-ai/claude-code`)
+- **Prometheux credentials** (username, organization, API token)
+
+## Setup (Local Server — Recommended)
+
+### 1. Install the MCP Package
+
+If you haven't already, install `prometheux-mcp`:
+
+**macOS:**
+```bash
+brew install pipx
+pipx ensurepath
+pipx install prometheux-mcp
+```
+
+**Windows/Linux:**
+```bash
+pip install pipx
+pipx ensurepath
+pipx install prometheux-mcp
+```
+
+### 2. Add the Server to Claude Code
+
+```bash
+claude mcp add --scope user \
+  -e PROMETHEUX_TOKEN='your_token_here' \
+  -e PROMETHEUX_USERNAME='your_username' \
+  -e PROMETHEUX_ORGANIZATION='your_organization' \
+  -- prometheux /Users/YOUR_USERNAME/.local/bin/prometheux-mcp --url https://api.prometheux.ai
+```
+
+<Tip>
+**Finding Your Path**
+
+Run `which prometheux-mcp` (macOS/Linux) or `where prometheux-mcp` (Windows) to find the correct path.
+</Tip>
+
+### 3. Verify the Connection
+
+Restart Claude Code and check the server status:
+
+```bash
+claude mcp list
+```
+
+You should see `prometheux` listed as connected. You can also type `/mcp` inside a Claude Code session to see all server statuses.
+
+## Alternative: Remote Server
+
+You can also use the remote server with OAuth authentication:
+
+```bash
+claude mcp add --transport http --scope user prometheux https://api.prometheux.ai/px-remote-mcp-server
+```
+
+This will trigger an OAuth browser flow when Claude Code connects. See the [Remote MCP Server](/integrations/mcp/remote) page for details.
+
+## Claude Code in Claude Desktop
+
+If you use Claude Code within the Claude Desktop app (not the terminal), it shares the Desktop app's MCP connectors. You can either:
+
+- **Use the remote connector** via Settings → Connectors → Add custom connector (see [Connect Claude](/integrations/mcp/claude))
+- **Use the local server** by configuring `claude_desktop_config.json` (see [Local MCP Server configuration](/integrations/mcp/local#2-configure-claude-desktop))
+
+Both methods make the Prometheux tools available to Claude Code running inside the Desktop app.
+
+## Usage
+
+Once connected, interact naturally with Claude Code. It will automatically use the Prometheux MCP tools when relevant.
+
+<Tip>
+**Example Conversations & Available Tools**
+
+See the [MCP overview page](/integrations/mcp/overview#available-tools) for example conversations and a complete list of available tools.
+</Tip>
+
+## Managing the Server
+
+```bash
+# List all configured servers
+claude mcp list
+
+# Remove the server
+claude mcp remove prometheux
+```
+
+## Troubleshooting
+
+### Server shows as "failed" in `/mcp`
+
+**Solution:**
+- Verify the path to `prometheux-mcp` is correct — run `which prometheux-mcp` in your terminal
+- Check that your credentials are valid and the token hasn't expired
+- Remove and re-add the server: `claude mcp remove prometheux` then add it again
+- Run `claude --debug` to see detailed error logs
+
+### Tools not being used
+
+**Solution:**
+- Type `/mcp` in Claude Code to verify the server is connected
+- Be more explicit in your query: "Use the prometheux tools to list concepts in project X"
+- Restart Claude Code for changes to take effect
+
+### "command not found" error
+
+**Solution:**
+- Use the full path to `prometheux-mcp` instead of just the command name
+- Ensure `pipx ensurepath` was run and your shell profile was reloaded
+
+For general troubleshooting, see the [Local MCP Server troubleshooting](/integrations/mcp/local#troubleshooting) section.

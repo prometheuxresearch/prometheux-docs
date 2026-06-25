@@ -1,8 +1,132 @@
 ---
 title: "Settings"
-description: "Coming soon."
+description: "Manage your Prometheux configuration: authentication token, LLM provider and model selection, and usage limits."
 ---
 
-# Settings
+Settings hold the configuration that controls how the Prometheux platform behaves for you: your authentication token, which LLM provider and model power AI features, embedding settings, and the limits that apply to your account.
 
-This page is coming soon. Content will be added here.
+Configuration is **user-scoped** by default and is persisted on the server, so it follows you across sessions. The same values can be read and written through the [Python SDK](/integrations/python-sdk) and the [REST API](/integrations/rest-api) — see the full [Config reference](/integrations/config) for every function and endpoint.
+
+---
+
+## Authentication token
+
+The `PMTX_TOKEN` authenticates you against the platform. You can set it through an environment variable or through configuration:
+
+```python
+import os
+
+os.environ['PMTX_TOKEN'] = 'pmtx_token'
+```
+
+```python
+import prometheux_chain as px
+
+px.config.set("PMTX_TOKEN", "pmtx_token")
+```
+
+---
+
+## LLM and model selection
+
+Prometheux uses LLMs to generate human-readable `explanations`, `translations` of Vadalog rules, `graph rag`, and LLM output `validation` tasks. By default, no LLM is configured.
+
+To enable an LLM, set the provider and supply an API key:
+
+```python
+import prometheux_chain as px
+
+# Choose a provider
+px.config.set("LLM_PROVIDER", "OpenAI")
+
+# Provide the API key
+px.config.set("LLM_API_KEY", "your_api_key")
+```
+
+You can also select the model version and tune generation parameters:
+
+```python
+px.config.update_config({
+    "LLM_PROVIDER": "OpenAI",
+    "LLM_API_KEY": "your_openai_api_key",
+    "LLM_VERSION": "gpt-4o",
+    "LLM_TEMPERATURE": 0.7,
+    "LLM_MAX_TOKENS": 4000
+})
+```
+
+---
+
+## Default configuration values
+
+The following defaults apply unless you override them:
+
+| Key | Default Value | Description |
+|-----|---------------|-------------|
+| `PMTX_TOKEN` | None | Prometheux authentication token |
+| `LLM_API_KEY` | None | LLM API key |
+| `LLM_PROVIDER` | OpenAI | LLM provider name |
+| `LLM_VERSION` | gpt-4o | LLM model version |
+| `LLM_TEMPERATURE` | 0.50 | LLM temperature setting |
+| `LLM_MAX_TOKENS` | 2000 | Maximum tokens for LLM responses |
+| `EMBEDDING_MODEL_VERSION` | text-embedding-3-large | Embedding model version |
+| `EMBEDDING_DIMENSIONS` | 2048 | Embedding dimensions |
+
+---
+
+## Saving and loading configuration
+
+User configuration is persisted on the server and can be saved or loaded at any time.
+
+```python
+import prometheux_chain as px
+
+# Save user-scoped configuration
+px.save_user_config(config_data={"theme": "dark"}, scope="user")
+
+# Load it back
+config = px.load_user_config(scope="user")
+```
+
+The equivalent REST endpoints are `POST /api/v1/users/save-config` and `GET /api/v1/users/load-config`. See the [Config reference](/integrations/config) for request and response details.
+
+---
+
+## Usage and limits
+
+Your account has usage limits for LLM and embedding calls. You can check the current usage and remaining quota:
+
+```bash
+GET /api/v1/users/usage-status
+```
+
+A typical response:
+
+```json
+{
+  "data": {
+    "llm_usage": {
+      "current": 150,
+      "limit": 1000,
+      "remaining": 850
+    },
+    "embedding_usage": {
+      "current": 50,
+      "limit": 500,
+      "remaining": 450
+    }
+  },
+  "message": "Usage status retrieved successfully",
+  "status": "success"
+}
+```
+
+Your role on the platform can be retrieved with `GET /api/v1/users/get-role`.
+
+---
+
+## Learn more
+
+- [Config reference](/integrations/config) — complete list of configuration functions, endpoints, and parameters
+- [Python SDK](/integrations/python-sdk) — using `prometheux_chain` to manage configuration programmatically
+- [REST API](/integrations/rest-api) — HTTP endpoints for configuration and user management
