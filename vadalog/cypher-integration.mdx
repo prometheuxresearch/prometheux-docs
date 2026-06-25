@@ -89,7 +89,7 @@ Both forms compose: an inline Cypher body that references a Neo4j-bound predicat
 <Note>
 **Cypher cells in the Prometheux platform**
 
-The Prometheux [platform](/platform/projects) authors programs as **cells**, each with a type — `vadalog`, `cypher`, `sql`, or `python`. In a **Cypher cell** you write the query directly, without wrapping it in a Vadalog rule head:
+The Prometheux [platform](/platform/projects) authors programs as **cells**, each with a type — `vadalog`, `cypher`, `sql`, or `python` (set via the [concept editor toolbar](/platform/concept-editor#toolbar)). In a **Cypher cell** you write the query directly, without wrapping it in a Vadalog rule head:
 
 ```cypher
 MATCH (a:Person)-[:KNOWS]->(b:Person)
