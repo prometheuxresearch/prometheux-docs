@@ -3,8 +3,6 @@ title: "Remote MCP Server"
 description: "A cloud-hosted MCP server that enables any MCP-compatible AI agent to interact with Prometheux."
 ---
 
-# Remote MCP Server
-
 The remote MCP server (`px-remote-mcp-server`) is a cloud-hosted [Model Context Protocol](https://modelcontextprotocol.io) server that enables any MCP-compatible AI agent to interact with Prometheux — without needing to install anything locally.
 
 It uses OAuth 2.0 authentication with PKCE, so users log in through a browser and their credentials are never exposed to the AI client.
@@ -25,6 +23,8 @@ It uses OAuth 2.0 authentication with PKCE, so users log in through a browser an
 - Suitable for production cloud deployments
 
 <Info>
+**Looking for a Simpler Local Setup?**
+
 If you prefer a local installation that doesn't require a deployed server, check out the [Local MCP Server](/integrations/mcp/local) documentation.
 </Info>
 
@@ -82,8 +82,17 @@ We provide step-by-step guides for connecting specific MCP clients:
 | Client | Guide |
 |--------|-------|
 | **Claude** (Desktop & Web) | [Connect Claude](/integrations/mcp/claude) |
+| **ChatGPT** (OpenAI) | [Connect ChatGPT](/integrations/mcp/chatgpt) |
 | **Genie Code** (Databricks) | [Connect Genie Code](/integrations/mcp/databricks-genie) |
-| **Snowflake Cortex** | For more info, ask your Prometheux rep |
+| **Snowflake Cortex** (Cortex Code & Intelligence) | [Connect Snowflake Cortex](/integrations/mcp/snowflake-cortex) |
+| **Cursor** | [Connect Cursor](/integrations/mcp/cursor) |
+| **Claude Code** (Terminal CLI) | [Connect Claude Code](/integrations/mcp/claude-code) |
+
+<Tip>
+**Coding Agents**
+
+For coding agents like **Cursor** and **Claude Code**, we recommend using the [Local MCP Server](/integrations/mcp/local) instead. It uses stdio transport with direct credentials, which avoids the OAuth browser flow and is more reliable in IDE and terminal environments.
+</Tip>
 
 For other MCP-compatible clients, use the [Server Details](#server-details) and [OAuth Endpoints](#oauth-endpoints) above to configure the connection manually.
 

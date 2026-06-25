@@ -1,0 +1,758 @@
+---
+title: Thinking in Vadalog
+description: A conceptual guide to thinking declaratively and recursively when modelling business logic in Vadalog.
+---
+
+Vadalog can change how you think about modelling your business logic because its
+expressiveness doesn't force you into thinking about the underlying system or
+data structures.
+
+It encourages you to think declaratively and recursively, which might not come
+naturally at first, but are skills that you can develop over time. Eventually,
+you'll see recursion everywhere, and see how thinking declaratively actually
+simplifies your ruleset.
+
+## Declaring your intent
+
+At the heart of any Ontology is a set of business rules. Unlike traditional
+business intelligence and data processing, we don't write Vadalog as imperative
+commands: first get data from this place, then, join it with data from this
+other place.
+
+Instead, we declare what we want the output to be, and let the system perform
+the necessary commands to arrive at our desired output.
+
+Let's say you want to find out whether a user on your platform is "engaged", and
+the way your company has decided this (i.e. your "business logic"), is that the
+user must have performed at least 10 actions on your system within the past 30
+days.
+
+Imperatively, you might say: for a given user, find all events where the userId
+is user.id and event.date < 30 days. Then count the number of events and return
+`true` if that count is > 10:
+
+```javascript showLineNumbers title="Imperative pseudocode"
+var startTime = new Date().valueOf() - 30 * 24 * 60 * 60;
+var sqlStatement = sql`
+  SELECT *, count("Events".eventId) FROM "Events"
+  WHERE "Events".timestamp > ${startTime} 
+  GROUP BY "Events".userId, "Events".eventId;`;
+var countsByUser = await databaseEngine.query(sqlStatement);
+var isEngaged = countsByUser.filter((row) => row[1] > 10);
+```
+
+Declaratively, we simply say: a user is engaged if they have 10 or more events
+in the past 30 days
+
+```prolog showLineNumbers
+eventsCountSince(UserId, SinceTime, Count) <-
+  event(EventId, UserId, Timestamp),
+  Timestamp > SinceTime,
+  Count = mcount(EventId).
+
+isEngaged(UserId) <-
+  eventsCountSince(UserId, now() - 30 * 24 * 60 * 60, Count),
+  Count > 10.
+```
+
+Someone at your company who might not know how to code or write database queries
+can look at your Vadalog program, and reason about what it is trying to do, and
+even change it to fit their needs, without having to learn much syntax.
+
+## Start by modelling business logic
+
+<Tip>
+**It helps to know Vadalog!**
+
+The rest of this page assumes you a general
+understanding of Vadalog syntax, but even if you don't, it should be easy enough
+to follow along!
+</Tip>
+
+When writing an ontology, it helps to start by thinking of the business rules
+you wish to model. What logic do you currently have that's represented by some
+code, performed by some process or workflow, or trapped in the head of a subject
+matter expert?
+
+Let's take the case of company control:
+
+> A company X controls a company Y, if:
+>
+> 1. X directly owns more than 50% of Y; or,
+>
+> 1. X controls a set of companies that jointly, and possibly together with X
+>    itself, own more than 50% of Y.
+
+The goal of this model is to determine which companies controls another, whether
+via direct or indirect ownership.
+
+It helps to think of a concrete example first before abstracting it, so let's
+take the congolomerate Yum! Brands, with its many brands such as KFC, Pizza Hut
+and Taco Bell. We want to know all the companies that Yum! controls.
+
+Let's start by writing out some facts -- these are ground truths that are based
+in real data that will eventually come from our database.
+
+```prolog showLineNumbers
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+```
+
+We'll add a statement that models our rule 1 from the facts, introducing the
+concept of "control". It helps to think of relationships between entities as
+verbs, such as "owns", "works at", "parents", or "controls".
+
+```prolog showLineNumbers {4-5}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+
+controls("Yum", "KFC") <- owns("Yum", "KFC", 0.6).
+controls("Yum", "Pizza Hut") <- owns("Yum", "Pizza Hut", 0.7).
+```
+
+Let's make these statements into a generic rule, replacing "KFC" and "Pizza Hut"
+with the variable `SomeBrand`, and the number of shares as the variable
+`Shares`.
+
+```prolog showLineNumbers {4-5}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+
+% Yum! controls some brand if it owns more than 50% of the shares of that brand.
+controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
+```
+
+Let's introduce a new company called `FastFoodsGroup`, and some ownership facts.
+FastFoodsGroup owns 45% of McDonalds, and Yum owns 70% of FastFoodsGroup.
+
+```prolog showLineNumbers {3-5}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Yum! controls some brand if it owns more than 50% of the shares of that brand.
+controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
+```
+
+Yum also owns 10% of McDonalds, but simply according to rule 1, it does not
+control McDonalds as it's only a minority shareholder. Therefore, we will need
+to model the indirect ownership of McDonalds by Yum! via the intermediary
+FastFoodsGroup, using rule 2:
+
+```prolog showLineNumbers {10-14}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Yum! controls some brand if it owns more than 50% of the shares of that brand.
+controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
+
+% Yum! controls McDonalds if it owns more than 50% an intermediary FastFoodsGroup,
+% who in turn owns more than 50% of McDonalds
+controls("Yum", "McDonalds") <- controls("Yum", "FastFoodsGroup"),
+                                owns("FastFoodsGroup", "McDonalds", Shares),
+                                Shares > 0.5.
+```
+
+<Tip>
+**Naming atoms**
+
+You can use the same atom name as the head of different rules with different
+bodies. If the atom shares the same number of arguments, Prometheux will consider
+them as 2 separate branches of the same logical chain.
+
+That is, when it encounters a rule that has `controls` in the body, it will
+pursue both `controls` definitions on lines 8 _**and**_ 12 to their logical conclusions.
+</Tip>
+
+More generally:
+
+```prolog showLineNumbers {10-14}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Yum! controls some brand if it owns more than 50% of the shares of that brand.
+controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
+
+% Yum! controls some brand if it controls an intemediary who in turn owns more
+% than 50% of that brand.
+controls("Yum", SomeBrand) <- controls("Yum", Intermediary),
+                              owns(Intermediary, SomeBrand, Shares),
+                              Shares > 0.5.
+```
+
+Company ownership rule 2 states that X controls Y if it has joint ownership of more than
+50% of Y. That means that we'll need to sum up the ownership shares via all
+intermediaries.
+
+So, instead of determining the condition `Shares > 0.5` for each of our current
+rules, we should sum up the shares first before applying this "control"
+condition. To do that, we consider all possible intermediaries, and keep track
+of the running sum while we step through each intermediary. How do we do that?
+
+## Work back from the end goal
+
+It always helps to think of working backwards from your end goal: Yum! controls
+some brand, if it controls directly or indirectly, more than 50% of its shares.
+Let's use the verb phrase `has_shares` to represent this.
+
+```prolog showLineNumbers {16-19}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Yum! controls some brand if it owns more than 50% of the shares of that brand.
+controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
+
+% Yum! controls some brand if it controls an intemediary who in turn owns more
+% than 50% of that brand.
+controls("Yum", SomeBrand) <- controls("Yum", Intermediary),
+                              owns(Intermediary, SomeBrand, Shares),
+                              Shares > 0.5.
+
+% Yum! controls some brand if its joint ownership of that company's shares is
+% above 50%.
+controls("Yum", SomeBrand) <- has_shares("Yum", SomeBrand, Shares),
+                              Shares > 0.5.
+```
+
+Since we've created this intermediate calculation `has_shares`, we should
+rephrase our 2 existing rules by dropping the condition (since that now happens
+later on line 19), and moving the `Shares` variable into the head predicate so 
+that we can keep track of its value.
+
+```prolog showLineNumbers {8,12-14}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Yum! has `Shares` amount of a brand if it owns that amount of shares in the brand.
+has_shares("Yum", SomeBrand, Shares) <- owns("Yum", SomeBrand, Shares).
+
+% Yum! has `Shares` amount of a brand if it controls an intermediary who has that
+% amount of shares in the brand.
+has_shares("Yum", Intermediary, SomeBrand, Shares) <-
+  controls("Yum", Intermediary),
+  owns(Intermediary, SomeBrand, Shares).
+
+% Yum! controls some brand if its joint ownership of that company's shares is
+% above 50%.
+controls("Yum", SomeBrand) <- has_shares("Yum", SomeBrand, Shares),
+                              Shares > 0.5.
+```
+
+Finally we sum through all the intermediaries by adding a summation rule, and
+replacing the body of our last rule to determine control based on the summed
+shares.
+
+<Note>
+When performing arithmetic across recursion, we need to use the recursion-specific 
+[aggregators](/vadalog/expressions/aggregations),
+which keep track of the aggregation (in this case "sum") across each recursive call.
+</Note>
+
+```prolog showLineNumbers {16-20,24}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Yum! has `Shares` amount of a brand if it owns that amount of shares in the brand.
+has_shares("Yum", SomeBrand, Shares) <- owns("Yum", SomeBrand, Shares).
+
+% Yum! has `Shares` amount of a brand if it controls an intermediary who has that
+% amount of shares in the brand.
+has_shares("Yum", Intermediary, SomeBrand, Shares) <-
+  controls("Yum", Intermediary),
+  owns(Intermediary, SomeBrand, Shares).
+
+% Sum all the direct (line 8) and indirect shares (lines 12-14) of some brand
+% that Yum has.
+has_total_shares("Yum", SomeBrand, TotalShares) <-
+  has_shares("Yum", Intermediary, SomeBrand, Shares),
+  TotalShares = msum(Shares).
+
+% Yum! controls some brand if its joint ownership of that company's shares is
+% above 50%.
+controls("Yum", SomeBrand) <- has_total_shares("Yum", SomeBrand, Shares),
+                              Shares > 0.5.
+```
+
+You'll notice that in our new `has_total_shares` rule, we've dropped `Intermediary` from the head
+of the rule and replaced it with `TotalShares`. Since we only care about the
+total sum of the shares, and we've already used the [`msum`
+aggregation](/vadalog/expressions/aggregations) to the joint shares for any given intermediary to
+our running total, we no longer need the identity of
+the intermediary.
+
+But this program will fail to run! The eagle eyed will notice that we actually
+have two definitions of `has_shares`, one with 3 arguments, and one with 4.
+
+Because the arity of these two head atoms is different, Prometheux will treat
+them as separate predicates, as if you had named them different things.
+
+To resolve this, we simply force line 8 to have 4 arguments, by adding an [anonymous
+variable `_`](/vadalog/language-primitives#anonymous-variables) into the 2nd position. This argument is never processed anyway, so
+you could call it anything you want and it would be ignored.
+
+```prolog showLineNumbers {8}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Yum! has `Shares` amount of a brand if it owns that amount of shares in the brand.
+has_shares("Yum", _, SomeBrand, Shares) <- owns("Yum", SomeBrand, Shares).
+
+% Yum! has `Shares` amount of a brand if it controls an intermediary who has that
+% amount of shares in the brand.
+has_shares("Yum", Intermediary, SomeBrand, Shares) <-
+  controls("Yum", Intermediary),
+  owns(Intermediary, SomeBrand, Shares).
+
+% Sum all the direct (line 8) and indirect shares (lines 12-14) of some brand
+% that Yum has.
+has_total_shares("Yum", SomeBrand, TotalShares) <-
+  has_shares("Yum", Intermediary, SomeBrand, Shares),
+  TotalShares = msum(Shares).
+
+% Yum! controls some brand if its joint ownership of that company's shares is
+% above 50%.
+controls("Yum", SomeBrand) <- has_total_shares("Yum", SomeBrand, Shares),
+                              Shares > 0.5.
+```
+
+<Warning>
+**Atoms with the same name**
+
+Prometheux will consider the head atom in different rules as separate branches
+of the same rule only if they share the same number of arguments.
+
+If they don't, Prometheux will consider them as separate rules altogether, which
+will often result in unexpected output.
+
+The following are considered different, and not 2 branches of the same rule!
+
+```
+someHead(A) <- someBody().
+someHead(A, B) <- someBody().
+
+ruleOne(A) <- someHead(A).
+ruleTwo(A, B) <- someHead(A, B).
+```
+
+`ruleOne` will only activate `someHead(A)` and `ruleTwo` will only activate `someHead(A, B)`.
+
+When using an atom name in the body however, you're able to use fewer arguments
+than the number of arguments in the definition of that predicate. Prometheux
+will simply set the remaining variables to be `null.
+
+```
+someHead(A, B, C) <- someBody().
+someHead(A, B, C) <- anotherBody().
+
+ruleOne(A) <- someHead(A). % Equivalent to someHead(A, null, null).
+ruleTwo(A, B) <- someHead(A, B). % Equivalent to someHead(A, B, null).
+```
+
+`ruleOne` and `ruleTwo` are defined by the both `someHead` rules, and each will
+activate both definitions, just with the remaining values being set to `null`.
+</Warning>
+
+Finally, let's make our rules totally generic, and see the entire ownership
+graph by adding an `@output` annotation
+
+```prolog showLineNumbers {30}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Rule 1: Conglomerate has `Shares` amount of a brand if it owns that amount of shares
+% in the brand.
+has_shares(Conglomerate, _, SomeBrand, Shares) <-
+  owns(Conglomerate, SomeBrand, Shares).
+
+% Rule 2: Conglomerate has `Shares` amount of a brand if it controls an intermediary
+% who has that amount of shares in the brand.
+has_shares(Conglomerate, Intermediary, SomeBrand, Shares) <-
+  controls(Conglomerate, Intermediary),
+  owns(Intermediary, SomeBrand, Shares).
+
+% Sum all the direct (line 8-9) and indirect shares (lines 14-16) of some brand
+% that the conglomerate has.
+has_total_shares(Conglomerate, SomeBrand, TotalShares) <-
+  has_shares(Conglomerate, Intermediary, SomeBrand, Shares),
+  TotalShares = msum(Shares).
+
+% Conglomerate controls some brand if its joint ownership of that company's
+% shares is above 50%.
+controls(Conglomerate, SomeBrand) <-
+  has_total_shares(Conglomerate, SomeBrand, Shares),
+  Shares > 0.5.
+
+@output("controls").
+```
+
+The output will be
+
+```prolog
+controls("Yum", "Pizza Hut")
+controls("Yum", "FastFoodsGroup")
+controls("Yum", "KFC")
+controls("Yum", "McDonalds")
+```
+
+Indeed, if we changed a fact that `FastFoodsGroup` owns 20% of `McDonalds`:
+
+```
+owns("FastFoodsGroup", "McDonalds", 0.2).
+```
+
+Then Yum! will no longer control McDonalds since the sum of its direct ownership
+(10%) and its joint ownership via FastFoodGroups (20%) = 30% is less than our
+50% threshold.
+
+```prolog
+controls("Yum", "Pizza Hut")
+controls("Yum", "FastFoodsGroup")
+controls("Yum", "KFC")
+```
+
+## Thinking recursively
+
+You might be wondering, why did we define `has_shares` for Rule 2 to be based on `control`, which is our final output? Doesn't that lead to an infinite loop?
+
+This is a good intuition, and indeed we can write rules that don't do this:
+
+```prolog showLineNumbers title="Non-recursive version of the program" {29}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+
+% Rule 1: Yum! controls a brand if it owns > 50% of the shares in the brand.
+controls(Conglomerate, SomeBrand) <-
+  owns(Conglomerate, SomeBrand, Shares),
+  Shares > 0.5.
+
+% Rule 2: Yum! controls a brand if the sum of its direct shares, and the
+% shares it owns indirectly via any intermediary that it owns > 50% of,
+% is more than 50%.
+controls(Conglomerate, SomeBrand) <-
+  owns(Conglomerate, Intermediary, IntermediaryShares),
+  owns(Intermediary, SomeBrand, JointShares),
+  owns(Conglomerate, SomeBrand, DirectShares),
+  TotalShares = JointShares + DirectShares,
+  IntermediaryShares > 0.5,
+  TotalShares > 0.5.
+
+@output("controls").
+```
+
+Initially, this seems like a good representation of our business rules. There's
+one Vadalog rule each for each business rule.
+
+We've defined 2 branches of `controls`, one for direct ownership, and one for
+indirect ownership. Since we're no longer using recursion, we don't have to use
+the `msum` operator, and can just use the regular `+` operator.
+
+Note, however that we've replicated the >50% shares rule three times in this
+ontology. While it may seem trivial, updating very large ontologies can be very
+prone to human error. Where possible, you always want to have a single source
+of truth for your business rules.
+
+What's more, our company control rules themselves are recursive, so sometimes it's actually easier to think recursively!
+
+### What is recursion
+
+Many systems are naturally recursive: folder directories, contact tracing for
+disease spread, family trees and so on.
+
+When we model a problem we're creating simplified versions of the world.
+Models are simply abstractions of some more complex system. The Vadalog rules that you write in your program help decide what is within the scope of the model, and what you can handwave away for your current calculation.
+
+If we were to trace a family tree, we can keep going up the tree, finding an individual's parents, grandparents, great-grandparents and so on. If we can't abstract away this never-ending relationship, we'd have to model all of humanity just to conceptualise what a family tree is!
+
+For every predicate, the head atom (the thing before `<-`) declares what the rule's
+intention. We can read it as "ignore everything after `<-` for that is an implementation
+detail". We don't care _how_ the rule is implemented just _what_ it represents.
+
+**The head atom is the abstraction of its definition in the rule's body.** Abstractions allow us to ignore how a rule is defined, and simply use it in the current context.
+
+Consider our ontology again:
+
+```prolog showLineNumbers
+has_shares(Conglomerate, _, SomeBrand, Shares) <-
+  owns(Conglomerate, SomeBrand, Shares).
+
+has_shares(Conglomerate, Intermediary, SomeBrand, Shares) <-
+  controls(Conglomerate, Intermediary, IntermediateShares),
+  owns(Intermediary, SomeBrand, Shares).
+
+has_total_shares(Conglomerate, SomeBrand, TotalShares) <-
+  has_shares(Conglomerate, Intermediary, SomeBrand, Shares),
+  TotalShares = msum(Shares).
+
+controls(Conglomerate, SomeBrand) <-
+  has_total_shares(Conglomerate, SomeBrand, Shares),
+  Shares > 0.5.
+```
+
+`controls(Conglomerate, SomeBrand)` is an abstraction over share ownership. All it's saying is that some conglomerate may control some brand. **_How_** we
+define control as a function of owning shares is an implementation detail.
+
+Perhaps in another world, there's a conglomerate who has control over a brand
+by royal decree.
+
+### Structure of a recursive rule
+
+A rule is recursive if its definition tree eventually leads back to itself.
+Recursive rules tend to follow a specific form: they have a recursive definition
+(the part that calls itself), and a base case (the termination condition).
+
+**Recursive Case**
+
+In our example `has_shares`, is defined with `controls`, which in turn is
+defined by `has_total_shares`, which is then defined by `has_shares`. We're able
+to write rules like that because we're relying on the abstraction of `controls`
+to define our `has_shares` rule. `has_shares` can "use" `controls` without
+having to care about how it's defined.
+
+But how do we resolve this infinite loop? At some point, we need to tell a
+recursive programme to stop going in circles.
+
+**Base Case**
+
+This is why we have a base case, or a condition at which we tell the recursion to terminate. For us, this is the rule
+
+```
+has_shares(Conglomerate, _, SomeBrand, Shares) <-
+  owns(Conglomerate, SomeBrand, Shares).
+```
+
+This rule does not call itself; and more importantly, it is defined by a factual
+rule. In most ontologies, base cases for recursive rules are the facts coming from
+your data sources.
+
+In our family tree example, one might (arbitrarily) decide that a base case
+is to consider no further parents beyond great grandparents.
+
+If you come from software engineering, you might be familiar with this function:
+
+```javascript
+function fibonacci(n) {
+  if (n == 0) return 0;
+  if (n == 1) return 1;
+  else return fibonacci(n - 1) + fibonacci(n - 2);
+}
+```
+
+In prometheux, you don't have to define these if-else branches. Since two rules
+with the same head atom are already possible branches of logic, Prometheux
+will intelligently run both branches until they resolve to facts.
+
+**Structuring your program**
+
+What's more, it's actually very intuitive to think recursively--the fact that
+we only consider the joint shares if the conglomerate owns >50% of the intermediary (line 20)
+is exactly Rule 1, just between the conglomerate and the intermediary.
+
+It actually feels more natural to write:
+
+<Tabs>
+  <Tab title="Recursive">
+    ```prolog showLineNumbers {16}
+    owns("Yum", "KFC", 0.6).
+    owns("Yum", "Pizza Hut", 0.7).
+    owns("FastFoodsGroup", "McDonalds", 0.45).
+    owns("Yum", "FastFoodsGroup", 0.7).
+    owns("Yum", "McDonalds", 0.1).
+
+    % Rule 1: Conglomerate controls a brand if it owns > 50% of the shares in the brand.
+    controls(Conglomerate, SomeBrand) <-
+      owns(Conglomerate, SomeBrand, Shares),
+      Shares > 0.5.
+
+    % Rule 2: Conglomerate controls a brand if the sum of its direct shares, and the
+    % shares it owns indirectly via any intermediary that it controls,
+    % is more than 50%.
+    controls(Conglomerate, SomeBrand) <-
+      controls(Conglomerate, Intermediary, IntermediaryShares),
+      owns(Intermediary, SomeBrand, JointShares),
+      owns(Conglomerate, SomeBrand, DirectShares),
+      TotalShares = msum(JointShares) + msum(DirectShares),
+      TotalShares > 0.5.
+
+    @output("controls").
+    ```
+  </Tab>
+  <Tab title="Non-recursive">
+    ```prolog showLineNumbers {16,20}
+    owns("Yum", "KFC", 0.6).
+    owns("Yum", "Pizza Hut", 0.7).
+    owns("FastFoodsGroup", "McDonalds", 0.45).
+    owns("Yum", "FastFoodsGroup", 0.7).
+    owns("Yum", "McDonalds", 0.1).
+
+    % Rule 1: Conglomerate controls a brand if it owns > 50% of the shares in the brand.
+    controls(Conglomerate, SomeBrand) <-
+      owns(Conglomerate, SomeBrand, Shares),
+      Shares > 0.5.
+
+    % Rule 2: Conglomerate controls a brand if the sum of its direct shares, and the
+    % shares it owns indirectly via any intermediary that it owns > 50% of,
+    % is more than 50%.
+    controls(Conglomerate, SomeBrand) <-
+      owns(Conglomerate, Intermediary, IntermediaryShares),
+      owns(Intermediary, SomeBrand, JointShares),
+      owns(Conglomerate, SomeBrand, DirectShares),
+      TotalShares = JointShares + DirectShares,
+      IntermediaryShares > 0.5,
+      TotalShares > 0.5.
+
+    @output("controls").
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+The ontology above gets the same output as our final program above, but it has one gotcha!
+</Warning>
+
+One sneaky bug is that this version of the ontology has (in both versions above)
+is that it only recurs one level deep, on line 16.
+While it treats Rule 1 as the base case for Rule 2, it doesn't actually recur
+for Rule 2 itself.
+
+Consider this dataset:
+
+```prolog showLineNumbers {3,6-7}
+owns("Yum", "KFC", 0.6).
+owns("Yum", "Pizza Hut", 0.7).
+% owns("FastFoodsGroup", "McDonalds", 0.45).
+owns("Yum", "FastFoodsGroup", 0.7).
+owns("Yum", "McDonalds", 0.1).
+owns("FastFoodsGroup", "DeepFriedFoods", 0.9).
+owns("DeepFriedFoods", "McDonalds", 0.45).
+```
+
+We've now extended our knowledge graph so that Yum! Brands and McDonalds are
+actually 2 steps away from each other:
+
+```
+Yum -> FastFoodsGroup -> DeepFriedFoods -> McDonalds.
+```
+
+The output for this program is:
+
+```
+controls("Yum", "Pizza Hut").
+controls("Yum", "KFC").
+controls("Yum", "FastFoodsGroup").
+controls("FastFoodsGroup", "DeepFriedFoods").
+```
+
+The relationship between "Yum" and "McDonalds" is no where to be found.
+
+The output from our original recursive program however, is correct:
+
+```prolog {4,5}
+controls("Yum", "Pizza Hut").
+controls("Yum", "KFC").
+controls("Yum", "FastFoodsGroup").
+controls("Yum", "DeepFriedFoods"). % Yum controls 90%!
+controls("Yum", "McDonalds"). % Yum controls 10% + 45% = 55%
+controls("FastFoodsGroup", "DeepFriedFoods").
+```
+
+What we've done by creating two predicates with the same head as our `@output`,
+is that we've essentially created a union. Instead of defining a rule that functions
+as a base case for recursion, we've created two separate rules and joined
+their outputs together.
+
+A good rule of thumb is to try to keep your output to one atom, and perform
+recursion one level deeper, which is exactly what our orignal ontology has done
+with the `has_shares` rule. `controls` is recursively defined only at the level
+of `has_shares`, and is not itself recursive.
+
+## Convert queries into Vadalog
+
+If you're familiar with relational or graph databases, you might wonder how
+Prometheux can help you connect the dots across different business entities
+that might require multiple joins or hops.
+
+### From SQL to Vadalog
+
+To compose data in relational database management systems (RDBMS), you often
+need to reach around the abstraction of business entities that tables provide.
+Answering complex then requires unweildy joins across many different tables.
+
+A simple way to think in Vadalog, is that multiple body predicates separated by
+commas **are** indeed a join between each predicate. Instead of thinking about
+which tables to join, you simply combine the rules that define the binding to
+the database.
+
+<Tabs>
+  <Tab title="Vadalog">
+    ```prolog showLineNumbers
+    @qbind("controls", "postgresql", "database", "select controller,controllee from controls").
+    @qbind("owns", "postgresql", "database", "select owner,owned,shares from ownership").
+
+    has_shares(Conglomerate, Intermediary, SomeBrand, Shares) <-
+      controls(Conglomerate, Intermediary, IntermediateShares),
+      owns(Intermediary, SomeBrand, Shares).
+    ```
+  </Tab>
+  <Tab title="SQL">
+    ```sql showLineNumbers
+    SELECT 
+      "controls"."controller" AS Congolomerate,
+      "controls"."controllee" AS Intermediary,
+      "ownership"."owned" AS SomeBrand,
+      "ownership"."shares",
+      FROM "ownership" INNER JOIN "controls"
+      ON "controls"."controllee" = "owns"."owner";
+    ```
+  </Tab>
+</Tabs>
+
+## Modelling time
+
+To model time, simply add a time variable to your predicates so that 
+time can flow through your entire program. 
+
+Assuming the `event` predicate is backed by some data with timestamps:
+
+```prolog showLineNumbers
+% These event facts should eventually come from a database, but we handwrite
+% them here as a mock dataset.
+event(1, 1720643380, "hello").
+event(2, 1720643402, "world").
+event(3, 1720643409, ".").
+
+% Initialise the state
+state("", 0).
+
+% Next state is defined by the current state with the next event applied to it.
+state(NewValue, NewTime) <- state(Value, Time), 
+                            event(EventId, EventTime, Payload), 
+                            NewTime = EventTime,
+                            NewValue = Value + Payload,
+                            EventTime > Time.
+```

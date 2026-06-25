@@ -3,8 +3,6 @@ title: "Graph Analytics"
 description: "Transitive closure, degree centrality, and community detection using pure Vadalog rules."
 ---
 
-# Graph Analytics
-
 Prometheux enables powerful graph analytics without requiring a dedicated graph database. You can perform complex graph operations and reasoning over all your relational and NoSQL data sources, making it easy to extract network insights from existing data infrastructure.
 
 For high-performance built-in graph algorithms, see [Graph Functions in Vadalog](/vadalog/graph-analytics). The examples below demonstrate how to implement graph analytics using pure Vadalog rules.
@@ -24,10 +22,10 @@ edge("d","c").
 edge("d","h").
 edge("f","g").
 
-% base case: if there is and edge from the node X to the node Y then there is a path from X to Y
+% base case: if there is and edge from the node X to the node Y then there is a path from X to Y %
 path(X,Y) <- edge(X,Y).
 
-% recursive case: if there is a path from the node X to the node Y and there is an edge from the node Y to the node Z, then there is a path from the node X to the node Z
+% recursive case: if there is a path from the node X to the node Y and there is an edge from the node Y to the node Z, then there is a path from the node X to the node Z %
 path(X,Z) <- path(X,Y),edge(Y,Z).
 
 @output("path").
@@ -78,7 +76,7 @@ The degree centrality is normalized by dividing by `N-1` (where N is the total n
 
 ## Community Detection (Connected Components)
 
-Community detection identifies groups of nodes that are more densely connected to each other than to nodes outside the group. One fundamental approach is finding connected components — groups of nodes where every node is reachable from every other node in the group through a path of edges.
+Community detection identifies groups of nodes that are more densely connected to each other than to nodes outside the group. One fundamental approach is finding connected components—groups of nodes where every node is reachable from every other node in the group through a path of edges.
 
 This example uses Equality Generating Dependencies (EGDs) to merge communities when nodes are connected, effectively computing connected components in an undirected graph:
 

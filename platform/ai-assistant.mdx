@@ -1,8 +1,40 @@
 ---
 title: "AI Assistant"
-description: "Coming soon."
+description: "The AI code assistant that generates, runs, and iterates on Vadalog concepts, plus natural-language and SQL translation."
 ---
 
-# AI Assistant
+Prometheux includes an AI code assistant powered by the **Vadalog AI Agent** — a streaming, conversational interface that can autonomously plan and execute data workflows. Working inside a project, the agent can generate Vadalog programs, run concepts, inspect results, and iterate based on what it finds.
 
-This page is coming soon. Content will be added here.
+## What the agent can do
+
+The agent maintains conversation history within a session, so follow-up messages have full context. In a single turn it can:
+
+- Generate a new Vadalog concept from a natural-language request.
+- Run concepts and read back their results.
+- Propose concept code for you to review and accept.
+- Iterate on a workflow based on the outcomes of the steps it ran.
+
+As the agent works, it streams its activity back: text replies, the tools it is calling, the concept code it proposes, and the results of each step. This drives the tight feedback loop you see in the assistant chat.
+
+For the full request/response contract (the `POST /agent/{project_id}/chat` streaming endpoint, the NDJSON event types such as `tool_start`, `proposal`, `tool_result`, `content`, and `done`, and how to reset a session), see the [Agent API reference](/integrations/api-endpoints/agent).
+
+## Translation helpers
+
+Alongside the conversational agent, Prometheux can translate other inputs into Vadalog so you don't have to write it by hand:
+
+- **Natural language → Vadalog** — describe what you want in plain English. You can reference existing concepts with `@concept_name` so their schemas are used as context for the translation.
+- **SQL → Vadalog** — convert a SQL query into an equivalent Vadalog program.
+- **RDF → Vadalog** — turn RDF data into Vadalog.
+- **OWL → Vadalog** — translate an OWL ontology into Vadalog rules (RDF/XML, Turtle, N3, and N-Triples), optionally saving the result as a concept.
+
+These translations are LLM-powered. For request parameters and response shapes, see the [Vadalingo (Translations) API reference](/integrations/api-endpoints/vadalingo).
+
+## Learn more
+
+- [Agent API](/integrations/api-endpoints/agent) — streaming chat endpoint and event types.
+- [Vadalingo API](/integrations/api-endpoints/vadalingo) — NL/SQL/RDF/OWL to Vadalog translation.
+- [Thinking in Vadalog](/vadalog/thinking-in-vadalog) — how to frame problems the way the language expects.
+
+<Note>
+This page describes the AI assistant capabilities that the agent and translation APIs support. The product UI surface for these features (where the assistant lives in the app, the accept/reject controls for proposals, and any in-app translation buttons) still needs to be documented by a human.
+</Note>

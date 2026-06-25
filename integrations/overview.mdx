@@ -1,0 +1,310 @@
+---
+title: PX APIs
+description: Overview of the ways to interact with the Prometheux platform programmatically — Python SDK, REST API, and MCP integration.
+---
+
+The Prometheux platform provides multiple ways to interact with all platform features programmatically:
+
+- **Python SDK** (`prometheux_chain`): A high-level Python library for seamless integration
+- **REST API**: Direct HTTP endpoints for maximum flexibility and language-agnostic access
+- **MCP Integration**: Connect AI agents to your ontologies via Model Context Protocol
+  - **Local MCP Server** (`prometheux-mcp`): For Claude Desktop with local installation
+  - **Remote MCP Server** (`px-remote-mcp-server`): For any MCP client (Claude, Genie Code, and more) with OAuth
+
+All interfaces provide equivalent functionality—choose the one that best fits your workflow.
+
+## Quick Start
+
+<Tabs>
+  <Tab title="Python SDK">
+
+### Installation
+
+```bash
+pip install --upgrade prometheux_chain
+```
+
+### Configuration
+
+```python
+import prometheux_chain as px
+import os
+
+# Set your authentication token
+os.environ['PMTX_TOKEN'] = 'YOUR_PMTX_TOKEN'
+
+# Configure the backend URL
+px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/{organization}/{username}")
+```
+
+### First API Call
+
+```python
+# Create a new project
+project_id = px.save_project(project_name="my_first_project")
+print(f"Created project: {project_id}")
+```
+
+### Install into Jupyter
+
+To manually install the library in your Jupyter Lab or Jupyter Notebook follow these steps:
+
+1. Create a new notebook with kernel Python and run the following commands in a dedicated cell
+2. Clone the repo
+
+    ```bash
+    !git clone https://github.com/prometheuxresearch/prometheux_chain.git
+    ```
+3. Navigate into the project and install it
+
+    ```bash
+    !cd prometheux_chain && pip install -e .
+    ```
+4. Copy the project into site-packages to allow importing and using it
+
+    ```bash
+    !cd prometheux_chain && cp -r prometheux_chain /opt/app-root/lib/python3.x/site-packages
+    ```
+5. Restart the kernel
+
+To update an existing installation of Prometheux Chain follow these steps:
+
+1. Uninstall the project
+
+    ```bash
+    !pip uninstall prometheux_chain -y
+    ```
+2. Clone the repo if it is not present
+
+    ```bash
+    !git clone https://github.com/prometheuxresearch/prometheux_chain.git
+    ```
+    else update it to the latest changes
+
+    ```bash
+    !cd prometheux_chain && git pull
+    ```
+3. Navigate into the project and install it
+
+    ```bash
+    !cd prometheux_chain && pip install -e .
+    ```
+4. Remove an existing installation if present
+
+    ```bash
+    !rm -r /opt/app-root/lib/python3.x/site-packages/prometheux_chain
+    ```
+5. Copy the project into site-packages to allow importing and using it
+
+    ```bash
+    !cd prometheux_chain && cp -r prometheux_chain /opt/app-root/lib/python3.x/site-packages
+    ```
+6. Restart the kernel
+
+  </Tab>
+  <Tab title="MCP (Claude Desktop)">
+
+### Automated Installation (Recommended)
+
+**macOS/Linux:**
+```bash
+curl -sSL https://raw.githubusercontent.com/prometheuxresearch/px-mcp-server/main/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/prometheuxresearch/px-mcp-server/main/install.ps1" -OutFile "install.ps1"
+.\install.ps1
+```
+
+The script will install everything and configure Claude Desktop automatically.
+
+### Manual Installation
+
+```bash
+pipx install prometheux-mcp
+```
+
+Then add to Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "prometheux": {
+      "command": "/Users/YOUR_USERNAME/.local/bin/prometheux-mcp",
+      "args": ["--url", "https://api.prometheux.ai"],
+      "env": {
+        "PROMETHEUX_TOKEN": "your_token",
+        "PROMETHEUX_USERNAME": "your_username",
+        "PROMETHEUX_ORGANIZATION": "your_org"
+      }
+    }
+  }
+}
+```
+
+<Tip>Run `which prometheux-mcp` to find the exact path on your system.</Tip>
+
+### First Interaction
+
+Restart Claude Desktop and ask:
+
+> "What concepts are available in my project-name project?"
+
+See the [full MCP documentation](/integrations/mcp/local) for detailed setup and usage.
+
+  </Tab>
+  <Tab title="MCP (Remote)">
+
+### Cloud-Hosted with OAuth
+
+The remote MCP server works with any MCP-compatible client — Claude, Genie Code, and more — using OAuth for authentication.
+
+### Server URL
+
+```
+https://api.prometheux.ai/px-remote-mcp-server
+```
+
+### Connect Your Client
+
+We provide step-by-step guides for specific clients:
+
+- **[Claude (Desktop & Web)](/integrations/mcp/claude)** — Add as a custom connector in Claude settings
+- **[Genie Code (Databricks)](/integrations/mcp/databricks-genie)** — Register as an external MCP server
+
+For other MCP clients, see the [Remote MCP Server](/integrations/mcp/remote#server-details) page for OAuth endpoints and connection parameters.
+
+### First Interaction
+
+Once connected, ask your AI agent:
+
+> "What concepts are available in my project-name project?"
+
+The remote server handles authentication and communicates with your Prometheux instance.
+
+See the [full MCP documentation](/integrations/mcp/remote) for detailed setup and troubleshooting.
+
+  </Tab>
+  <Tab title="REST API">
+
+### Base URL
+
+All API endpoints are relative to your Prometheux platform instance:
+
+```
+https://api.prometheux.ai/jarvispy/{organization}/{username}/api/v1/
+```
+
+Where:
+- `{organization}` is your organization identifier
+- `{username}` is your username
+
+### Authentication
+
+All API requests require authentication using a Bearer token:
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+### First API Call
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/save" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "project": {
+      "name": "my_first_project"
+    }
+  }'
+```
+
+  </Tab>
+</Tabs>
+
+## Response Format
+
+All REST API responses follow a consistent format:
+
+```json
+{
+  "data": {},           // Response data (varies by endpoint)
+  "message": "string",  // Human-readable message
+  "status": "success"   // Status: "success" or "error"
+}
+```
+
+The Python SDK automatically handles responses and returns the relevant data directly.
+
+## API Categories
+
+The API is organized into the following categories:
+
+| Category | Description |
+|----------|-------------|
+| [**Config**](/integrations/config) | SDK configuration and LLM setup |
+| [**Data**](/integrations/api-endpoints/data) | Data connection and management |
+| [**Projects**](/integrations/api-endpoints/projects) | Project management |
+| [**Concepts**](/integrations/api-endpoints/concepts) | Concept execution and management |
+| [**Vadalog**](/integrations/api-endpoints/vadalog) | Vadalog program evaluation |
+| [**Rule Inference**](/integrations/api-endpoints/rule-inference) | Schema inference from data sources |
+| [**Dashboards**](/integrations/api-endpoints/dashboards) | Dashboard CRUD |
+| [**Vadalingo**](/integrations/api-endpoints/vadalingo) | NL, SQL, RDF, and OWL to Vadalog translation |
+| [**AI Agent**](/integrations/api-endpoints/agent) | Streaming conversational AI agent |
+
+## Error Handling
+
+<Tabs>
+  <Tab title="Python SDK">
+
+The SDK raises exceptions for errors:
+
+```python
+import prometheux_chain as px
+
+try:
+    result = px.run_concept(project_id="invalid_id", concept_name="test")
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+The REST API uses standard HTTP status codes:
+
+| Code | Description |
+|------|-------------|
+| `200` | Success |
+| `400` | Bad Request (invalid parameters) |
+| `401` | Unauthorized (invalid or missing token) |
+| `500` | Internal Server Error |
+
+Error responses include detailed messages in the response body:
+
+```json
+{
+  "data": null,
+  "message": "Project not found",
+  "status": "error"
+}
+```
+
+  </Tab>
+</Tabs>
+
+## Requirements
+
+### Python SDK
+
+- Python 3.9 or higher
+- Install via pip: `pip install prometheux_chain`
+
+### REST API
+
+- Any HTTP client (curl, Postman, programming language HTTP libraries)
+- Valid JWT authentication token

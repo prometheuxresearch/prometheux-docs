@@ -3,8 +3,6 @@ title: "Snowflake Native App"
 description: "For teams already on Snowflake — install directly from the Marketplace with full data sovereignty."
 ---
 
-# Snowflake Native App
-
 > For teams already on Snowflake — install directly from the Marketplace with
 > full data sovereignty.
 
@@ -374,6 +372,100 @@ USE SCHEMA v1;
 CALL set_compute_pool('high_performance_pool');
 CALL init();
 ```
+
+## Snowflake Cortex AI Assistant
+
+Prometheux can use Snowflake Cortex as its built-in AI assistant, so all LLM
+inference stays within your Snowflake account — no external API keys required.
+
+### Enable Cortex access
+
+When installing or upgrading the app, approve the **IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE**
+permission in the app's **Permissions** tab. This grants the app access to Cortex LLM functions.
+
+If your Snowflake region has limited model availability, also run the following as `ACCOUNTADMIN`:
+
+```sql
+USE ROLE ACCOUNTADMIN;
+
+-- Enable cross-region inference so all Cortex models are available
+-- Use 'AWS_EU' to keep data within EU, or 'ANY_REGION' for full model access
+ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'ANY_REGION';
+```
+
+### Select Cortex in the app
+
+1. Open the Prometheux app and go to **Settings > Chat Model Configuration**
+2. Select **snowflake cortex** as the LLM provider
+3. Choose a model from the dropdown (populated dynamically from your account)
+4. Click **Save**
+
+The AI assistant will now use Snowflake Cortex for all responses. Available
+models depend on your region and cross-region settings — see
+[Snowflake Cortex model availability](https://docs.snowflake.com/en/user-guide/snowflake-cortex/llm-functions)
+for details.
+
+<Tip>
+**No external access needed**
+
+Unlike OpenAI or Azure providers, Cortex requires no external access integration
+or API keys. All inference is handled natively within Snowflake.
+</Tip>
+
+## Cortex Agent Integration (MCP)
+
+The native app includes a built-in MCP server that is automatically registered when
+the platform starts. Cortex Agents and Snowflake Intelligence can discover and invoke
+Prometheux tools (list concepts, run reasoning, query knowledge graphs) without any
+additional setup.
+
+### Verify the MCP server
+
+After `CALL init()` completes, confirm the MCP server is registered:
+
+```sql
+SHOW CUSTOM MCP SERVERS IN APPLICATION prometheux;
+DESC CUSTOM MCP SERVER prometheux.app_public.prometheux_mcp;
+```
+
+### Use with a Cortex Agent
+
+Create an agent that references the native app's MCP server:
+
+```sql
+CREATE AGENT my_prometheux_agent
+  FROM SPECIFICATION $$
+models:
+  orchestration: auto
+instructions:
+  response: "Use Prometheux tools to answer questions about knowledge graphs."
+tools: []
+mcp_servers:
+  - server_spec:
+      name: "PROMETHEUX.APP_PUBLIC.PROMETHEUX_MCP"
+$$;
+
+GRANT USAGE ON AGENT my_prometheux_agent TO ROLE my_role;
+```
+
+The agent will automatically discover Prometheux tools via `tools/list` and invoke
+them as needed.
+
+<Tip>
+**Cortex Code**
+
+The built-in MCP server works with Cortex Agents and Snowflake Intelligence. For
+**Cortex Code** (Snowflake's AI coding assistant), use the
+[external MCP connector](/integrations/mcp/snowflake-cortex) pointing at the
+cloud-hosted Prometheux platform instead.
+</Tip>
+
+<Tip>
+**Available Tools**
+
+See the [MCP overview page](/integrations/mcp/overview#available-tools) for the complete list of
+tools exposed via MCP.
+</Tip>
 
 ## Next Steps
 
