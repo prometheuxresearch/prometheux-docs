@@ -102,20 +102,57 @@ All REST API responses follow a consistent format:
 
 The Python SDK automatically handles responses and returns the relevant data directly.
 
+## Streaming responses
+
+Some endpoints stream their output incrementally — the [AI Agent](/integrations/api-endpoints/agent)
+chat, [Context Layer auto-seed](/integrations/api-endpoints/context-layer#auto-seed-from-data-sources),
+and the concept run-stream. In the SDK these are exposed as **generator
+functions**: iterate over them to consume events as they arrive instead of
+waiting for the whole response.
+
+```python
+import prometheux_chain as px
+
+# Agent chat — each event is a dict with a "type" and "data"
+for event in px.agent_chat(project_id="proj_123", message="Find all transitive suppliers and run it"):
+    if event["type"] == "content":
+        print(event["data"]["chunk"], end="")
+    elif event["type"] == "done":
+        print("\n[done]")
+```
+
+Each yielded event mirrors the NDJSON frames documented on the corresponding API
+Reference page. Streams terminate with a `done` event, or an `error` event if
+something goes wrong mid-stream.
+
 ## API Categories
+
+<Tip>
+For a flat index of **every** `px.<function>` mapped to its endpoint, see the
+[SDK Function Reference](/integrations/sdk-reference).
+</Tip>
 
 The API is organized into the following categories:
 
 | Category | Description |
 |----------|-------------|
-| [**Config**](/integrations/config) | SDK configuration and LLM setup |
-| [**Data Sources**](/integrations/api-endpoints/data) | Data connections and schema inference |
-| [**Projects**](/integrations/api-endpoints/projects) | Project management |
-| [**Concepts**](/integrations/api-endpoints/concepts) | Concept execution and management |
-| [**Vadalog**](/integrations/api-endpoints/vadalog) | Vadalog program evaluation |
-| [**Dashboards**](/integrations/api-endpoints/dashboards) | Dashboard CRUD |
+| [**Config**](/integrations/config) | SDK configuration, LLM setup, and account/usage helpers |
+| [**Authentication**](/integrations/api-endpoints/authentication) | Issue, list, and revoke API tokens |
+| [**Projects**](/integrations/api-endpoints/projects) | Project management, templates, snapshots, create-from-context |
+| [**Project Sharing**](/integrations/api-endpoints/sharing) | Share projects and manage inbox/outbox |
+| [**Concepts**](/integrations/api-endpoints/concepts) | Concept execution, reordering, and management |
+| [**Data Sources**](/integrations/api-endpoints/data) | Data connections, schema inference, file store, joins |
+| [**Ontology**](/integrations/api-endpoints/ontology) | Ontology persistence, node/edge roles, OWL import |
+| [**Knowledge Graph**](/integrations/api-endpoints/knowledge-graph) | Graph building and analytics over concept output |
+| [**Vadalog**](/integrations/api-endpoints/vadalog) | Vadalog program analysis and evaluation |
 | [**Vadalingo**](/integrations/api-endpoints/vadalingo) | NL, SQL, RDF, and OWL to Vadalog translation |
+| [**Dashboards**](/integrations/api-endpoints/dashboards) | Dashboard CRUD |
+| [**Schedules**](/integrations/api-endpoints/schedules) | Automated concept runs on cron or data-change triggers |
+| [**Context Layer**](/integrations/api-endpoints/context-layer) | Agent knowledge base: notes, search, ingestion |
 | [**AI Agent**](/integrations/api-endpoints/agent) | Streaming conversational AI agent |
+| [**Chat History**](/integrations/api-endpoints/chat-history) | Browse and manage agent chat sessions |
+| [**Alerts**](/integrations/api-endpoints/alerts) | Monitoring webhooks and alert reprocessing |
+| [**Compute**](/integrations/api-endpoints/compute) | Compute availability checks |
 
 ## Error Handling
 

@@ -250,7 +250,24 @@ The SDK uses the following default configurations:
 
 Retrieve the current user's role.
 
-> **Python SDK:** Not available in the current SDK. Use the REST API below.
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+role = px.get_role()
+print(role)
+```
+
+**Function Signature**
+
+```python
+def get_role() -> Dict[str, Any]
+```
+
+  </Tab>
+  <Tab title="REST API">
 
 ### HTTP Request
 
@@ -277,13 +294,33 @@ curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/get-
 }
 ```
 
+  </Tab>
+</Tabs>
+
 ---
 
 ### Get Usage Status
 
 Get current API usage statistics and limits.
 
-> **Python SDK:** Not available in the current SDK. Use the REST API below.
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+usage = px.get_usage_status()
+print(usage)
+```
+
+**Function Signature**
+
+```python
+def get_usage_status() -> Dict[str, Any]
+```
+
+  </Tab>
+  <Tab title="REST API">
 
 ### HTTP Request
 
@@ -318,6 +355,142 @@ curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/usag
   "status": "success"
 }
 ```
+
+  </Tab>
+</Tabs>
+
+---
+
+### Get Login Activity
+
+Return the distinct IP addresses that have accessed your workspace, with
+geolocation and access timestamps, most recent first.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+activity = px.get_login_activity()
+print(activity)
+```
+
+**Function Signature**
+
+```python
+def get_login_activity() -> List[Dict[str, Any]]
+```
+
+  </Tab>
+  <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+GET /api/v1/users/login-activity
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/login-activity" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Response
+
+```json
+{
+  "data": [
+    {
+      "ip": "203.0.113.10",
+      "city": "London",
+      "country": "GB",
+      "last_seen": "2026-06-25T09:00:00+00:00"
+    }
+  ],
+  "message": "Login activity retrieved successfully",
+  "status": "success"
+}
+```
+
+  </Tab>
+</Tabs>
+
+---
+
+### List LLM Models
+
+Return the available model names for a given LLM provider. The request body
+carries the provider name plus any provider-specific credentials needed to query
+its model catalog.
+
+<Tabs>
+  <Tab title="Python SDK">
+
+```python
+import prometheux_chain as px
+
+models = px.list_llm_models(provider="OpenAI", api_key="your_api_key")
+print(models)
+```
+
+**Function Signature**
+
+```python
+def list_llm_models(provider: str, **credentials) -> Dict[str, Any]
+```
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | str | Yes | The LLM provider name (e.g. `"OpenAI"`). |
+| `**credentials` | any | No | Provider-specific credentials (e.g. `api_key`). |
+
+  </Tab>
+  <Tab title="REST API">
+
+### HTTP Request
+
+```bash
+POST /api/v1/users/llm-models
+```
+
+### Request body
+
+```json
+{
+  "provider": "OpenAI",
+  "api_key": "your_api_key"
+}
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/llm-models" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{ "provider": "OpenAI", "api_key": "your_api_key" }'
+```
+
+### Response
+
+```json
+{
+  "data": {
+    "provider": "OpenAI",
+    "models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"]
+  },
+  "message": "Models retrieved successfully",
+  "status": "success"
+}
+```
+
+  </Tab>
+</Tabs>
 
 ---
 

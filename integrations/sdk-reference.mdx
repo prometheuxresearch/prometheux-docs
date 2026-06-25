@@ -1,0 +1,236 @@
+---
+title: "SDK Function Reference"
+description: "Every prometheux_chain function, the REST endpoint it calls, and a one-line description — grouped by domain."
+---
+
+This page is the complete index of the `prometheux_chain` Python SDK. Every
+function is re-exported at the top level, so you call it as `px.<function>(...)`:
+
+```python
+import prometheux_chain as px
+
+project_id = px.save_project(project_name="my_project")
+```
+
+Each function is a thin wrapper around a REST endpoint — follow the **Endpoint**
+link to the full reference (parameters, request body, and response shape). Path
+segments like `{project_id}` are supplied as function arguments.
+
+<Note>
+A few functions are **generators** that stream events as they arrive
+(newline-delimited JSON or a WebSocket). They are flagged
+<Icon icon="bolt" /> below — iterate over the return value rather than awaiting a
+single result. See [Streaming responses](/integrations/python-sdk#streaming-responses).
+</Note>
+
+## Config
+
+The `config` object reads and writes local SDK settings (token, backend URL, LLM
+keys). See [Config](/integrations/config) for the full list of keys.
+
+| Function | Description |
+|---|---|
+| `config.get(key, default=None)` | Read a local config value. |
+| `config.set(key, value)` | Set a local config value. |
+| `config.update_config(updates)` | Set multiple config values at once. |
+
+## Projects
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `save_project(...)` | [`POST /projects/save`](/integrations/api-endpoints/projects#save-a-project) | Create or update a project. |
+| `list_projects(...)` | [`GET /projects/list`](/integrations/api-endpoints/projects#list-projects) | List visible projects across scopes. |
+| `load_project(...)` | [`GET /projects/load`](/integrations/api-endpoints/projects#load-a-project) | Load full details for one project. |
+| `copy_project(...)` | [`POST /projects/copy`](/integrations/api-endpoints/projects#copy-a-project) | Duplicate a project. |
+| `list_templates(...)` | [`GET /projects/list-templates`](/integrations/api-endpoints/projects#list-templates) | Browse marketplace templates. |
+| `import_template(...)` | [`POST /projects/import-template`](/integrations/api-endpoints/projects#import-a-template) | Create a project from a template. |
+| `export_project(...)` | [`POST /projects/export-project`](/integrations/api-endpoints/projects#export-a-project) | Serialize a project to a portable payload. |
+| `import_project(...)` | [`POST /projects/import-project`](/integrations/api-endpoints/projects#import-a-project) | Restore a project from a payload. |
+| `export_workspace(...)` | [`POST /projects/export-workspace`](/integrations/api-endpoints/projects#export-workspace) | Export every project in the workspace. |
+| `import_workspace(...)` | [`POST /projects/import-workspace`](/integrations/api-endpoints/projects#import-workspace) | Restore a full workspace. |
+| `create_project_from_context(...)` | [`POST /projects/create-from-context`](/integrations/api-endpoints/projects#create-from-context) | Build a project from text/files via the LLM. |
+| `create_snapshot(...)` | [`POST /projects/snapshots/create`](/integrations/api-endpoints/projects#create-a-snapshot) | Capture a point-in-time snapshot. |
+| `list_snapshots(...)` | [`GET /projects/snapshots/list`](/integrations/api-endpoints/projects#list-snapshots) | List a project's snapshots. |
+| `restore_snapshot(...)` | [`POST /projects/snapshots/restore`](/integrations/api-endpoints/projects#restore-a-snapshot) | Restore a project from a snapshot. |
+| `delete_snapshot(...)` | [`POST /projects/snapshots/delete`](/integrations/api-endpoints/projects#delete-a-snapshot) | Delete a snapshot. |
+| `cleanup_projects(...)` | [`POST /projects/cleanup`](/integrations/api-endpoints/projects#other-operations) | Delete one project or all. |
+
+## Project sharing
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `create_share(...)` | [`POST /projects/share`](/integrations/api-endpoints/sharing#share-a-project) | Share a project as viewer/editor. |
+| `list_shares(...)` | [`GET /projects/share/list`](/integrations/api-endpoints/sharing#list-shares-outbox) | List shares you created (outbox). |
+| `update_share_role(...)` | [`POST /projects/share/update-role`](/integrations/api-endpoints/sharing#update-a-shares-role) | Change a share between viewer/editor. |
+| `revoke_share(...)` | [`POST /projects/share/revoke`](/integrations/api-endpoints/sharing#revoke-a-share) | Revoke a share you granted. |
+| `list_inbox(...)` | [`GET /projects/share/inbox`](/integrations/api-endpoints/sharing#list-inbox) | List shares granted to you (inbox). |
+| `accept_share(...)` | [`POST /projects/share/accept`](/integrations/api-endpoints/sharing#accept-a-share) | Accept a pending share. |
+| `leave_share(...)` | [`POST /projects/share/leave`](/integrations/api-endpoints/sharing#leave-a-share) | Detach from an accepted share. |
+| `sync_inbox(...)` | [`POST /projects/share/sync`](/integrations/api-endpoints/sharing#sync-inbox) | Reconcile local shares with the source of truth. |
+
+## Concepts
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `save_concept(...)` | [`POST /concepts/{project_id}/save`](/integrations/api-endpoints/concepts#save-a-concept) | Create or update a concept. |
+| `list_concepts(...)` | [`GET /concepts/{project_id}/list`](/integrations/api-endpoints/concepts#list-concepts) | List concepts in a project. |
+| `run_concept(...)` | [`POST /concepts/{project_id}/run/{concept_name}`](/integrations/api-endpoints/concepts#run-a-concept) | Run a concept and its dependency chain. |
+| `run_concept_stream(...)` <Icon icon="bolt" /> | `WS /concepts/{project_id}/run-stream/{concept_name}` | Run a concept, streaming progress frames. |
+| `rename_concept(...)` | [`POST /concepts/{project_id}/rename`](/integrations/api-endpoints/concepts#rename-a-concept) | Rename a concept and its dependents. |
+| `reorder_concepts(...)` | [`POST /concepts/{project_id}/reorder`](/integrations/api-endpoints/concepts#reorder-concepts) | Set concept display order. |
+| `fetch_results(...)` | [`GET /concepts/{project_id}/fetch`](/integrations/api-endpoints/concepts#fetch-concept-results) | Read persisted output rows (paginated). |
+| `search_results(...)` | [`POST /concepts/{project_id}/search`](/integrations/api-endpoints/concepts#search-concept-results) | Filter output rows by term/columns. |
+| `get_execution_status(...)` | [`GET /concepts/{project_id}/execution-status`](/integrations/api-endpoints/concepts#single-project) | Latest run status for one project. |
+| `get_execution_statuses(...)` | [`GET /concepts/execution-statuses`](/integrations/api-endpoints/concepts#all-projects-batch) | Run statuses across all projects. |
+| `generate_concept_description(...)` | [`POST /concepts/{project_id}/generate-description`](/integrations/api-endpoints/concepts#other-operations) | LLM-generate a concept description. |
+| `get_concept_description(...)` | [`GET /concepts/{project_id}/description`](/integrations/api-endpoints/concepts#other-operations) | Read/lazily-generate a description. |
+| `llm_analysis(...)` | [`POST /concepts/{project_id}/llm`](/integrations/api-endpoints/concepts#other-operations) | Ask a question over predicate data. |
+| `download_concept(...)` | [`GET /concepts/{project_id}/download`](/integrations/api-endpoints/concepts#other-operations) | Export results to CSV / download a file. |
+| `cleanup_concepts(...)` | [`POST /concepts/{project_id}/cleanup`](/integrations/api-endpoints/concepts#other-operations) | Delete concepts. |
+
+## Data sources & files
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `connect_sources(...)` | [`POST /data/connect`](/integrations/api-endpoints/data#connect-a-data-source) | Register a database/file source. |
+| `list_sources(...)` | [`GET /data/list`](/integrations/api-endpoints/data#list-data-sources) | List registered sources. |
+| `list_sheets(...)` | [`POST /data/list-sheets`](/integrations/api-endpoints/data#list-sheets) | List sheets in a spreadsheet source. |
+| `list_demo_sources(...)` | [`GET /data/demo-sources`](/integrations/api-endpoints/data#demo-sources) | List onboarding demo sources. |
+| `refresh_sources(...)` | [`POST /data/refresh`](/integrations/api-endpoints/data#refresh-sources) | Re-probe and reconcile sources. |
+| `infer_schema(...)` | [`POST /data/infer-schema`](/integrations/api-endpoints/data#infer-schema) | Generate Vadalog binds from a connection. |
+| `preview_datasource(...)` | [`POST /data/preview`](/integrations/api-endpoints/data#preview-data) | Preview rows from a bound source. |
+| `all_pairs_join(...)` | [`POST /data/all-pairs-join`](/integrations/api-endpoints/data#all-pairs-join) | Discover joins across sources. |
+| `upload_file(...)` | [`POST /data/files/upload`](/integrations/api-endpoints/data#upload-file) | Upload a file to `disk/`. |
+| `list_files(...)` | [`GET /data/files/list`](/integrations/api-endpoints/data#list-files) | List files in `disk/`. |
+| `make_directory(...)` | [`POST /data/files/mkdir`](/integrations/api-endpoints/data#make-directory) | Create a directory in `disk/`. |
+| `move_file(...)` | [`POST /data/files/move`](/integrations/api-endpoints/data#move-rename-file) | Move/rename a file or directory. |
+| `delete_files(...)` | [`POST /data/files/delete`](/integrations/api-endpoints/data#delete-files) | Delete files/directories. |
+| `download_file(...)` | [`GET /data/files/download`](/integrations/api-endpoints/data#download-file) | Download a file from `disk/`. |
+| `cleanup_sources(...)` | [`POST /data/cleanup`](/integrations/api-endpoints/data#other-operations) | Remove data sources. |
+
+## Ontology
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `save_ontology(...)` | [`POST /concepts/{project_id}/save-ontology`](/integrations/api-endpoints/ontology#save-the-ontology) | Persist a project's ontology. |
+| `load_ontology(...)` | [`GET /concepts/{project_id}/load-ontology`](/integrations/api-endpoints/ontology#load-the-ontology) | Load a project's ontology. |
+| `update_concept_ontology_type(...)` | [`PATCH /concepts/{project_id}/concepts/{concept_name}/ontology-type`](/integrations/api-endpoints/ontology#set-a-concepts-ontology-type) | Mark a concept as node/edge. |
+| `add_to_lineage(...)` | [`POST /concepts/{project_id}/add-to-lineage`](/integrations/api-endpoints/ontology#add-to-lineage) | Add a node/edge to the lineage. |
+| `describe_ontology(...)` | [`POST /concepts/{project_id}/describe-ontology`](/integrations/api-endpoints/ontology#describe-the-ontology) | LLM-describe an ontology. |
+| `import_owl(...)` | [`POST /concepts/{project_id}/import-owl`](/integrations/api-endpoints/ontology#import-an-owl-ontology) | Import OWL into editor JSON. |
+
+## Knowledge graph
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `build_graph(...)` | [`POST /kgs/{project_id}/build-graph/{output_predicate}`](/integrations/api-endpoints/knowledge-graph#build-a-graph) | Build a graph from an edge predicate. |
+| `run_graph_analytics(...)` | [`POST /kgs/{project_id}/graph-analytics/{output_predicate}`](/integrations/api-endpoints/knowledge-graph#run-graph-analytics) | Run an analytics algorithm on a graph. |
+| `list_graph_functions(...)` | [`GET /kgs/graph-functions`](/integrations/api-endpoints/knowledge-graph#list-graph-functions) | List available analytics functions. |
+| `visualize_concept_lineage(...)` | [`POST /kgs/{project_id}/visualize-concept-lineage`](/integrations/api-endpoints/knowledge-graph#visualize-concept-lineage) | Return the concept dependency DAG. |
+
+## Context layer (knowledge)
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `list_context_notes(...)` | [`GET /knowledge/context`](/integrations/api-endpoints/context-layer#list-notes) | List context notes. |
+| `create_context_note(...)` | [`POST /knowledge/context`](/integrations/api-endpoints/context-layer#create-a-note) | Create a context note. |
+| `get_context_note(...)` | [`GET /knowledge/context/{note_id}`](/integrations/api-endpoints/context-layer#get-a-note) | Read a context note. |
+| `update_context_note(...)` | [`PATCH /knowledge/context/{note_id}`](/integrations/api-endpoints/context-layer#update-a-note) | Update a context note. |
+| `delete_context_note(...)` | [`DELETE /knowledge/context/{note_id}`](/integrations/api-endpoints/context-layer#delete-a-note) | Delete a context note. |
+| `search_context_notes(...)` | [`POST /knowledge/context/search`](/integrations/api-endpoints/context-layer#semantic-search) | Semantic search over notes. |
+| `create_context_notes_from_file(...)` | [`POST /knowledge/context/from-file`](/integrations/api-endpoints/context-layer#ingest-a-file-as-context) | Ingest a file as context notes. |
+| `auto_seed(...)` <Icon icon="bolt" /> | [`POST /knowledge/auto-seed`](/integrations/api-endpoints/context-layer#auto-seed-from-data-sources) | Profile sources, stream observations. |
+| `project_text(...)` | [`GET /knowledge/project/{project_id}/text`](/integrations/api-endpoints/context-layer#render-project-document) | Render the project document. |
+| `interview_template(...)` | `GET /knowledge/interview/template` | Onboarding interview template. |
+| `submit_interview(...)` | `POST /knowledge/interview` | Submit onboarding interview answers. |
+| `onboarding_status(...)` | `GET /knowledge/onboarding-status` | Report onboarding progress. |
+
+## AI agent
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `agent_chat(...)` <Icon icon="bolt" /> | [`POST /agent/{project_id}/chat`](/integrations/api-endpoints/agent#chat) | Stream a conversation with the agent. |
+| `agent_reset(...)` | [`POST /agent/{project_id}/reset`](/integrations/api-endpoints/agent#reset-session) | Clear a session's history. |
+
+## Chat history
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `list_sessions(...)` | [`GET /chat-history/sessions`](/integrations/api-endpoints/chat-history#list-sessions) | List agent chat sessions. |
+| `get_session(...)` | [`GET /chat-history/sessions/{session_id}`](/integrations/api-endpoints/chat-history#get-a-session) | Load a session with messages. |
+| `rename_session(...)` | [`PATCH /chat-history/sessions/{session_id}`](/integrations/api-endpoints/chat-history#rename-a-session) | Rename a session. |
+| `delete_session(...)` | [`DELETE /chat-history/sessions/{session_id}`](/integrations/api-endpoints/chat-history#delete-a-session) | Delete a session. |
+
+## Dashboards
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `list_all_dashboards(...)` | [`GET /dashboards/list`](/integrations/api-endpoints/dashboards#list-all-dashboards) | List dashboards across projects. |
+| `list_dashboards(...)` | [`GET /dashboards/{project_id}/list`](/integrations/api-endpoints/dashboards#list-dashboards-in-a-project) | List dashboards in a project. |
+| `get_dashboard(...)` | [`GET /dashboards/{project_id}/{dashboard_id}`](/integrations/api-endpoints/dashboards#get-a-dashboard) | Load a dashboard. |
+| `save_dashboard(...)` | [`POST /dashboards/{project_id}/save`](/integrations/api-endpoints/dashboards#save-a-dashboard) | Create or update a dashboard. |
+| `delete_dashboard(...)` | [`DELETE /dashboards/{project_id}/{dashboard_id}`](/integrations/api-endpoints/dashboards#delete-a-dashboard) | Delete a dashboard. |
+
+## Schedules
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `create_policy(...)` | [`POST /schedules/{project_id}/policies`](/integrations/api-endpoints/schedules#create-a-policy) | Attach a cron/data-change policy. |
+| `list_policies(...)` | [`GET /schedules/{project_id}/policies`](/integrations/api-endpoints/schedules#list-policies) | List policies in a project. |
+| `get_policy(...)` | [`GET /schedules/{project_id}/policies/{policy_id}`](/integrations/api-endpoints/schedules#get-a-policy) | Load a policy. |
+| `update_policy(...)` | [`PATCH /schedules/{project_id}/policies/{policy_id}`](/integrations/api-endpoints/schedules#update-a-policy) | Update or enable/disable a policy. |
+| `delete_policy(...)` | [`DELETE /schedules/{project_id}/policies/{policy_id}`](/integrations/api-endpoints/schedules#delete-a-policy) | Delete a policy. |
+| `trigger_policy(...)` | [`POST /schedules/{project_id}/policies/{policy_id}/trigger`](/integrations/api-endpoints/schedules#trigger-a-policy-now) | Fire a policy run immediately. |
+| `get_run_history(...)` | [`GET /schedules/{project_id}/policies/{policy_id}/runs`](/integrations/api-endpoints/schedules#run-history) | Read a policy's run history. |
+
+## Alerts
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `get_alert_history(...)` | [`GET /alerts/history`](/integrations/api-endpoints/alerts#alert-history) | List stored alerts. |
+| `reprocess_alert(...)` | [`POST /alerts/{alert_id}/reprocess`](/integrations/api-endpoints/alerts#reprocess-an-alert) | Re-run an alert's concept. |
+
+## Compute
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `check_compute_availability(...)` | [`POST /compute/availability`](/integrations/api-endpoints/compute#check-availability) | Check machine/Databricks availability. |
+
+## Vadalog
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `analyze_program(...)` | [`POST /vadalog/analyze`](/integrations/api-endpoints/vadalog#analyze-a-program) | Inspect a program's predicate structure. |
+| `parse_binds(...)` | [`POST /vadalog/parse-binds`](/integrations/api-endpoints/vadalog#parse-binds) | Separate rules from bind annotations. |
+| `build_bind(...)` | [`POST /vadalog/build-bind`](/integrations/api-endpoints/vadalog#build-a-bind) | Rewrite a bind for a new predicate. |
+| `evaluate_program(...)` | [`POST /vadalog/evaluate`](/integrations/api-endpoints/vadalog#evaluate-a-program) | Evaluate a Vadalog program directly. |
+
+## Vadalingo
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `translate_nl_to_vadalog(...)` | [`POST /vadalingo/{project_id}/translate/nl-to-vadalog`](/integrations/api-endpoints/vadalingo#natural-language-vadalog) | Translate natural language to Vadalog. |
+| `translate_sql_to_vadalog(...)` | [`POST /vadalingo/{project_id}/translate/sql-to-vadalog`](/integrations/api-endpoints/vadalingo#sql-vadalog) | Translate SQL to Vadalog. |
+| `translate_rdf_to_vadalog(...)` | [`POST /vadalingo/{project_id}/translate/rdf-to-vadalog`](/integrations/api-endpoints/vadalingo#rdf-vadalog) | Translate RDF to Vadalog. |
+| `translate_owl_to_vadalog(...)` | [`POST /vadalingo/{project_id}/translate/owl-to-vadalog`](/integrations/api-endpoints/vadalingo#owl-vadalog) | Translate OWL to Vadalog. |
+
+## Account & configuration
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `get_role(...)` | [`GET /users/get-role`](/integrations/config#get-user-role) | Get the caller's role. |
+| `get_usage_status(...)` | [`GET /users/usage-status`](/integrations/config#get-usage-status) | LLM/embedding usage and limits. |
+| `get_login_activity(...)` | [`GET /users/login-activity`](/integrations/config#get-login-activity) | Recent access IPs/sessions. |
+| `list_llm_models(...)` | [`POST /users/llm-models`](/integrations/config#list-llm-models) | List models for an LLM provider. |
+| `save_user_config(...)` | [`POST /users/save-config`](/integrations/config#save-user-config) | Persist server-side user config. |
+| `load_user_config(...)` | [`GET /users/load-config`](/integrations/config#load-user-config) | Load server-side user config. |
+
+## Authentication
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `issue_token(...)` | [`POST /auth/issue-token`](/integrations/api-endpoints/authentication#issue-a-token) | Mint a new API key. |
+| `list_tokens(...)` | [`GET /auth/tokens`](/integrations/api-endpoints/authentication#list-tokens) | List your API keys' metadata. |
+| `revoke_token(...)` | [`POST /auth/revoke`](/integrations/api-endpoints/authentication#revoke-the-current-token) | Revoke the current token. |
+| `revoke_specific_token(...)` | [`POST /auth/revoke/{jti}`](/integrations/api-endpoints/authentication#revoke-a-specific-token) | Revoke a token by ID. |
+| `revoke_all_tokens(...)` | [`POST /auth/revoke-all`](/integrations/api-endpoints/authentication#revoke-all-tokens) | Revoke all your tokens. |
