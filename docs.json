@@ -93,6 +93,8 @@
           "platform/projects",
           "platform/ontology-graph",
           "platform/concepts-and-lineage",
+          "platform/project-workspace",
+          "platform/concept-editor",
           "platform/dashboards",
           "platform/ai-assistant",
           "platform/compute",
