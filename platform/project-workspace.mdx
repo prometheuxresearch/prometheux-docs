@@ -1,0 +1,123 @@
+---
+title: "Project Workspace"
+description: "A tour of the project workspace (the Lineage view) — the Explorer tree, the Concepts and Data library, and the lineage canvas."
+---
+
+Opening a project takes you into the **project workspace** — the Lineage view.
+It has three regions:
+
+- The **Explorer** on the left — the navigation tree of every concept in the project.
+- The **lineage canvas** in the center — a visual graph of how your concepts and data sources depend on one another.
+- The **Library** on the right — two tabs, **Concepts** and **Data**, for browsing what's available to build with.
+
+Clicking a concept opens it in the **editor** — documented in detail on
+[The Concept Editor](/platform/concept-editor).
+
+## The Explorer
+
+The Explorer is your project's table of contents. Toggle it with the **Explorer**
+tab on the far-left edge. Each row is one concept; the icon shows its type:
+
+| Icon | Concept type |
+|---|---|
+| `( )` | Vadalog (logic) |
+| Database | SQL |
+| Share | Cypher |
+| Code | Python |
+
+A small **green dot** next to a concept means it has **unsaved changes**.
+
+<Frame caption="The Explorer tree — every concept in the project, with the header actions (refresh, save all, search, collapse/expand, new cell, new group) along the top.">
+  <img src="/images/app/placeholder.svg" alt="The Explorer tree" />
+</Frame>
+
+### Explorer header actions
+
+| Button | Tooltip | What it does |
+|---|---|---|
+| Refresh | **Refresh concepts** | Reloads the project's concepts and lineage. |
+| Save | **Save all** | Saves every concept with unsaved changes. Highlights when changes are pending. |
+| Search | **Search cells** | Opens a filter box that matches on code, description, and output predicate. |
+| Collapse / Expand | **Collapse all groups** / **Expand all groups** | Folds or unfolds every group at once. |
+| New cell | **New cell** | Creates a new, empty concept. |
+| New group | **New group** | Creates a folder for organizing concepts. |
+
+### Working with concepts in the tree
+
+| Action | How |
+|---|---|
+| Open a concept | **Single-click** it — it opens in the editor. |
+| Rename | **Double-click** it, or right-click → **Rename**. |
+| Create nearby | Right-click → **New cell here**. |
+| Delete | Right-click → **Delete** (asks for confirmation). |
+| Organize into groups | Create a **New group**, then drag concepts in, or use a group's right-click menu (**New cell in …**, **Rename group**, **Delete group**). A count badge shows how many concepts each group holds. |
+
+## The Library — Concepts and Data
+
+The Library on the right edge has two tabs. Click a tab to open it; click it again
+to close. Each tab's header has **Search**, **Collapse all / Expand all**, and
+**Refresh**.
+
+### Concepts tab
+
+Browse every concept in the project (including those defined as ontology nodes) as
+a reference. Each entry is expandable and shows the concept's **fields and types**.
+
+- **Click** an entry to jump to its concept in the editor.
+- **Copy concept** copies the concept's signature — `name(field1, field2, …)` —
+  to your clipboard, ready to paste into a rule.
+
+### Data tab
+
+Browse the data sources connected to your workspace, grouped by location (for
+example **Local Files** and an **S3** bucket). Each source shows its **column
+count** and expands to reveal its schema, row count, and path.
+
+| Action | How |
+|---|---|
+| Inspect a source | Expand it to see columns, types, row count, and location. |
+| Build on a source | **Create concept from this data source** (the **+** button) opens a new concept already bound to that source. |
+| Reuse a source | **Copy predicate signature** copies the source's `name(col1, col2, …)` for use in a rule. |
+| Add a source | Connect new sources from the [Data Sources](/platform/data-connections) page; they appear here automatically. |
+
+<Frame caption="The Library on the Data tab — sources grouped by location (Local Files, S3), each showing its column count and expandable schema. The Concepts / Data tabs are on the right edge.">
+  <img src="/images/app/placeholder.svg" alt="The Data library panel" />
+</Frame>
+
+## The lineage canvas
+
+The center canvas draws your project as a **dependency graph**: each concept is a
+card, each data source is a node, and the edges show what feeds what — this is
+your data lineage at a glance.
+
+- Each concept card shows a **status dot** (running, success, error, or skipped),
+  the concept name, and — if it has fields — an **expand/collapse** chevron.
+- **Click a card** to open that concept in the editor and highlight its upstream
+  dependencies.
+- A card's **three-dot menu** offers **Rename** and **Delete**.
+- **Click a data source node** to open a side panel with two tabs: **Details**
+  (connection info and schema) and **Preview** (a paginated, searchable sample of
+  the data).
+- Use **Collapse all cards / Expand all cards** to fold every card to its title,
+  and the standard zoom / fit controls to navigate large graphs.
+
+<Frame caption="The lineage canvas — concept cards connected by dependency edges, each with a status dot, with a data source node feeding the chain.">
+  <img src="/images/app/placeholder.svg" alt="The lineage canvas" />
+</Frame>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="The Concept Editor" icon="pen-to-square" href="/platform/concept-editor">
+    Every control, tab, and keyboard shortcut in the editor.
+  </Card>
+  <Card title="Concepts & Lineage" icon="diagram-project" href="/platform/concepts-and-lineage">
+    The concepts behind the canvas, and how lineage is captured.
+  </Card>
+  <Card title="Data Sources" icon="database" href="/platform/data-connections">
+    Connect the data that powers your concepts.
+  </Card>
+  <Card title="AI Assistant" icon="robot" href="/platform/ai-assistant">
+    Have the assistant build and run concepts for you.
+  </Card>
+</CardGroup>
