@@ -58,6 +58,7 @@
         "group": "Get Started",
         "pages": [
           "get-started/platform-overview",
+          "get-started/quickstart",
           "get-started/your-first-project",
           {
             "group": "Installation",

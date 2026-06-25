@@ -1,0 +1,240 @@
+---
+title: "Quickstart"
+description: "A hands-on, click-by-click tour of the Prometheux app — from a fresh account to a running project and your first dashboard."
+---
+
+You've created your account. **Now what?**
+
+This guide walks you through the platform end to end, entirely in the web app —
+no code editor, API, or SDK required. By the end you'll have connected data,
+created a project, run your first concept, explored the results, and built a
+dashboard on top of them.
+
+<Note>
+This is the **app walkthrough**. Once you're comfortable clicking around and want
+to learn the Vadalog language itself, continue with
+[Your First Project](/get-started/your-first-project) and the
+[Vadalog Reference](/vadalog/overview).
+</Note>
+
+## Step 1 — Get your bearings
+
+After signing in and completing the **"Complete your profile"** screen, you land
+in your **workspace**. The home screen centers on the **AI Assistant**, and the
+left sidebar is how you move around:
+
+| Sidebar item | Where it takes you | What it's for |
+|---|---|---|
+| **Home** | `/` | The AI Assistant — ask questions or have it build things for you. |
+| **Projects** | `/projects` | Create and open projects (where your work lives). |
+| **Data** | `/datasources` | Connect data sources and upload files. |
+| **Dashboards** | `/dashboards` | Build visualizations over your project output. |
+| **Apps** | `/apps` | Published apps built on your dashboards. |
+| **Settings** | `/settings` | Profile, API keys, models, and preferences. |
+
+<Tip>
+A **Getting Started** checklist lives at the bottom of the sidebar and tracks
+your progress through the first few tasks (connect data, create a project,
+create a dashboard, and more). It's a handy companion to this guide.
+</Tip>
+
+<Frame caption="The workspace on first login — AI Assistant in the center, navigation sidebar on the left, and the Getting Started checklist at the bottom of the sidebar.">
+  <img src="/images/app/placeholder.svg" alt="Prometheux workspace home" />
+</Frame>
+
+## Step 2 — Connect your data
+
+Open **Data** (`/datasources`) from the sidebar. This page has two tabs:
+**Sources** (database connections) and **Files** (uploads).
+
+<Steps>
+  <Step title="Open the connection dialog">
+    Click **Add Data Source**. The **"Add your data source"** dialog opens with a
+    searchable, categorized list of connectors — **Relational Databases**
+    (PostgreSQL, MySQL, SQL Server, Oracle, …), **Cloud Services** (Snowflake,
+    Databricks, BigQuery, Redshift, …), **NoSQL** (MongoDB, Neo4j),
+    **Vector Stores**, and **File Formats** (CSV, JSON, Parquet, Excel, …).
+  </Step>
+  <Step title="Pick a connector and fill in the details">
+    Select your source type and complete the connection form. Fields vary by
+    type — for example, Snowflake asks for **Username**, **Password**,
+    **Account URL**, **Database**, and an optional **Warehouse**; PostgreSQL asks
+    for **Host**, **Port**, **Database**, **Username**, and **Password**.
+  </Step>
+  <Step title="No data handy? Use a demo source">
+    On a fresh workspace, expand **"Available px-datasources — no setup needed"**
+    and pick a read-only Prometheux dataset. It opens the connection form
+    pre-filled — just review and connect, so you can explore the platform before
+    wiring up your own systems.
+  </Step>
+  <Step title="Or upload a file">
+    Switch to the **Files** tab, click **Upload**, and choose a CSV, Excel, or
+    other supported file. Each uploaded file gets a **Connect** button that
+    registers it as a data source. (Excel workbooks let you pick which sheets to
+    connect.)
+  </Step>
+</Steps>
+
+Once connected, your source appears in the **Sources** list with its record and
+column (feature) counts. Use **Preview** to inspect the data in a paginated,
+searchable table, and **Run** to use it inside a project.
+
+<Frame caption="The 'Add your data source' dialog — categorized connectors with a search box, and the 'Available px-datasources' demo section expanded.">
+  <img src="/images/app/placeholder.svg" alt="Add data source dialog" />
+</Frame>
+
+## Step 3 — Create a project
+
+A **project** is your workspace for turning data into answers — it holds your
+concepts, ontology, and dashboards.
+
+Open **Projects** (`/projects`). On a new account you'll see
+*"It looks like you don't have any projects yet."*
+
+<Steps>
+  <Step title="Start a new project">
+    Click **New Project** (top-right). In the dialog, stay on the **Create** tab
+    and fill in:
+    - **Name** — e.g. *Company Ownership*
+    - **Description** *(optional)*
+    - **Context** *(optional)* — a few notes about the project's goal; the AI
+      Assistant reads this on every turn.
+    - **Scope** — leave as **User Scope**.
+  </Step>
+  <Step title="Create it">
+    Click **Create**. You're taken straight into the **project editor**, opened
+    on the **Lineage** view.
+  </Step>
+</Steps>
+
+<Tip>
+**In a hurry?** If a **Templates** tab is available, hover a template and click
+**Use →** to spin up a ready-made project (ontology, concepts, and sample data
+included) that you can explore and adapt.
+</Tip>
+
+<Frame caption="The Projects page empty state with the New Project button (top-right), and the New Project dialog showing the Name, Description, Context, and Scope fields.">
+  <img src="/images/app/placeholder.svg" alt="Create a new project" />
+</Frame>
+
+## Step 4 — Define your first concept
+
+Inside the project editor, the **Explorer** panel on the left lists your
+**concepts** — the logic that transforms data into results.
+
+<Steps>
+  <Step title="Add a concept">
+    Click **New cell** in the Explorer header. A new concept cell appears.
+  </Step>
+  <Step title="Choose how to express it">
+    Pick a concept type: **Logic** (Vadalog, the default), **SQL**, **Cypher**,
+    or **Python**. Write your logic in the editor.
+  </Step>
+  <Step title="Let the assistant write it for you (optional)">
+    Type a plain-English **description** of what you want, then click the
+    **✨ Generate Vadalog from natural language** button. Prometheux drafts the
+    Vadalog for you; edit it as needed.
+  </Step>
+  <Step title="Save">
+    Save with the **Save cell** button or <kbd>⌘S</kbd> / <kbd>Ctrl+S</kbd>. An
+    unsaved cell shows a **Modified** badge.
+  </Step>
+</Steps>
+
+<Note>
+New to Vadalog? The [Your First Project](/get-started/your-first-project)
+tutorial teaches the language step by step, and the
+[Vadalog Reference](/vadalog/overview) is the full guide.
+</Note>
+
+<Frame caption="The project editor — the Explorer panel with a concept cell open, the concept-type selector (Logic/SQL/Cypher/Python), the CodeMirror editor, and the ✨ natural-language button.">
+  <img src="/images/app/placeholder.svg" alt="Defining a concept" />
+</Frame>
+
+## Step 5 — Shape your ontology (optional)
+
+The **Ontology** view lets you model your domain visually as a graph of nodes
+and edges. On an empty canvas you'll see **"Build your Ontology"** — just
+**double-click anywhere to add a node**, then connect nodes with edges. Use the
+canvas controls (**Auto Layout**, **Zoom In/Out**, **Center & Fit**) to arrange
+the graph.
+
+You can skip this for now and come back once you have a few concepts — see
+[Ontology Graph](/platform/ontology-graph) for the full editor.
+
+<Frame caption="The Ontology editor canvas with a few nodes and edges, and the canvas controls (Auto Layout, Zoom, Center & Fit) in the corner.">
+  <img src="/images/app/placeholder.svg" alt="Ontology graph editor" />
+</Frame>
+
+## Step 6 — Run it and explore the results
+
+With a concept saved, run it from the cell toolbar:
+
+- **Run cell** executes just the current concept.
+- **Run workflow** runs the concept together with everything it depends on.
+
+Press <kbd>Shift</kbd>+<kbd>Enter</kbd> as a shortcut. While it runs, the button
+becomes a **Stop** control and the results panel shows *"Running query…"*. When
+it finishes, the **Output** tab opens automatically with your results.
+
+In the Output table you can:
+- **Page** through rows (**Prev** / **Next**, with a **Rows** size selector).
+- **Search** across columns and apply per-column filters (`contains`, `equals`,
+  `<`, `>`, …).
+
+Switch to the **Lineage** view (open the **Explorer** rail) to see your concepts
+as a dependency graph — click any node to jump into its editor.
+
+<Frame caption="A concept after running — the Output tab showing the results table with search and pagination, and the Lineage dependency graph alongside.">
+  <img src="/images/app/placeholder.svg" alt="Exploring concept results and lineage" />
+</Frame>
+
+## Step 7 — Build a dashboard
+
+Now turn your results into something shareable.
+
+<Steps>
+  <Step title="Create a dashboard">
+    Open **Dashboards** (`/dashboards`) and click **New Dashboard**.
+  </Step>
+  <Step title="Point it at your project">
+    In the config panel, choose your **Project** and an **Input concept (drives
+    run)** — the concept whose run produces the data your widgets display. Set a
+    **Title** and any header details.
+  </Step>
+  <Step title="Lay out pages, sections, and widgets">
+    Click **Add page** for a tab, **Add section** within it (choose **Single**,
+    **Two columns**, or **Four columns**), then **Add widget**. Pick a widget
+    type — **Table**, **Line chart**, **Pie chart**, or **Progress bar** — and
+    select the **Concept** it visualizes. For charts, map the **X axis** / **Y
+    axis** (or label / value) columns.
+  </Step>
+  <Step title="Save and run">
+    Click **Save**, then open the dashboard and click **RUN**. Prometheux executes
+    the input concept and populates every widget with live data.
+  </Step>
+</Steps>
+
+<Frame caption="The dashboard editor — the config panel (Project, Input concept, pages/sections) on one side and the widget canvas with a chart and table on the other.">
+  <img src="/images/app/placeholder.svg" alt="Building a dashboard" />
+</Frame>
+
+## What's next
+
+You've gone from an empty account to a running project and a live dashboard.
+From here:
+
+<CardGroup cols={2}>
+  <Card title="Learn Vadalog" icon="code" href="/get-started/your-first-project">
+    Write your own reasoning rules with the step-by-step language tutorial.
+  </Card>
+  <Card title="Connect more data" icon="database" href="/platform/data-connections">
+    Wire up Snowflake, Databricks, SQL databases, and files.
+  </Card>
+  <Card title="Use the AI Assistant" icon="robot" href="/platform/ai-assistant">
+    Have the assistant generate and debug concepts for you.
+  </Card>
+  <Card title="Automate & integrate" icon="plug" href="/integrations/overview">
+    Drive the platform from the REST API, Python SDK, or MCP.
+  </Card>
+</CardGroup>
