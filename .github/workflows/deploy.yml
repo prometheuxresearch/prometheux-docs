@@ -28,7 +28,17 @@ jobs:
           mkdir -p build
           unzip -q export.zip -d build
           # Strip files only useful for offline distribution
-          rm -f build/serve.js "build/Start Docs.command" "build/Start Docs.bat"
+          rm -f build/serve.js "build/Start Docs.command" "build/Start Docs.bat" build/function-code.js
+
+      - name: Build static search index (Pagefind)
+        # Indexes the built HTML pages and writes the index + UI assets to
+        # build/pagefind/. A small overlay (assets/static-search.{js,css})
+        # is then injected into every page so Cmd+K and the existing
+        # Mintlify search button open this local index instead of hitting
+        # Mintlify's hosted search backend.
+        run: |-
+          npx --yes pagefind@latest --site build
+          node scripts/inject-static-search.mjs build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

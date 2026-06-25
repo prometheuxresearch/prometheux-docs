@@ -1,0 +1,73 @@
+#px-search-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 9999;
+}
+#px-search-modal.open {
+  display: block;
+}
+
+.px-search-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 15, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.px-search-panel {
+  position: relative;
+  width: min(680px, calc(100vw - 32px));
+  margin: 9vh auto 0;
+  background: #ffffff;
+  color: inherit;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  padding: 18px 18px 12px;
+}
+
+html.dark .px-search-panel,
+html[data-theme='dark'] .px-search-panel {
+  background: #141414;
+  color: #e8e8e8;
+}
+
+html.px-search-open,
+html.px-search-open body {
+  overflow: hidden;
+}
+
+/* Tweak Pagefind UI colors to match Mintlify (primary green #00e382) */
+:root {
+  --px-search-primary: #00e382;
+}
+.pagefind-ui {
+  --pagefind-ui-primary: var(--px-search-primary);
+  --pagefind-ui-text: #1a1a1a;
+  --pagefind-ui-background: transparent;
+  --pagefind-ui-border: #e3e3e3;
+  --pagefind-ui-tag: #f4f4f4;
+  --pagefind-ui-border-width: 1px;
+  --pagefind-ui-border-radius: 10px;
+  --pagefind-ui-image-border-radius: 8px;
+  --pagefind-ui-image-box-ratio: 3 / 2;
+  --pagefind-ui-font: inherit;
+  --pagefind-ui-scale: 0.95;
+}
+
+html.dark .pagefind-ui,
+html[data-theme='dark'] .pagefind-ui {
+  --pagefind-ui-text: #ececec;
+  --pagefind-ui-border: #2a2a2a;
+  --pagefind-ui-tag: #1f1f1f;
+}
+
+.pagefind-ui__search-input {
+  font-size: 1rem;
+}
+
+.pagefind-ui__result-link {
+  color: var(--px-search-primary);
+}
