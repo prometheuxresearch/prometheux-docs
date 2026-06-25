@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Screenshot placeholder">
+  <rect width="1200" height="675" fill="#f1f3f5"/>
+  <rect x="3" y="3" width="1194" height="669" fill="none" stroke="#cdd2d8" stroke-width="3" stroke-dasharray="14 10" rx="16"/>
+  <text x="600" y="322" font-family="Roboto, Arial, sans-serif" font-size="44" font-weight="600" fill="#8a929b" text-anchor="middle">Screenshot placeholder</text>
+  <text x="600" y="378" font-family="Roboto, Arial, sans-serif" font-size="24" fill="#aab0b8" text-anchor="middle">Replace this image src with your capture — see the caption below.</text>
+</svg>
