@@ -3,8 +3,6 @@ title: "Data Connections"
 description: "Connect files, databases, warehouses, and APIs to Prometheux so your concepts can read from and write to them."
 ---
 
-# Data Connections
-
 Prometheux connects to a wide range of data sources — local and cloud files, relational and graph databases, data warehouses, vector stores, and HTTP APIs — so you can read source data into your concepts and write results back out. Connections also work across cloud and distributed file systems such as **S3** and **HDFS**, supporting modern data lake and data migration scenarios.
 
 Under the hood, every connection is expressed as a `@bind` annotation that ties a concept to a data source for reading or writing. The connection covers the source type, its options (host, credentials, file path, query, etc.), the database or path, and the table or file name.

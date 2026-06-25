@@ -3,8 +3,6 @@ title: "Card Clearing Migration"
 description: "Migrating mainframe COBOL card clearing pipelines to Prometheux using Vadalog."
 ---
 
-# From Mainframe to Modern: Migrating Card Clearing
-
 Card clearing and settlement is a core process in payment networks. Acquirers and issuers exchange transaction records — typically stored as fixed-length EBCDIC files on mainframes — to reconcile purchases, refunds, and chargebacks across the network.
 
 Migrating this workflow off the mainframe usually requires months of ETL development: decoding COBOL copybooks, mapping packed-decimal fields, joining with modern reference data, and validating totals. With Prometheux, the same pipeline can be expressed in a handful of Vadalog rules that read the mainframe extract directly and join it with data already living in modern systems.
