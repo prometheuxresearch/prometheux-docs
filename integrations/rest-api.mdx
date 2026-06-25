@@ -1,222 +1,167 @@
 ---
 title: "REST API"
-description: "The Prometheux Engine offers a simple RESTful API for its main operations."
+description: "Conventions for the Prometheux platform REST API — base URL, authentication, the response envelope, scoping, pagination, and error handling."
 ---
 
-The Prometheux Engine offers a simple RESTful API, which allows you to carry out
-its main operations.
+The Prometheux platform exposes a REST API that lets you drive every part of the
+platform from your own application — create projects, connect data, define and
+run concepts, read results, build knowledge graphs, schedule runs, and more.
 
-Below is a list of the provided endpoints:
+This page covers the conventions shared by **all** endpoints. Read it once, then
+jump into the per-resource references in the **API Reference** section.
 
-### `/evaluate`
+<Info>
+Looking for the low-level Vadalog engine API (`/evaluate`, `/config-info/set`)?
+That is a separate, lower-level interface — see
+[Vadalog Engine API](/vadalog/engine-api). The platform API documented here is
+what external tools should integrate against.
+</Info>
 
-It evaluates a Vadalog program and returns the results as a JSON blob.
+## Base URL
 
-- **URL**: `/evaluate`
-- **Method**: `POST`
-- **Data Params**: the first query param contains the entire program and the
-  second contains other programs it depends on as a module:
-  `program=[Vadalog-Program], otherPrograms=[[Vadalog-Programs]]`
-- **Response**: `{ "id" : [integer], "resultSet" : { "atom_name" : [list of
-result values] }, "types" : { "atom_name" : { list of result types } },
-"columnNames" : { "atom_name : { list of result column names } } }`
+All endpoints are versioned under `/api/v1`. On Prometheux Cloud, each
+workspace is addressed by organization and username:
 
-* **Status Codes:**
-  - `200 OK`: Successful evaluation of the Vadalog program.
-  - `400 BAD_REQUEST`: Indicates a malformed Vadalog program in the request
-    body. The response includes an error message detailing the issue.
-  - `500 INTERNAL_SERVER_ERROR`: Occurs when the evaluation encounters runtime
-    or other exceptions. The response contains an error message specifying the
-    encountered exception.
-
-- **Sample Call**:
-  ```bash
-  curl -X POST 'http://localhost:8080/evaluate' --data 'program=a(1,3).b(X,Y)<-a(X,Y).@output("b").'
-  ```
-  gives the following response:
-  ```json
-  {
-    "id": 1,
-    "resultSet": { "b": [[1, 3]] },
-    "types": { "b": ["INT", "INT"] },
-    "columnNames": { "b": ["X", "Y"] }
-  }
-  ```
-- **Sample Call with modules**:
-  ```bash
-  curl 'http://localhost:8080/evaluate?program=@module(%22m1%22).@include(%22m2%22).a(1).&otherPrograms=@module(%22m2%22).b(X)<-a(X).@output(%22b%22).&modules=@module(%22m3%22).b(X)<-a(X).@output(%22b%22).'
-  ```
-  gives the following response:
-  ```json
-  {
-    "id": 1,
-    "resultSet": { "b": [[1]] },
-    "types": { "b": ["INT"] },
-    "columnNames": { "b": ["X"] }
-  }
-  ```
-
-### `/evaluateFromRepoWithParams`
-
-It evaluates a Vadalog program, using the values for X and Y specified as
-parameters, and returns the results as a JSON blob (this endpoint is used for
-the 'close links' example).
-
-- **URL**: `/evaluateFromRepoWithParams`
-- **Method**: `POST`
-- **Data Params**: the first query param contains the path to the program from
-  the `repository` folder and the second is a string that represents the params
-  X and Y: `programName=[Path-to-Vadalog-Program], params=[string ("X=value,
-Y=value")]`
-- **Response**: `{ "id" : [integer], "resultSet" : { "atom_name" : [list of
-result values] }, "types" : { "atom_name" : [list of result types] },
-"columnNames" : { "atom_name : [list of result column names] } }`
-
-* **Status Codes:**
-  - `200 OK`: Successful evaluation of the Vadalog program.
-  - `400 BAD_REQUEST`: Indicates a malformed Vadalog program in the request
-    body. The response includes an error message detailing the issue.
-  - `500 INTERNAL_SERVER_ERROR`: Occurs when the evaluation encounters runtime
-    or other exceptions. The response contains an error message specifying the
-    encountered exception.
-
-- **Sample Call**:
-
-  ```bash
-  curl -X POST 'http://localhost:8080/evaluateFromRepoWithParams' --data \
-  'programName=program.vada' --data 'params=X=1,Y=3'
-  ```
-
-  gives the following response:
-
-  ```json
-  {
-    "id": 1,
-    "resultSet": { "c": [[1, 3]] },
-    "types": { "c": ["INT", "INT"] },
-    "columnNames": { "c": ["A", "B"] }
-  }
-  ```
-
-#### `/evaluateFromRepoWithParamsProps`
-
-It sets specified properties in the `vada.properties` file, evaluates a Vadalog
-program, using the values for X and Y specified as parameters, and returns the
-results as a JSON blob.
-
-- **URL**: `/evaluateFromRepoWithParamsProp`
-- **Method**: `POST`
-- **Data Params**: the first query param contains the path to the program from
-  the `repository` folder, the second is a string that represents the params X
-  and Y and the third is a string that represents the vada properties set:
-  `programName=[Path-to-Vadalog-Program], params=[string ("X=value, Y=value")],
-prop=[string ["propertyName=value"]]`
-- **Response**: `{ "id" : [integer], "resultSet" : { "atom_name" : [list of
-result values] }, "types" : { "atom_name" : [list of result types] },
-"columnNames" : { "atom_name : [list of result column names] } }`
-
-* **Status Codes:**
-  - `200 OK`: Successful evaluation of the Vadalog program.
-  - `400 BAD_REQUEST`: Indicates a malformed Vadalog program in the request
-    body. The response includes an error message detailing the issue.
-  - `500 INTERNAL_SERVER_ERROR`: Occurs when the evaluation encounters runtime
-    or other exceptions. The response contains an error message specifying the
-    encountered exception.
-
-- **Sample Call**:
-
-  ```bash
-  curl -X POST 'http://localhost:8080/evaluateFromRepoWithParamsProp' --data \
-  'programName=program.vada' --data 'params=X=1,Y=3' --data \
-  'prop=terminationStrategyMode=lightMode, linearization=true'
-  ```
-
-  gives the following response:
-
-  ```json
-  {
-    "id": 1,
-    "resultSet": { "c": [[1, 3]] },
-    "types": { "c": ["INT", "INT"] },
-    "columnNames": { "c": ["A", "B"] }
-  }
-  ```
-
-### `/actuator/health`
-
-This endpoint validates the health status of the system its various components,
-including Vadalog Distributed Evaluation, disk space, and a simple ping check.
-
-- **URL**: `/actuator/health`
-- **Method**: `GET`
-- **Response**: `{ "status": "System Status (UP/DOWN/UNKNOWN)", "components": {
-"Vadalog Distributed": { "status": "Component Status (UP/DOWN/UNKNOWN)",
-"details": { "Vadalog Distributed with Local/Spark Standalone/YARN/Livy":
-  "Component Detail Status" } }, "diskSpace": { "status": "Component Status
-    (UP/DOWN/UNKNOWN)", "details": { "total": "Component Detail Status",
-    "free": "Component Detail Status", "threshold": "Component Detail Status",
-      "exists": true/false } }, "ping": { "status": "Component Status
-    (UP/DOWN/UNKNOWN)" } } } `
-- **Sample Call**:
-  ```bash
-    curl http://localhost:8080/actuator/health
-  ```
-
-### `/config-info/set`
-This endpoint allows you to set a single key-value pair for configuration. It is useful for dynamically setting credentials such as database connection details or AWS access keys for S3 buckets.
-Refer to the [Configuration Reference](/get-started/installation/on-premises/cluster#configuration-reference) to review the available configuration properties.
-
-- URL: `/config-info/set`
-
-- Method: `POST`
-
-- Request Body:
-  ```json
-  {
-    "key": "propertyName",
-    "value": "propertyValue"
-  }
-  ```
-  - `key`: The configuration key you wish to set (e.g., database.password, aws.accessKey).
-  - `value`: The value to be assigned to the given key (e.g., myDBPassword, myAWSAccessKey).
-- Response: `{ "status": "SUCCESS/FAILURE", "message": "Operation details" }`
-
-Sample Call:
-```bash
-curl -X POST "http://localhost:8080/config-info/set" \
-  -H "Content-Type: application/json" \
-  -d '{"key": "database.password", "value": "myDBPassword"}'
+```
+https://api.prometheux.ai/jarvispy/{organization}/{username}/api/v1
 ```
 
-## `/config-info/setAll`
-This endpoint allows you to set multiple key-value pairs for configuration at once. The key-value pairs should be provided in the request body as a JSON object.
+| Segment | Description |
+|---|---|
+| `{organization}` | Your organization identifier. |
+| `{username}` | Your username. |
 
-Refer to the [Configuration Reference](/get-started/installation/on-premises/cluster#configuration-reference) to review the available configuration properties.
+For a self-hosted instance, the base URL is your host plus the API prefix:
 
-- URL: `/config-info/setAll`
+```
+https://<your-host>/api/v1
+```
 
-Method: `POST`
+Throughout the API Reference, paths are written relative to the base URL — e.g.
+`POST /projects/save` means
+`POST https://api.prometheux.ai/jarvispy/{org}/{user}/api/v1/projects/save`.
 
-Request Body:
+## Authentication
 
-```json
+Every request must carry a bearer token:
+
+```
+Authorization: Bearer <token>
+```
+
+Tokens are JarvisPy API keys (JWTs). See
+[Authentication](/integrations/api-endpoints/authentication) for how to obtain,
+list, and revoke them.
+
+## Response envelope
+
+Every JSON response uses the same envelope:
+
+```jsonc
 {
-  "propertyName1": "propertyValue1",
-  "propertyName2": "propertyValue2",
-  "propertyName3": "propertyValue3"
+  "status": "success",   // "success", "error", or "conflict"
+  "message": "Success",  // human-readable label
+  "data": { }            // the payload — shape depends on the endpoint
 }
 ```
-Each key represents a configuration property (e.g., database.password, aws.accessKey), and each value represents the value assigned to that property.
 
-Response: `{ "status": "SUCCESS/FAILURE", "message": "All properties set successfully or error details"}`
+Read your result from `data`. On errors, `status` is `"error"` (or `"conflict"`),
+`message` describes the problem, and `data` is `null`.
 
-Sample Call:
-```bash
-curl -X POST "http://localhost:8080/config-info/setAll" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "database.password": "myDBPassword",
-    "s3aAccessKey": "myAWSAccessKey",
-    "s3aSecretKey": "myAWSSecretKey"
-  }'
+<Note>
+A few endpoints do not use this envelope: file downloads return the raw file,
+and streaming endpoints return [NDJSON](#streaming-responses). These are called
+out explicitly on their pages.
+</Note>
+
+## Status codes
+
+| Code | `status` | Meaning |
+|---|---|---|
+| `200` | `success` | The request succeeded. |
+| `400` | `error` | Bad request — malformed body or invalid parameters. |
+| `401` | `error` | Missing, invalid, expired, or revoked token. |
+| `403` | `error` | Authenticated but not allowed to perform this action. |
+| `404` | `error` | The referenced resource does not exist. |
+| `409` | `conflict` | The request conflicts with current state (e.g. a name already exists). |
+| `422` | `error` | Well-formed request, but the entity could not be processed. |
+| `500` | `error` | Server-side error during processing. |
+
+A typical error response:
+
+```jsonc
+{
+  "status": "error",
+  "message": "Project not found",
+  "data": null
+}
 ```
+
+## Scope
+
+Most resources exist in one of two scopes, selected with a `scope` parameter
+(query or body, depending on the endpoint):
+
+| Scope | Meaning |
+|---|---|
+| `user` *(default)* | Private to your user. |
+| `organization` | Shared across your organization. |
+
+Endpoints that read across scopes accept a comma-separated `scopes` parameter
+instead — e.g. `?scopes=user,organization`.
+
+## Pagination
+
+Endpoints that return tabular data (concept results, table previews) are
+paginated with a consistent set of parameters:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `page` | integer | `1` | 1-based page number. |
+| `page_size` | integer | `30` | Rows per page (max `1000`). |
+| `order_by` | string | — | Comma-separated `column_index:direction`, e.g. `0:asc,2:desc`. |
+
+Paginated responses include the page metadata alongside the rows:
+
+```jsonc
+{
+  "status": "success",
+  "message": "Success",
+  "data": {
+    "rows": [ /* ... */ ],
+    "count": 1240,
+    "page": 1,
+    "page_size": 30
+  }
+}
+```
+
+## Streaming responses
+
+Some endpoints stream their output as **NDJSON** (newline-delimited JSON):
+the response body is a sequence of JSON objects, one per line, emitted as work
+progresses. Read the stream line by line and parse each line independently
+rather than waiting for the whole body. Endpoints that stream say so on their
+page.
+
+## Compute
+
+Execution endpoints accept an optional `compute` object to target a specific
+backend (local engine, Databricks, or Snowflake). When omitted, your workspace
+default is used. Unless you manage multiple compute backends, you can leave it
+out.
+
+## API Reference
+
+| Resource | What it covers |
+|---|---|
+| [Authentication](/integrations/api-endpoints/authentication) | Obtain, list, and revoke API tokens |
+| [Projects](/integrations/api-endpoints/projects) | Create, load, list, export/import, snapshot projects |
+| [Concepts](/integrations/api-endpoints/concepts) | Define, run, and read results from concepts |
+| [Data Sources](/integrations/api-endpoints/data) | Connect data sources, infer schema, upload and preview data |
+| [Knowledge Graph](/integrations/api-endpoints/knowledge-graph) | Build graphs and run graph analytics over concept output |
+| [Vadalog](/integrations/api-endpoints/vadalog) | Analyze and evaluate Vadalog programs directly |
+| [Vadalingo](/integrations/api-endpoints/vadalingo) | Translate NL, SQL, RDF, and OWL into Vadalog |
+| [Dashboards](/integrations/api-endpoints/dashboards) | Manage dashboards programmatically |
+| [Schedules](/integrations/api-endpoints/schedules) | Automate concept runs on a cron or data-change trigger |
+| [Context Layer](/integrations/api-endpoints/context-layer) | Manage and semantically search the agent knowledge base |

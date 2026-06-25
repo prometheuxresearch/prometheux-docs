@@ -1,772 +1,524 @@
 ---
-title: "Projects API"
-description: "Manage projects within workspaces, including creation, import/export, and template management."
+title: "Projects"
+description: "Create, load, copy, import/export, and snapshot Prometheux projects — the top-level containers for concepts, data sources, and ontologies."
 ---
 
-The Projects API allows you to manage projects within workspaces, including creation, import/export, and template management.
+A **project** is the top-level container in Prometheux — it groups concepts, data
+sources, an ontology, and compute configuration into a single workspace. The
+Projects API lets you create and load projects, copy or template them, move them
+between workspaces via export/import, and capture point-in-time snapshots.
 
----
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+Where [scope](/integrations/rest-api#scope) is accepted, valid values are `user`
+(default) and `organization`.
 
-## Save Project
+## Save a project
 
-Create or update a project in a workspace.
+Create or update a project. Sending an existing `id` updates the project in
+place; a new `id` (or a client-generated one) creates a new project.
 
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# Create a new project
-project_id = px.save_project(project_name="my_project")
-
-# Update an existing project
-updated_project_id = px.save_project(
-    project_id="existing_id", 
-    project_name="updated_name"
-)
+```
+POST /projects/save
 ```
 
-**Function Signature**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project` | body | yes | — | Project object (see fields below). |
+| `project.id` | body | yes | — | Project identifier. |
+| `project.name` | body | yes | — | Human-readable project name. |
+| `project.scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the project. |
+| `project.description` | body | no | — | Optional project description. |
 
-```python
-def save_project(project_id=None, project_name=None, project_scope="user", description=None)
-```
-
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | str | No | The project identifier. If None, a new project will be created |
-| `project_name` | str | Yes* | The name of the project. Required when creating a new project |
-| `project_scope` | str | No | The scope of the project. Defaults to "user" |
-| `description` | str | No | Optional project description |
-
-**Returns**
-
-The project ID of the created or updated project.
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
+### Example
 
 ```bash
-POST /api/v1/projects/save
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| project | object | Yes | Project data object |
-
-The project object should contain:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| id | string | No | Project ID (auto-generated if not provided) |
-| name | string | Yes | Project name |
-| description | string | No | Project description |
-| metadata | object | No | Additional project metadata |
-
-### cURL Example
-
-```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/save" \
+curl -X POST "$BASE_URL/projects/save" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "project": {
-      "name": "Financial Risk Analysis",
-      "description": "Project for analyzing financial risk factors",
-      "metadata": {
-        "department": "risk_management",
-        "priority": "high"
-      }
+      "id": "my-project-001",
+      "name": "Supply Chain Analysis",
+      "scope": "user",
+      "description": "Vadalog models for supplier risk."
     }
   }'
 ```
 
-  </Tab>
-</Tabs>
-
----
-
-## List Projects
-
-List all projects in a workspace.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# List all user projects
-projects = px.list_projects()
-
-# List projects with specific scopes
-projects = px.list_projects(project_scopes=["user", "shared"])
-```
-
-**Function Signature**
-
-```python
-def list_projects(
-    project_scopes=None
-)
-```
-
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_scopes` | list | No | List of project scopes to filter by. Defaults to `["user"]` when `None` |
-
-**Returns**
-
-A list of project data dictionaries.
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
-
-```bash
-GET /api/v1/projects/list?scopes=user
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| scopes | string | No | Comma-separated list of scopes (default: "user") |
-
-### cURL Example
-
-```bash
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/list?scopes=user,organization" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-  </Tab>
-</Tabs>
-
----
-
-## Load Project
-
-Load a specific project by ID.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# Load a specific project
-project_data = px.load_project(project_id="my_project_id")
-```
-
-**Function Signature**
-
-```python
-def load_project(
-    project_id, 
-    project_scope="user"
-)
-```
-
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | str | Yes | The project identifier to load |
-| `project_scope` | str | No | The scope of the project. Defaults to "user" |
-
-**Returns**
-
-The project data dictionary.
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
-
-```bash
-GET /api/v1/projects/load?project_id={project_id}&scope=user
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| project_id | string | Yes | The project ID to load |
-| scope | string | No | Project scope (default: "user") |
-
-### cURL Example
-
-```bash
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/load?project_id=proj_12345&scope=user" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-  </Tab>
-</Tabs>
-
----
-
-## List Templates
-
-List all available project templates from the marketplace.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# List all available project templates
-templates = px.list_templates()
-for template in templates:
-    print(f"Template: {template['name']} (ID: {template['id']})")
-```
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
-
-```bash
-GET /api/v1/projects/list-templates
-```
-
-### Parameters
-
-None
-
-### cURL Example
-
-```bash
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/list-templates" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-  </Tab>
-</Tabs>
-
-### Response
-
-```json
+```jsonc
 {
-  "data": [
-    {
-      "id": "template_001",
-      "name": "Financial Analysis Template",
-      "description": "Template for financial data analysis",
-      "category": "finance"
-    },
-    {
-      "id": "template_002",
-      "name": "Customer Analytics Template",
-      "description": "Template for customer behavior analysis",
-      "category": "marketing"
-    }
-  ],
-  "message": "Templates retrieved successfully",
-  "status": "success"
+  "status": "success",
+  "message": "Project Supply Chain Analysis saved successfully",
+  "data": { "project_id": "my-project-001" }
 }
 ```
 
----
+## List projects
 
-## Import Template
+Return all projects visible to the authenticated user across one or more
+[scopes](/integrations/rest-api#scope). Results from multiple scopes are merged
+and deduplicated by project ID.
 
-Import a project from a marketplace template.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# Import a template as a new project
-result = px.import_template(
-    template_id="template_001", 
-    new_project_name="My Financial Analysis"
-)
-print(f"Template imported as project: {result['name']}")
+```
+GET /projects/list
 ```
 
-  </Tab>
-  <Tab title="REST API">
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scopes` | query | no | `"user"` | Comma-separated [scopes](/integrations/rest-api#scope), e.g. `user,organization`. |
 
-### HTTP Request
+<Note>
+The `organization` scope is temporarily disabled — passing it is silently
+ignored and only `user`-scoped projects are returned.
+</Note>
 
 ```bash
-POST /api/v1/projects/import-template
+curl "$BASE_URL/projects/list?scopes=user" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Parameters
+`data` is an array of project objects (id, name, scope, description, and
+associated metadata).
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| template_id | string | Yes | The template ID to import |
-| new_project_name | string | No | Custom name for the new project |
-| project_scope | string | No | Project scope (default: "user") |
+## Load a project
 
-### cURL Example
+Fetch full details for a single project by ID.
+
+```
+GET /projects/load
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | query | yes | — | The project ID to load. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/import-template" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "template_id": "template_001",
-    "new_project_name": "My Financial Analysis",
-    "project_scope": "user"
-  }'
+curl "$BASE_URL/projects/load?project_id=$PROJECT_ID&scope=user" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-  </Tab>
-</Tabs>
-
-### Response
-
-```json
+```jsonc
 {
+  "status": "success",
+  "message": "Project loaded successfully",
   "data": {
-    "id": "proj_67890",
-    "name": "My Financial Analysis",
-    "description": "Project created from Financial Analysis Template",
-    "scope": "user"
-  },
-  "message": "Template imported successfully as project 'My Financial Analysis'",
-  "status": "success"
+    "id": "my-project-001",
+    "name": "Supply Chain Analysis",
+    "scope": "user",
+    "description": "Vadalog models for supplier risk."
+  }
 }
 ```
 
----
+## Copy a project
 
-## Export Project
+Duplicate an existing project into the same or a different scope. All concepts,
+data source binds, and ontology are copied; a new project ID is assigned.
 
-Export a project including all its data and metadata.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-import json
-
-# Export a project
-export_data = px.export_project(
-    project_id="proj_12345"
-)
-print(f"Exported {export_data['summary']['total_tables']} tables")
-
-# Save export data for later import
-with open("project_export.json", "w") as f:
-    json.dump(export_data, f)
+```
+POST /projects/copy
 ```
 
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
-
-```bash
-POST /api/v1/projects/export-project
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| project_id | string | Yes | The project ID to export |
-| scope | string | No | Export scope (default: "user") |
-
-### cURL Example
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | body | yes | — | ID of the source project to copy. |
+| `new_project_name` | body | no | — | Name for the copy. Defaults to the source name with a suffix. |
+| `target_scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new project. |
+| `compute` | body | no | `{}` | Compute configuration overrides for the copy (Databricks / Snowflake). |
 
 ```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/export-project" \
+curl -X POST "$BASE_URL/projects/copy" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "project_id": "proj_12345",
-    "scope": "user"
-  }'
-```
-
-  </Tab>
-</Tabs>
-
----
-
-## Import Project
-
-Import a previously exported project into a workspace.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-import json
-
-# Load previously exported data
-with open("project_export.json", "r") as f:
-    export_data = json.load(f)
-
-# Import the project
-result = px.import_project(
-    export_data=export_data
-)
-print(f"Imported project with new ID: {result['new_project_id']}")
-```
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
-
-```bash
-POST /api/v1/projects/import-project
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| export_data | object | Yes | Previously exported project data |
-| scope | string | No | Import scope (default: "user") |
-
-### cURL Example
-
-```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/import-project" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "export_data": {...},
-    "scope": "user"
-  }'
-```
-
-  </Tab>
-</Tabs>
-
----
-
-## Copy Project
-
-Copy a project within or between workspaces.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# Copy a project (project_id is the first positional argument)
-result = px.copy_project(
-    "proj_12345",
-    target_scope="user",
-    new_project_name="Copy of Financial Analysis",
-)
-print(f"Project copied with new ID: {result['new_project_id']}")
-```
-
-**Function Signature**
-
-```python
-def copy_project(project_id, target_scope="user", new_project_name=None)
-```
-
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | str | Yes | Source project ID (positional) |
-| `target_scope` | str | No | Target scope for the copy. Defaults to "user" |
-| `new_project_name` | str | No | Name for the copied project |
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
-
-```bash
-POST /api/v1/projects/copy
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| project_id | string | Yes | Source project ID |
-| new_project_name | string | No | Name for the copied project |
-| target_scope | string | No | Target scope (default: "user") |
-
-### cURL Example
-
-```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/copy" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "project_id": "proj_12345",
-    "new_project_name": "Copy of Financial Analysis",
+    "project_id": "'$PROJECT_ID'",
+    "new_project_name": "Supply Chain Analysis (Copy)",
     "target_scope": "user"
   }'
 ```
 
-  </Tab>
-</Tabs>
-
----
-
-## Cleanup Projects
-
-Delete projects from a workspace.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# Clean up all user projects
-px.cleanup_projects()
-
-# Clean up a specific project
-px.cleanup_projects(project_id="my_project_id")
+```jsonc
+{
+  "status": "success",
+  "message": "Project copied successfully! New project ID: new-project-abc.",
+  "data": { "new_project_id": "new-project-abc" }
+}
 ```
 
-**Function Signature**
+## Templates
 
-```python
-def cleanup_projects(
-    project_id=None, 
-    project_scope="user"
-)
+Templates are pre-built projects available to all users from a shared
+marketplace. Use `list-templates` to browse them, then `import-template` to
+instantiate one as a new project in your workspace.
+
+### List templates
+
+Return all available templates from the marketplace. No parameters required.
+
 ```
-
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | str | No | The project identifier. If None, cleans up all project resources for the user |
-| `project_scope` | str | No | The scope of the project. Defaults to "user" |
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
+GET /projects/list-templates
+```
 
 ```bash
-POST /api/v1/projects/cleanup
+curl "$BASE_URL/projects/list-templates" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Parameters
+`data` is an array of template objects (id, name, description, and metadata).
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| project | object | No | Project specification for deletion |
+### Import a template
 
-The project object can contain:
+Create a new project from a marketplace template. Data source connections are
+validated after import; any that cannot be resolved are reported in
+`failed_datasources`.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | string | Specific project ID to delete |
-| scope | string | Project scope (default: "user") |
+```
+POST /projects/import-template
+```
 
-### cURL Example
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `template_id` | body | yes | — | ID of the template to import. |
+| `new_project_name` | body | no | — | Name for the resulting project. Defaults to the template name. |
+| `project_scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new project. |
+| `compute` | body | no | `{}` | Compute configuration overrides (Databricks / Snowflake). |
 
 ```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/cleanup" \
+curl -X POST "$BASE_URL/projects/import-template" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "project": {
-      "id": "proj_12345",
-      "scope": "user"
+    "template_id": "tmpl_supply_chain_01",
+    "new_project_name": "My Supply Chain Project",
+    "project_scope": "user"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Template imported successfully as project 'My Supply Chain Project'",
+  "data": {
+    "id": "proj_abc123",
+    "name": "My Supply Chain Project",
+    "scope": "user"
+  }
+}
+```
+
+<Tip>
+If any data sources declared in the template cannot be resolved in your
+workspace, the response includes a `failed_datasources` array listing which
+connectors need to be reconfigured before running concepts.
+</Tip>
+
+## Export a project
+
+Serialize a single project — its concepts (structure only, not cached output
+rows), data source binds, ontology, and metadata — into a portable JSON payload.
+Use `import-project` to restore it.
+
+```
+POST /projects/export-project
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | body | yes | — | ID of the project to export. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+
+```bash
+curl -X POST "$BASE_URL/projects/export-project" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "project_id": "'$PROJECT_ID'", "scope": "user" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Project 'my-project-001' exported successfully. Found 12 tables with 340 total rows. (Concept data and embedding tables excluded, concepts set to not populated)",
+  "data": {
+    "project_id": "my-project-001",
+    "tables": { "concepts": ["..."], "datasources": ["..."] },
+    "summary": {
+      "total_tables": 12,
+      "total_rows": 340
     }
+  }
+}
+```
+
+<Note>
+Concept execution output (cached predicate rows) and embedding tables are
+excluded from the export. All concepts are marked as not-populated so they
+must be re-run after import.
+</Note>
+
+## Import a project
+
+Restore a project from a payload previously produced by `export-project`. A new
+project ID is assigned; data source connections are validated after import and
+any that fail are reported in `failed_datasources`.
+
+```
+POST /projects/import-project
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `export_data` | body | yes | — | The `data` object from an `export-project` response. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the imported project. |
+| `force_new_id` | body | no | `false` | Assign a fresh ID even if the original project ID is available. |
+| `compute` | body | no | `{}` | Compute configuration overrides. |
+
+```bash
+curl -X POST "$BASE_URL/projects/import-project" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "export_data": { "project_id": "my-project-001", "tables": { "..." } },
+    "scope": "user",
+    "force_new_id": false
   }'
 ```
 
-  </Tab>
-</Tabs>
-
----
-
-## Export Workspace
-
-Export all projects and workspace data for the given scope.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-export_data = px.export_workspace(scope="user")
+```jsonc
+{
+  "status": "success",
+  "message": "Project imported successfully! New project ID: proj_xyz789. Created 12 tables, inserted 340 rows.",
+  "data": {
+    "new_project_id": "proj_xyz789",
+    "summary": {
+      "tables_created": 12,
+      "rows_inserted": 340
+    }
+  }
+}
 ```
 
-**Function Signature**
+## Export workspace
 
-```python
-def export_workspace(scope="user")
+Export every project in the workspace — and all workspace-level tables — in a
+single payload. Equivalent to calling `export-project` for each project plus the
+workspace-level tables in one request.
+
+```
+POST /projects/export-workspace
 ```
 
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `scope` | str | No | Workspace scope to export. Defaults to "user" |
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) to export. |
 
 ```bash
-POST /api/v1/projects/export-workspace
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| scope | string | No | Workspace scope (default: "user") |
-
-### cURL Example
-
-```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/export-workspace" \
+curl -X POST "$BASE_URL/projects/export-workspace" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{ "scope": "user" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Workspace tables exported successfully. Found 45 tables with 1200 total rows across 5 projects (5 successful, 0 failed). (Concept data, embedding, and user_configs tables excluded, concepts set to not populated)",
+  "data": {
+    "projects": { "...": "..." },
+    "workspace_tables": { "...": "..." },
+    "summary": {
+      "total_tables": 45,
+      "total_rows": 1200,
+      "projects_found": 5,
+      "projects_exported_successfully": 5,
+      "projects_failed": 0
+    }
+  }
+}
+```
+
+## Import workspace
+
+Restore a full workspace from a payload produced by `export-workspace`. Each
+project is imported in turn; partial failures are tracked per-project in the
+summary.
+
+```
+POST /projects/import-workspace
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `export_data` | body | yes | — | The `data` object from an `export-workspace` response. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the imported workspace. |
+
+```bash
+curl -X POST "$BASE_URL/projects/import-workspace" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
+    "export_data": { "..." },
     "scope": "user"
   }'
 ```
 
-  </Tab>
-</Tabs>
-
----
-
-## Import Workspace
-
-Import workspace data previously produced by export workspace.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-result = px.import_workspace(export_data, scope="user")
+```jsonc
+{
+  "status": "success",
+  "message": "Workspace tables imported successfully. Imported 5 projects (0 failed), created 45 tables, inserted 1200 rows.",
+  "data": {
+    "summary": {
+      "projects_imported": 5,
+      "projects_failed": 0,
+      "tables_created": 45,
+      "rows_inserted": 1200
+    }
+  }
+}
 ```
 
-**Function Signature**
+## Snapshots
 
-```python
-def import_workspace(export_data, scope="user")
+Snapshots are point-in-time captures of a project's full state — concepts, data
+source binds, and ontology. They enable lightweight versioning without a full
+export/import cycle.
+
+<Warning>
+Restoring a snapshot overwrites the current project state. By default, a safety
+snapshot of the current state is automatically created before the restore
+proceeds. Set `create_safety_snapshot: false` to skip this.
+</Warning>
+
+### Create a snapshot
+
+```
+POST /projects/snapshots/create
 ```
 
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `export_data` | object | Yes | Payload returned by `export_workspace` |
-| `scope` | str | No | Target scope for the import. Defaults to "user" |
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | body | yes | — | ID of the project to snapshot. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+| `description` | body | no | — | Optional human-readable label for the snapshot. |
 
 ```bash
-POST /api/v1/projects/import-workspace
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| export_data | object | Yes | Workspace export payload |
-| scope | string | No | Target scope (default: "user") |
-
-### cURL Example
-
-```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/import-workspace" \
+curl -X POST "$BASE_URL/projects/snapshots/create" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "export_data": {...},
+    "project_id": "'$PROJECT_ID'",
+    "scope": "user",
+    "description": "Before schema refactor"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Snapshot created successfully for project 'my-project-001'",
+  "data": {
+    "snapshot_id": "snap_a1b2c3",
+    "project_id": "my-project-001",
+    "description": "Before schema refactor",
+    "created_at": "2026-06-25T09:00:00+00:00"
+  }
+}
+```
+
+### List snapshots
+
+Return snapshot metadata for a project. The heavy snapshot payload is omitted —
+use `restore` with a `snapshot_id` to apply one.
+
+```
+GET /projects/snapshots/list
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | query | yes | — | The project whose snapshots to list. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+
+```bash
+curl "$BASE_URL/projects/snapshots/list?project_id=$PROJECT_ID&scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+`data` is an array of snapshot metadata objects (snapshot\_id, description,
+created\_at).
+
+### Restore a snapshot
+
+```
+POST /projects/snapshots/restore
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `snapshot_id` | body | yes | — | ID of the snapshot to restore. |
+| `project_id` | body | yes | — | ID of the project to overwrite. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+| `create_safety_snapshot` | body | no | `true` | Capture the current state before restoring. |
+
+```bash
+curl -X POST "$BASE_URL/projects/snapshots/restore" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "snapshot_id": "snap_a1b2c3",
+    "project_id": "'$PROJECT_ID'",
+    "scope": "user",
+    "create_safety_snapshot": true
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Project 'my-project-001' restored from snapshot 'snap_a1b2c3'",
+  "data": {
+    "project_id": "my-project-001",
+    "restored_from": "snap_a1b2c3",
+    "safety_snapshot_id": "snap_safety_d4e5f6"
+  }
+}
+```
+
+### Delete a snapshot
+
+```
+POST /projects/snapshots/delete
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `snapshot_id` | body | yes | — | ID of the snapshot to delete. |
+| `project_id` | body | yes | — | ID of the owning project. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+
+```bash
+curl -X POST "$BASE_URL/projects/snapshots/delete" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "snapshot_id": "snap_a1b2c3",
+    "project_id": "'$PROJECT_ID'",
     "scope": "user"
   }'
 ```
 
-  </Tab>
-</Tabs>
-
----
-
-## Complete Workflow Example
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-import os
-
-# Set up authentication and configuration
-os.environ['PMTX_TOKEN'] = 'my_pmtx_token'
-px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/my-org/my-user")
-
-# Create a new project
-project_id = px.save_project(project_name="test_project")
-
-# List all projects
-projects = px.list_projects()
-print(f"Available projects: {projects}")
-
-# Load the created project
-project_data = px.load_project(project_id)
-
-# Clean up when done
-px.cleanup_projects(project_id=project_id)
+```jsonc
+{
+  "status": "success",
+  "message": "Snapshot 'snap_a1b2c3' deleted successfully",
+  "data": null
+}
 ```
 
-  </Tab>
-  <Tab title="REST API">
+## Other operations
 
-```bash
-# Create a project
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/save" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"project": {"name": "test_project"}}'
-
-# List projects
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/list?scopes=user" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Load a specific project
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/load?project_id=proj_12345" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Cleanup
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/cleanup" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"project": {"id": "proj_12345", "scope": "user"}}'
-```
-
-  </Tab>
-</Tabs>
+| Operation | Endpoint | Notes |
+|---|---|---|
+| Delete a project or all projects | `POST /projects/cleanup` | Body: `project` object with `id` (omit to delete all user projects) and `scope`. Shared/scoped users cannot delete projects. |

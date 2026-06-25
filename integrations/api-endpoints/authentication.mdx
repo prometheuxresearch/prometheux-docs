@@ -1,0 +1,228 @@
+---
+title: "Authentication"
+description: "Obtain, list, and revoke the API tokens used to authenticate REST requests to the Prometheux platform."
+---
+
+Every request to the Prometheux platform API must carry a bearer token:
+
+```
+Authorization: Bearer <token>
+```
+
+Tokens are JarvisPy **API keys** — signed JWTs that inherit your identity
+(`sub`, `username`, `organization`, `role`). A token issued through the API
+**cannot escalate privileges**; it carries exactly the claims of the token that
+created it.
+
+Prometheux uses an **allowlist** model: a token is only accepted while its
+record exists server-side. Revoking a token deletes that record, and the token
+stops working immediately.
+
+## How external integrators get a token
+
+There is no public sign-up endpoint. An external integration is bootstrapped
+once, then manages its own keys:
+
+<Steps>
+  <Step title="Get a bootstrap token from an administrator">
+    A Prometheux administrator provisions your workspace and gives you a
+    one-time **bootstrap token**. This is the credential you use for your very
+    first API call — typically only to mint a long-lived key.
+  </Step>
+  <Step title="Mint a long-lived API key">
+    Call [`POST /auth/issue-token`](#issue-a-token) with the bootstrap token in
+    the `Authorization` header. The response contains a new token — store it
+    securely. This is the key your integration uses day to day.
+  </Step>
+  <Step title="Use the key on every request">
+    Send `Authorization: Bearer <token>` with all subsequent requests.
+  </Step>
+  <Step title="Rotate and revoke as needed">
+    List your keys with [`GET /auth/tokens`](#list-tokens) and revoke compromised
+    or retired keys with [`POST /auth/revoke/{jti}`](#revoke-a-specific-token).
+  </Step>
+</Steps>
+
+<Warning>
+The raw token string is returned **exactly once**, in the response to
+`POST /auth/issue-token`. It is never retrievable again — store it securely the
+moment you receive it. Afterwards, tokens are referenced only by their `jti`
+(token ID) for listing and revocation.
+</Warning>
+
+---
+
+## Issue a token
+
+Mint a new API key for the authenticated caller. The new token inherits the
+caller's identity claims.
+
+```
+POST /auth/issue-token
+```
+
+### Request body
+
+All fields are optional.
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `name` | string \| null | `null` | Human-readable label so you can tell keys apart when listing them. Max 120 characters. |
+| `expires_in_minutes` | integer \| null | `null` | Token lifetime in minutes (max `525600` = 1 year). Omit, or pass `null`/`0`, to issue a token with **no expiration**. |
+
+### Response
+
+| Field | Type | Description |
+|---|---|---|
+| `token` | string | The raw JWT. **Shown only once.** |
+| `jti` | string (UUID) | The token's unique ID — used to list and revoke it later. |
+| `name` | string \| null | The label you provided. |
+| `expires_at` | ISO-8601 (UTC) \| null | When the token expires, or `null` if it never expires. |
+| `expires_in_minutes` | integer \| null | The effective lifetime, or `null` if it never expires. |
+
+### Example
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/auth/issue-token" \
+  -H "Authorization: Bearer $BOOTSTRAP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "CI pipeline", "expires_in_minutes": 525600 }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Token issued successfully",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "jti": "f1c2a3b4-5d6e-7f80-9a0b-1c2d3e4f5a6b",
+    "name": "CI pipeline",
+    "expires_at": "2027-06-25T10:00:00+00:00",
+    "expires_in_minutes": 525600
+  }
+}
+```
+
+---
+
+## List tokens
+
+List metadata for every active API key belonging to the caller, oldest first.
+The raw JWTs are **never** returned — only their metadata.
+
+```
+GET /auth/tokens
+```
+
+### Response
+
+`data.tokens` is an array of:
+
+| Field | Type | Description |
+|---|---|---|
+| `jti` | string (UUID) | The token's unique ID. |
+| `name` | string \| null | The label set when the token was issued. |
+| `issued_at` | ISO-8601 (UTC) \| null | When the token was issued. |
+| `expires_at` | ISO-8601 (UTC) \| null | When the token expires, or `null` if it never expires. |
+
+### Example
+
+```bash
+curl "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/auth/tokens" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Tokens listed successfully",
+  "data": {
+    "tokens": [
+      {
+        "jti": "f1c2a3b4-5d6e-7f80-9a0b-1c2d3e4f5a6b",
+        "name": "CI pipeline",
+        "issued_at": "2026-06-25T10:00:00+00:00",
+        "expires_at": "2027-06-25T10:00:00+00:00"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Revoke the current token
+
+Revoke the token used to make the request (i.e. "log out" this key).
+
+```
+POST /auth/revoke
+```
+
+### Response
+
+```jsonc
+{
+  "status": "success",
+  "message": "Token revoked successfully",
+  "data": { "jti": "f1c2a3b4-...", "status": "revoked" }
+}
+```
+
+---
+
+## Revoke a specific token
+
+Revoke a token by its `jti` — use this to retire or rotate keys from a
+management UI.
+
+```
+POST /auth/revoke/{jti}
+```
+
+| Parameter | In | Required | Description |
+|---|---|---|---|
+| `jti` | path | yes | The ID of the token to revoke. |
+
+**Authorization:** admins may revoke any token; non-admins may only revoke
+tokens they own. Revoking an unknown token you own is idempotent and returns
+`200` with `status: "not_found"` in `data`.
+
+### Example
+
+```bash
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/auth/revoke/f1c2a3b4-5d6e-7f80-9a0b-1c2d3e4f5a6b" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Token revoked successfully",
+  "data": { "jti": "f1c2a3b4-...", "status": "revoked" }
+}
+```
+
+---
+
+## Revoke all tokens
+
+Revoke every API key belonging to the caller ("log out everywhere").
+
+```
+POST /auth/revoke-all
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "All tokens for this user have been revoked",
+  "data": { "sub": "auth0|abc123", "status": "all_revoked" }
+}
+```
+
+<Note>
+The out-of-band bootstrap token is managed by an administrator, not stored as a
+user API key. It is not returned by `GET /auth/tokens` and cannot be revoked
+through these endpoints — attempting to revoke it returns `409 conflict`.
+</Note>

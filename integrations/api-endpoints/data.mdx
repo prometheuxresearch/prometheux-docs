@@ -1,449 +1,471 @@
 ---
-title: "Data API"
-description: "Connect, manage, and query external data sources within your workspaces."
+title: "Data Sources"
+description: "Connect databases and files, list and refresh sources, preview data, and manage the on-disk file store."
 ---
 
-The Data API allows you to connect, manage, and query external data sources within your workspaces.
+A **data source** is an external database table or file that a concept can read from via a bind annotation. The Data Sources API lets you register connections, browse uploaded files, infer Vadalog schemas from tables, and preview raw rows before building logic.
 
----
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope)
+unless noted otherwise. The `scope` parameter follows the [scope](/integrations/rest-api#scope) conventions; paginated endpoints follow [pagination](/integrations/rest-api#pagination).
 
-## Connect Data Source
+## Connections
 
-Connect an external database to a workspace.
+### Connect a data source
 
-<Tabs>
-  <Tab title="Python SDK">
+Register an external database or file-based source. On success the platform stores the connection and returns the full updated source list.
 
-```python
-import prometheux_chain as px
-
-# Create a database configuration
-database_config = px.Database(
-    database_type='postgresql',
-    username='user',
-    password='password',
-    host='localhost',
-    port=5432,
-    database_name='mydb',
-    tables=['users', 'orders']
-)
-
-# Connect the source
-source_data = px.connect_sources(
-    database_payload=database_config,
-    compute_row_count=True
-)
+```
+POST /data/connect
 ```
 
-**Function Signature**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the connection. |
+| `database` | body | yes | — | Connection descriptor (see fields below). |
+| `computeRowCount` | body | no | `false` | Whether to count rows per table after connecting. |
 
-```python
-def connect_sources(
-    database_payload: Database = None,
-    compute_row_count=False
-)
-```
+**`database` object fields:**
 
-**Parameters**
+| Field | Required | Description |
+|---|---|---|
+| `databaseType` | yes | Database type: `postgresql`, `mysql`, `snowflake`, `databricks`, `csv`, `excel`, `json`, `parquet`, `ttl`, `owl`, and others. |
+| `host` | no | Host or path. For file-based types, omit to default to `disk/`; relative paths are automatically prefixed with `disk/`. |
+| `port` | no | Port number. |
+| `database` | no | Database name. |
+| `schema` | no | Schema name. |
+| `username` | no | Database username. |
+| `password` | no | Database password. |
+| `tables` | no | Array of table names to include. |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `database_payload` | Database | Yes | The database connection configuration |
-| `compute_row_count` | bool | No | Whether to compute row counts for tables. Defaults to False |
-
-**Returns**
-
-The connection response data containing source information.
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
+#### Example
 
 ```bash
-POST /api/v1/data/connect
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| scope | string | No | Data source scope (default: "user") |
-| database | object | Yes | Database connection configuration |
-| computeRowCount | boolean | No | Compute row counts for tables (default: false) |
-
-The database object should contain:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| databaseType | string | Yes | Database type (e.g., "postgresql", "mysql", "csv") |
-| host | string | Yes | Database host |
-| port | integer | No | Database port |
-| databaseName | string | Yes | Database name |
-| username | string | Yes | Database username |
-| password | string | Yes | Database password |
-| tables | array | No | List of specific tables to include |
-| schema | string | No | Database schema |
-| options | object | No | Additional database-specific options |
-
-### cURL Example
-
-```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/data/connect" \
+curl -X POST "$BASE_URL/data/connect" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "scope": "user",
     "database": {
       "databaseType": "postgresql",
       "host": "db.example.com",
       "port": 5432,
-      "databaseName": "customers",
-      "username": "user",
-      "password": "password"
+      "database": "customers",
+      "schema": "public",
+      "username": "reader",
+      "password": "s3cr3t",
+      "tables": ["orders", "users"]
     },
-    "computeRowCount": true
+    "computeRowCount": false
   }'
 ```
 
-  </Tab>
-</Tabs>
-
-### Response
-
-```json
+```jsonc
 {
+  "status": "success",
+  "message": "Database connection successful",
   "data": {
     "connectionStatus": true,
     "sources": [
-      {
-        "id": "source_123",
-        "name": "customers",
-        "type": "table",
-        "row_count": 1500
-      }
+      { "id": "src_a1b2", "name": "orders", "databaseType": "postgresql" },
+      { "id": "src_c3d4", "name": "users",  "databaseType": "postgresql" }
     ],
     "errorMessage": null
-  },
-  "message": "Database connection successful",
-  "status": "success"
+  }
 }
 ```
 
----
+On a failed connection `connectionStatus` is `false` and `errorMessage` contains the driver error.
 
-## List Data Sources
+### List data sources
 
-List all connected data sources in a workspace.
+Return all registered data sources for the authenticated user.
 
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# List all sources in the workspace
-sources = px.list_sources()
-print(f"Available sources: {sources}")
+```
+GET /data/list
 ```
 
-**Function Signature**
-
-```python
-def list_sources()
-```
-
-**Returns**
-
-A list of data source information dictionaries.
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of sources to return. |
 
 ```bash
-GET /api/v1/data/list?scope=user
+curl "$BASE_URL/data/list?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Parameters
+`data` is an array of source objects (id, name, databaseType, host, schema, tables, and row counts if computed).
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| scope | string | No | Data source scope (default: "user") |
+### List sheets
 
-### cURL Example
+Return the sheet names available in a spreadsheet or multi-tab source (e.g. an Excel file or Google Sheet connection).
+
+```
+POST /data/list-sheets
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `database` | body | yes | — | Connection descriptor for the spreadsheet source. |
 
 ```bash
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/data/list?scope=user" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-  </Tab>
-</Tabs>
-
----
-
-## Cleanup Data Sources
-
-Remove data sources from a workspace.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-# Clean up all sources
-px.cleanup_sources()
-
-# Clean up specific sources
-px.cleanup_sources(source_ids=['source1', 'source2'])
-```
-
-**Function Signature**
-
-```python
-def cleanup_sources(source_ids=None)
-```
-
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `source_ids` | list | No | List of specific source IDs to clean up. If None, cleans up all sources |
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
-
-```bash
-POST /api/v1/data/cleanup
-```
-
-### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| scope | string | No | Data source scope (default: "user") |
-| source_ids | array | No | Specific source IDs to delete (if not provided, deletes all) |
-
-### cURL Example
-
-```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/data/cleanup" \
+curl -X POST "$BASE_URL/data/list-sheets" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "scope": "user",
-    "source_ids": ["source_123", "source_456"]
+    "database": {
+      "databaseType": "excel",
+      "host": "reports.xlsx"
+    }
   }'
 ```
 
-  </Tab>
-</Tabs>
-
----
-
-## Infer Schema
-
-Infer schema from a database configuration.
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-
-db = px.Database(
-    database_type='postgresql',
-    username='user',
-    password='password',
-    host='localhost',
-    port=5432,
-    database_name='mydb',
-)
-
-schema_result = px.infer_schema(database=db, add_bind=True, add_model=False)
+```jsonc
+{
+  "status": "success",
+  "message": "Success",
+  "data": { "sheets": ["Sheet1", "Summary", "Raw"] }
+}
 ```
 
-**Function Signature**
+### Demo sources
 
-```python
-def infer_schema(database: Database, add_bind=True, add_model=False)
+Return the pre-built demo data sources shown during onboarding. Each preset includes its full `database` connection payload so the frontend can pre-populate the connect form.
+
+```
+GET /data/demo-sources
 ```
 
-**Parameters**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `database` | Database or dict | Yes | The database connection configuration |
-| `add_bind` | bool | No | Whether to add bind metadata. Defaults to True |
-| `add_model` | bool | No | Whether to add model metadata. Defaults to False |
-
-**Returns**
-
-The schema inference result from the API.
-
-  </Tab>
-  <Tab title="REST API">
-
-### HTTP Request
+No parameters. Requires authentication.
 
 ```bash
-POST /api/v1/data/infer-schema
+curl "$BASE_URL/data/demo-sources" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Parameters
+```jsonc
+{
+  "status": "success",
+  "message": "Demo datasources retrieved successfully",
+  "data": [
+    {
+      "id": "northwind",
+      "label": "Northwind (PostgreSQL)",
+      "description": "Classic orders and products dataset.",
+      "category": "database",
+      "databaseType": "postgresql",
+      "database": { "host": "demo.prometheux.ai", "port": 5432, "..." : "..." }
+    }
+  ]
+}
+```
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| database | object | Yes | Database connection configuration |
-| addBind | boolean | No | Add bind metadata (default: true) |
-| addModel | boolean | No | Add model metadata (default: false) |
+### Refresh sources
 
-### cURL Example
+Re-probe every stored connection group and reconcile the source list. Database groups are re-discovered by `(type, host, port, database, schema)`; file-based sources are removed if the file is no longer accessible.
+
+```
+POST /data/refresh
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of sources to refresh. |
+| `group_filter` | body | no | — | If set, refresh only sources matching this connection group identifier. |
 
 ```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/data/infer-schema" \
+curl -X POST "$BASE_URL/data/refresh" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{ "scope": "user" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Data sources refreshed successfully",
+  "data": [ /* updated source list */ ],
+  "failed_datasources": []   // present only when some sources failed
+}
+```
+
+### Infer schema
+
+Inspect a connection and generate Vadalog bind annotations (and optionally a concept stub) for every table in the descriptor.
+
+```
+POST /data/infer-schema
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `database` | body | yes | — | Connection descriptor for the source to inspect. |
+| `addBind` | body | no | `true` | Emit a `@bind` annotation for each table. |
+| `addModel` | body | no | `false` | Also emit a concept model stub for each table. |
+
+```bash
+curl -X POST "$BASE_URL/data/infer-schema" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "database": {
       "databaseType": "postgresql",
       "host": "db.example.com",
       "port": 5432,
-      "databaseName": "customers",
-      "username": "user",
-      "password": "password"
+      "database": "customers",
+      "username": "reader",
+      "password": "s3cr3t"
     },
     "addBind": true,
     "addModel": false
   }'
 ```
 
-  </Tab>
-</Tabs>
-
----
-
-## Database Class
-
-The Python SDK provides a `Database` class for structured database configuration.
-
-```python
-from prometheux_chain.data.database import Database
-
-db = Database(
-    database_type='postgresql',
-    username='user',
-    password='password',
-    host='localhost',
-    port=5432,
-    database_name='mydb',
-    tables=['users', 'orders'],
-    schema='public'
-)
-
-# Convert to dictionary for API call
-db_config = db.to_dict()
+```jsonc
+{
+  "status": "success",
+  "message": "Schema inferred successfully",
+  "data": {
+    "binds": [
+      "@bind(\"orders\", \"postgresql\", \"db.example.com\", ...).",
+      "@bind(\"users\",  \"postgresql\", \"db.example.com\", ...)."
+    ],
+    "models": []
+  }
+}
 ```
 
-### Constructor Parameters
+### Preview data
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `database_type` | str | Yes | Database type (e.g., 'postgresql', 'mysql', 'csv', 'snowflake') |
-| `username` | str | No | Database username |
-| `password` | str | No | Database password |
-| `host` | str | No | Database host address |
-| `port` | int | No | Database port number |
-| `database_name` | str | No | Name of the database |
-| `tables` | list | No | List of specific tables to include |
-| `schema` | str | No | Database schema name |
-| `catalog` | str | No | Database catalog name |
-| `query` | str | No | Custom SQL query |
-| `options` | dict | No | Additional database-specific options |
-| `selected_columns` | list | No | Specific columns to include |
-| `ignore_columns` | list | No | Columns to exclude |
-| `ignore_tables` | list | No | Tables to exclude |
-| `url` | str | No | Direct connection URL |
+Return a paginated sample of raw rows from a bound data source, with optional search and column filters.
 
-### Methods
-
-- **`to_dict()`**: Converts the Database object to a dictionary format suitable for API calls
-- **`from_dict(data)`**: Class method to create a Database object from a dictionary
-
----
-
-## Complete Workflow Example
-
-<Tabs>
-  <Tab title="Python SDK">
-
-```python
-import prometheux_chain as px
-import os
-
-# Set up authentication and configuration
-os.environ['PMTX_TOKEN'] = 'my_pmtx_token'
-px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/my-org/my-user")
-
-# Create a database configuration using the Database class
-database = px.Database(
-    database_type='postgresql',
-    username='myuser',
-    password='mypassword',
-    host='localhost',
-    port=5432,
-    database_name='my_database',
-    tables=['customers', 'orders'],
-    schema='public'
-)
-
-# Connect the database source
-source_data = px.connect_sources(database_payload=database)
-
-# List all sources
-sources = px.list_sources()
-print(f"Connected sources: {sources}")
-
-# Clean up when done
-px.cleanup_sources()
+```
+POST /data/preview
 ```
 
-  </Tab>
-  <Tab title="REST API">
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `bind_annotation` | body | yes | — | The full `@bind(...)` annotation string identifying the source. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the source. |
+| `page` | body | no | `1` | [Page](/integrations/rest-api#pagination) number. |
+| `page_size` | body | no | `0` | Rows per page (`0` falls back to the server default of `10`). |
+| `order_by` | body | no | — | e.g. `"0:asc,2:desc"`. |
+| `search_term` | body | no | — | Free-text term matched across all columns. |
+| `column_filters` | body | no | — | Array of `{ "position": <col index>, "value": <string> }`. |
 
 ```bash
-# Connect a database
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/data/connect" \
+curl -X POST "$BASE_URL/data/preview" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
+    "bind_annotation": "@bind(\"orders\", \"postgresql\", \"db.example.com\", 5432, \"customers\", \"public\", \"reader\", \"s3cr3t\").",
     "scope": "user",
-    "database": {
-      "databaseType": "postgresql",
-      "host": "localhost",
-      "port": 5432,
-      "databaseName": "my_database",
-      "username": "myuser",
-      "password": "mypassword"
-    },
-    "computeRowCount": true
+    "page": 1,
+    "page_size": 20
   }'
-
-# List data sources
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/data/list?scope=user" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Cleanup data sources
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/data/cleanup" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"scope": "user"}'
 ```
 
-  </Tab>
-</Tabs>
+```jsonc
+{
+  "status": "success",
+  "message": "Data preview retrieved successfully",
+  "data": {
+    "columns": ["order_id", "customer", "total"],
+    "rows": [
+      [1001, "Acme Corp", 450.00],
+      [1002, "Globex",    129.99]
+    ],
+    "count": 2,
+    "page": 1,
+    "page_size": 20
+  }
+}
+```
+
+## Files
+
+All file operations are scoped to the server-side `disk/` storage directory. Paths are relative to that root; path traversal (`..`) is rejected.
+
+### Upload file
+
+Upload a file to `disk/`. The request must be sent as `multipart/form-data`. The returned `filePath` (e.g. `disk/reports.csv`) can be used directly as the `host` in a subsequent `/data/connect` call.
+
+```
+POST /data/files/upload
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `file` | form | yes | — | The file to upload (`multipart/form-data` field). |
+| `path` | form | no | `""` | Subdirectory within `disk/` to upload into. Must already exist. |
+
+Allowed extensions: `.csv`, `.xlsx`, `.xls`, `.json`, `.parquet`, `.pdf`, `.txt`, `.docx`, `.yaml`, `.ttl`, `.rdf`, `.owl`, `.cobol`, and others configured by the server. Maximum file size: 10 GB (server-configurable).
+
+```bash
+curl -X POST "$BASE_URL/data/files/upload" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@/local/path/customers.csv" \
+  -F "path=datasets"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "File uploaded successfully",
+  "data": {
+    "filePath": "disk/datasets/customers.csv",
+    "fileName": "customers.csv",
+    "fileSize": 204800
+  }
+}
+```
+
+### List files
+
+List the contents of a directory within `disk/`. Directories are returned before files; hidden entries (names starting with `.`) are excluded.
+
+```
+GET /data/files/list
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | query | no | `""` | Subdirectory within `disk/` to list. Defaults to the root. |
+
+```bash
+curl "$BASE_URL/data/files/list?path=datasets" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Files listed successfully",
+  "data": [
+    { "name": "archive",       "type": "directory", "size": null,   "modified": "2026-06-01T09:00:00+00:00" },
+    { "name": "customers.csv", "type": "file",      "size": 204800, "modified": "2026-06-20T14:32:11+00:00", "extension": "csv" }
+  ]
+}
+```
+
+### Download file
+
+Download a file from `disk/`. **Returns the raw file bytes**, not the standard envelope. The `Content-Type` is inferred from the file extension.
+
+```
+GET /data/files/download
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | query | yes | — | File path relative to `disk/` (e.g. `datasets/customers.csv`). |
+
+```bash
+curl "$BASE_URL/data/files/download?path=datasets/customers.csv" \
+  -H "Authorization: Bearer $TOKEN" \
+  -O customers.csv
+```
+
+### Make directory
+
+Create a new subdirectory inside `disk/`. The directory must not already exist; its parent must exist.
+
+```
+POST /data/files/mkdir
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | body | yes | — | Path of the new directory relative to `disk/`. |
+
+```bash
+curl -X POST "$BASE_URL/data/files/mkdir" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "path": "datasets/q2" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Directory 'datasets/q2' created successfully",
+  "data": { "path": "datasets/q2" }
+}
+```
+
+### Delete files
+
+Delete one or more files or directories within `disk/`. Non-empty directories require `recursive: true`.
+
+```
+POST /data/files/delete
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `paths` | body | yes | — | Array of paths relative to `disk/` to delete. |
+| `recursive` | body | no | `false` | Delete non-empty directories recursively. |
+
+```bash
+curl -X POST "$BASE_URL/data/files/delete" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "paths": ["datasets/old_report.csv", "archive"],
+    "recursive": false
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Deleted 1 item(s), 1 error(s)",
+  "data": {
+    "deleted": ["datasets/old_report.csv"],
+    "errors": [
+      { "path": "archive", "error": "Directory not empty (use recursive: true)" }
+    ]
+  }
+}
+```
+
+### Move / rename file
+
+Move or rename a file or directory within `disk/`. The destination must not already exist and its parent directory must exist.
+
+```
+POST /data/files/move
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `source` | body | yes | — | Current path relative to `disk/`. |
+| `destination` | body | yes | — | New path relative to `disk/`. |
+
+```bash
+curl -X POST "$BASE_URL/data/files/move" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source":      "datasets/customers_v1.csv",
+    "destination": "datasets/customers.csv"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Moved 'datasets/customers_v1.csv' to 'datasets/customers.csv'",
+  "data": {
+    "source":      "datasets/customers_v1.csv",
+    "destination": "datasets/customers.csv"
+  }
+}
+```
+
+## Other operations
+
+| Operation | Endpoint | Notes |
+|---|---|---|
+| Remove data sources | `POST /data/cleanup` | Body: `scope` (default `"user"`), `source_ids` (array; omit to delete all sources in scope). |

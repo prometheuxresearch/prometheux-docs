@@ -1,0 +1,265 @@
+---
+title: "Knowledge Graph"
+description: "Build, visualize, and run analytics over knowledge graphs derived from concept output predicates."
+---
+
+The Knowledge Graph API turns the output of a concept (an edge predicate) into
+an interactive graph. You can paginate the raw graph data, enumerate complete
+paths between nodes, run graph analytics algorithms, and inspect the
+concept-level lineage DAG for a project.
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+Graph-building endpoints are [paginated](/integrations/rest-api#pagination) and
+[scoped](/integrations/rest-api#scope).
+
+## Build a graph
+
+Fetch the rows of an edge predicate and construct a graph from them. The
+`column_roles` body field maps predicate column positions (zero-indexed) to
+graph roles: `source` and `target` identify the nodes that each edge connects,
+and the optional `edge_value` column becomes the edge label.
+
+Two pagination modes are available:
+
+- **`records`** (default) — paginates over the raw edge rows. Fast for large
+  predicates; useful when you want to stream the graph in chunks.
+- **`paths`** — uses the Vadalog `#PATHS` operator to enumerate all complete
+  paths through the graph, then paginates over those paths. Set
+  `recompute=true` on the first request (or when `source_node` / `target_node`
+  change) to trigger execution; subsequent page requests can omit it to read
+  from the cached result. Path results are capped at 50,000 paths.
+
+```
+POST /kgs/{project_id}/build-graph/{output_predicate}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `output_predicate` | path | yes | — | Name of the edge predicate to graph. |
+| `column_roles` | body | yes | — | Object mapping `"source"` and `"target"` to column positions (integers ≥ 0). Optional `"edge_value"` sets the edge label column. |
+| `compute` | body | no | — | [Compute](/integrations/rest-api#compute) target. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the output predicate. |
+| `page` | query | no | `1` | [Page](/integrations/rest-api#pagination) number. |
+| `page_size` | query | no | config default | Rows per page. |
+| `order_by` | query | no | — | Column ordering, e.g. `0:asc,2:desc`. Records mode only. |
+| `pagination_mode` | query | no | `"records"` | `"records"` or `"paths"`. |
+| `max_depth` | query | no | `50` | Maximum path depth. Paths mode only. |
+| `source_node` | query | no | — | Restrict paths to those starting from this node value. Paths mode only. |
+| `target_node` | query | no | — | Restrict paths to those ending at this node value. Paths mode only. |
+| `recompute` | query | no | `false` | Re-execute `#PATHS` and refresh cached results. Set to `true` when `source_node` or `target_node` changes. Paths mode only. |
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/kgs/$PROJECT_ID/build-graph/edge?scope=user&page=1&page_size=50" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "column_roles": { "source": 0, "target": 1, "edge_value": 2 },
+    "compute": {}
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Graph built successfully from data",
+  "data": {
+    "nodes": [
+      { "id": "CompanyA", "label": "CompanyA" },
+      { "id": "CompanyB", "label": "CompanyB" }
+    ],
+    "edges": [
+      { "source": "CompanyA", "target": "CompanyB", "label": "partner" }
+    ],
+    "pagination": {
+      "page": 1,
+      "page_size": 50,
+      "total_count": 120,
+      "total_pages": 3,
+      "has_next": true,
+      "has_prev": false
+    }
+  }
+}
+```
+
+<Tip>
+When using `pagination_mode=paths`, send `recompute=true` only on the first
+request (or when your filter nodes change). For all subsequent pages, omit
+`recompute` (or pass `false`) to read from the cached parquet result — this
+avoids re-running the Vadalog engine on every page turn.
+</Tip>
+
+## Run graph analytics
+
+Execute a graph analytics function over an edge predicate. The engine builds
+the graph from the predicate, runs the selected algorithm, and returns the
+result merged back onto the node list — each node gains an `analytics` field
+with the computed value (e.g. a PageRank score or a connected-component ID).
+
+```
+POST /kgs/{project_id}/graph-analytics/{output_predicate}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `output_predicate` | path | yes | — | Name of the edge predicate to analyse. |
+| `column_roles` | body | yes | — | Object with `"source"` and `"target"` column positions (integers ≥ 0). |
+| `function` | body | yes | — | Analytics function to run. Must be a key returned by [List graph functions](#list-graph-functions). |
+| `function_params` | body | no | `{}` | Function-specific parameter object. See the function's schema in the registry. |
+| `compute` | body | no | — | [Compute](/integrations/rest-api#compute) target. |
+| `project` | body | no | — | Object `{ "scope": "user" }` overriding the query-level scope. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the output predicate. |
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/kgs/$PROJECT_ID/graph-analytics/edge?scope=user" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "column_roles": { "source": 0, "target": 1 },
+    "function": "pagerank",
+    "function_params": { "damping_factor": 0.85, "iterations": 20 }
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Graph analytics (pagerank) completed successfully",
+  "data": {
+    "nodes": [
+      { "id": "CompanyA", "label": "CompanyA", "analytics": { "score": 0.412 } },
+      { "id": "CompanyB", "label": "CompanyB", "analytics": { "score": 0.231 } }
+    ],
+    "edges": [
+      { "source": "CompanyA", "target": "CompanyB" }
+    ],
+    "analytics_type": "pagerank",
+    "analytics_range": { "min": 0.231, "max": 0.412 }
+  }
+}
+```
+
+The shape of `analytics` on each node depends on the function's result type:
+
+| Result type | `analytics` field | `analytics_range` |
+|---|---|---|
+| `node_score` (e.g. PageRank, degree centrality) | `{ "score": <float> }` | `{ "min": float, "max": float }` |
+| `node_group` (e.g. connected components) | `{ "component": "<id>" }` | not present |
+| `paths` | nodes/edges shaped as path graph | not present |
+
+## List graph functions
+
+Return the registry of available analytics functions together with their
+parameter schemas. Use this to discover what values are valid for the
+`function` field in [Run graph analytics](#run-graph-analytics).
+
+```
+GET /kgs/graph-functions
+```
+
+This endpoint takes no parameters.
+
+```bash
+curl "$BASE_URL/kgs/graph-functions" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Available graph analytics functions",
+  "data": {
+    "pagerank": {
+      "label": "PageRank",
+      "description": "Ranks nodes by the likelihood of a random walk arriving at each one.",
+      "result_type": "node_score",
+      "params": {
+        "damping_factor": { "type": "number", "default": 0.85 },
+        "iterations":     { "type": "integer", "default": 20 }
+      }
+    },
+    "cc": {
+      "label": "Connected Components",
+      "description": "Assigns each node to a weakly-connected component.",
+      "result_type": "node_group",
+      "params": {}
+    },
+    "dc": {
+      "label": "Degree Centrality",
+      "description": "Scores each node by its share of connections relative to the graph.",
+      "result_type": "node_score",
+      "params": {}
+    },
+    "paths": {
+      "label": "Shortest Paths",
+      "description": "Enumerates shortest paths between all node pairs.",
+      "result_type": "paths",
+      "params": {}
+    }
+  }
+}
+```
+
+## Visualize concept lineage
+
+Return the concept dependency DAG for a project as a graph. Each node
+represents a concept (enriched with its output fields and types); each edge is
+a transitive dependency between two concepts. Use this to understand how
+concepts relate to one another before building or exploring a knowledge graph.
+
+```
+POST /kgs/{project_id}/visualize-concept-lineage
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `project.scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. Passed as `{ "project": { "scope": "user" } }`. |
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/kgs/$PROJECT_ID/visualize-concept-lineage" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "project": { "scope": "user" } }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Concept lineage visualization generated successfully",
+  "data": {
+    "nodes": [
+      {
+        "id": "raw_companies",
+        "label": "raw_companies",
+        "fields": [
+          { "name": "name", "type": "string" },
+          { "name": "location", "type": "string" }
+        ]
+      },
+      {
+        "id": "enriched_companies",
+        "label": "enriched_companies",
+        "fields": [
+          { "name": "name", "type": "string" },
+          { "name": "location", "type": "string" },
+          { "name": "revenue", "type": "float" }
+        ]
+      }
+    ],
+    "edges": [
+      { "source": "raw_companies", "target": "enriched_companies" }
+    ]
+  }
+}
+```

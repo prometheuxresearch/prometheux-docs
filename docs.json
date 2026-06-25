@@ -123,13 +123,16 @@
           {
             "group": "API Reference",
             "pages": [
-              "integrations/api-endpoints/data",
+              "integrations/api-endpoints/authentication",
               "integrations/api-endpoints/projects",
               "integrations/api-endpoints/concepts",
+              "integrations/api-endpoints/data",
+              "integrations/api-endpoints/knowledge-graph",
               "integrations/api-endpoints/vadalog",
-              "integrations/api-endpoints/rule-inference",
-              "integrations/api-endpoints/dashboards",
               "integrations/api-endpoints/vadalingo",
+              "integrations/api-endpoints/dashboards",
+              "integrations/api-endpoints/schedules",
+              "integrations/api-endpoints/context-layer",
               "integrations/api-endpoints/agent"
             ]
           }
@@ -184,7 +187,8 @@
           "vadalog/chase-provenance",
           "vadalog/explanations",
           "vadalog/graph-analytics",
-          "vadalog/sql-integration"
+          "vadalog/sql-integration",
+          "vadalog/engine-api"
         ]
       },
       {

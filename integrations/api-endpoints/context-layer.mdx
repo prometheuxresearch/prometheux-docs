@@ -1,0 +1,377 @@
+---
+title: "Context Layer"
+description: "Store, search, and ingest context notes that ground the AI agent's knowledge base, scoped globally or per-project."
+---
+
+The **Context Layer** is the AI agent's knowledge base. It stores *context notes* — discrete facts, observations, and document chunks — that the agent retrieves at inference time to reason over your data. Notes are scoped either `global` (workspace-wide) or `project` (tied to a single project via a `scope_id`).
+
+<Note>
+This **scope model** (`global` | `project` + `scope_id`) is distinct from the user/organization scope used by the rest of the API. A note scoped to `project` with a given `scope_id` is invisible to the agent when it operates on a different project, even within the same organization.
+</Note>
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+
+<Note>
+The platform also ships an onboarding interview wizard that populates context notes interactively. Those endpoints (`GET /knowledge/interview/template`, `POST /knowledge/interview`) are UI-internal and not documented here.
+</Note>
+
+## Context notes
+
+### List notes
+
+Return all context notes for the given scope, optionally filtered by kind.
+
+```
+GET /knowledge/context
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | query | yes | — | `global` or `project`. |
+| `scope_id` | query | no | — | Project UUID. Required when `scope` is `project`. |
+| `kinds` | query | no | — | Comma-separated list of note kinds to include (e.g. `fact,observation`). Omit to return all kinds. |
+
+```bash
+curl "$BASE_URL/knowledge/context?scope=project&scope_id=$PROJECT_ID" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Context notes listed",
+  "data": [
+    {
+      "id": "note_a1b2...",
+      "scope": "project",
+      "scope_id": "proj_123",
+      "kind": "fact",
+      "text": "The `orders` table has a composite primary key on (order_id, tenant_id).",
+      "source": "user",
+      "pinned": false,
+      "superseded_by": null,
+      "created_at": "2026-06-20T09:15:00+00:00"
+    }
+  ]
+}
+```
+
+### Create a note
+
+Write a single context note into the knowledge base.
+
+```
+POST /knowledge/context
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | body | yes | — | `global` or `project`. |
+| `scope_id` | body | no | — | Project UUID. Required when `scope` is `project`. |
+| `kind` | body | yes | — | Free-form note type, e.g. `fact`, `observation`, `constraint`, `document_chunk`. |
+| `text` | body | yes | — | The note content. |
+| `source` | body | no | `"user"` | Originator label: `user`, `agent`, `auto_seed`, etc. |
+| `pinned` | body | no | `false` | Pinned notes are always included in retrieval regardless of relevance score. |
+| `supersedes` | body | no | `[]` | List of note IDs that this note replaces. Superseded notes are excluded from future retrieval. |
+
+```bash
+curl -X POST "$BASE_URL/knowledge/context" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scope": "project",
+    "scope_id": "proj_123",
+    "kind": "fact",
+    "text": "Revenue figures are always in USD unless the currency column is populated.",
+    "pinned": true
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Context note created",
+  "data": {
+    "id": "note_c3d4...",
+    "scope": "project",
+    "scope_id": "proj_123",
+    "kind": "fact",
+    "text": "Revenue figures are always in USD unless the currency column is populated.",
+    "source": "user",
+    "pinned": true,
+    "superseded_by": null,
+    "created_at": "2026-06-25T11:00:00+00:00"
+  }
+}
+```
+
+### Get a note
+
+Retrieve a single context note by ID.
+
+```
+GET /knowledge/context/{note_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `note_id` | path | yes | — | Context note UUID. |
+
+```bash
+curl "$BASE_URL/knowledge/context/note_c3d4..." \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Context note retrieved",
+  "data": {
+    "id": "note_c3d4...",
+    "scope": "project",
+    "scope_id": "proj_123",
+    "kind": "fact",
+    "text": "Revenue figures are always in USD unless the currency column is populated.",
+    "source": "user",
+    "pinned": true,
+    "superseded_by": null,
+    "created_at": "2026-06-25T11:00:00+00:00"
+  }
+}
+```
+
+### Update a note
+
+Partially update a context note. Only fields present in the request body are modified. Omitting `scope` or `scope_id` entirely leaves those fields unchanged; passing them explicitly (even as `null`) overwrites them.
+
+```
+PATCH /knowledge/context/{note_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `note_id` | path | yes | — | Context note UUID. |
+| `text` | body | no | — | Replacement note content. |
+| `kind` | body | no | — | Replacement kind label. |
+| `pinned` | body | no | — | `true` or `false`. |
+| `scope` | body | no | — | Move the note to a different scope (`global` or `project`). |
+| `scope_id` | body | no | — | Move the note to a different project. Pass `null` together with `scope: "global"` to clear the project binding. |
+
+```bash
+curl -X PATCH "$BASE_URL/knowledge/context/note_c3d4..." \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "pinned": false, "text": "Revenue figures are in USD (pre-2025) or EUR (2025+)." }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Context note updated",
+  "data": {
+    "id": "note_c3d4...",
+    "scope": "project",
+    "scope_id": "proj_123",
+    "kind": "fact",
+    "text": "Revenue figures are in USD (pre-2025) or EUR (2025+).",
+    "source": "user",
+    "pinned": false,
+    "superseded_by": null,
+    "created_at": "2026-06-25T11:00:00+00:00"
+  }
+}
+```
+
+### Delete a note
+
+Permanently delete a context note.
+
+```
+DELETE /knowledge/context/{note_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `note_id` | path | yes | — | Context note UUID. |
+
+```bash
+curl -X DELETE "$BASE_URL/knowledge/context/note_c3d4..." \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Context note deleted",
+  "data": null
+}
+```
+
+## Search
+
+### Semantic search
+
+Run a vector similarity search over context notes. Returns notes ranked by semantic relevance to the query string, each annotated with a similarity score.
+
+```
+POST /knowledge/context/search
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | query | yes | — | `global` or `project`. |
+| `scope_id` | query | no | — | Project UUID. Required when `scope` is `project`. |
+| `kinds` | query | no | — | Comma-separated kind filter. |
+| `top_k` | query | no | `10` | Maximum number of results to return (1–100). |
+| `query` | body | yes | — | The natural-language search string to embed and match against. |
+
+```bash
+curl -X POST "$BASE_URL/knowledge/context/search?scope=project&scope_id=$PROJECT_ID&top_k=5" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "query": "currency handling for revenue columns" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Context notes searched",
+  "data": [
+    {
+      "id": "note_c3d4...",
+      "kind": "fact",
+      "text": "Revenue figures are in USD (pre-2025) or EUR (2025+).",
+      "score": 0.91,
+      "pinned": false,
+      "source": "user"
+    }
+  ]
+}
+```
+
+## Ingestion
+
+### Ingest a file as context
+
+Parse and chunk an already-uploaded file into context notes. The file must first be uploaded via [`POST /data/files/upload`](/integrations/api-endpoints/data#upload-a-file), which returns a `disk/<name>` path to pass here.
+
+The ingestion pipeline extracts text, splits it into chunks, embeds each chunk, and persists them as `document_chunk` notes tied back to a shared `document_id`. If the embedding service is unavailable the file is still stored as a single un-vectorized note.
+
+```
+POST /knowledge/context/from-file
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | body | no | `"global"` | `global` or `project`. |
+| `scope_id` | body | no | — | Project UUID. Required when `scope` is `project`. |
+| `file_path` | body | yes | — | The `disk/<name>` path returned by the file-upload endpoint. |
+
+```bash
+curl -X POST "$BASE_URL/knowledge/context/from-file" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scope": "project",
+    "scope_id": "proj_123",
+    "file_path": "disk/data_dictionary_v3.pdf"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "File ingested as context notes",
+  "data": {
+    "document_id": "doc_e5f6...",
+    "filename": "data_dictionary_v3.pdf",
+    "chunk_count": 14,
+    "persisted": 14,
+    "scope": "project",
+    "scope_id": "proj_123"
+  }
+}
+```
+
+<Warning>
+Returns `422 Unprocessable Entity` when the file is readable but no text can be extracted — the most common cause is a scanned PDF without an OCR layer.
+</Warning>
+
+### Auto-seed from data sources
+
+Profile connected data sources and automatically write observation notes into the Context Layer. The platform inspects schemas, samples, and statistics for each source and uses the LLM to generate structured observations.
+
+This endpoint returns a [streaming NDJSON](/integrations/rest-api#streaming-responses) response. Each line is a JSON object with a `type` field describing the event.
+
+```
+POST /knowledge/auto-seed
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | body | no | `"project"` | `global` or `project`. |
+| `scope_id` | body | no | — | Project UUID. Required when `scope` is `project`. |
+| `datasource_ids` | body | no | — | Array of data source IDs to profile. Omit to profile all connected sources. |
+
+```bash
+curl -X POST "$BASE_URL/knowledge/auto-seed" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scope": "project",
+    "scope_id": "proj_123",
+    "datasource_ids": ["ds_aaa", "ds_bbb"]
+  }'
+```
+
+Each NDJSON line follows this shape:
+
+```jsonc
+// Source profiling started
+{ "type": "source_started", "data": { "datasource_id": "ds_aaa", "name": "prod_warehouse" } }
+
+// A note was written to the Context Layer
+{ "type": "note_written", "data": { "note_id": "note_g7h8...", "kind": "observation", "text": "..." } }
+
+// All sources processed
+{ "type": "done", "data": { "notes_written": 12 } }
+
+// Error (stream remains open; partial results may have been written)
+{ "type": "error", "data": { "error": "Connection to ds_bbb timed out" } }
+```
+
+## Project document
+
+### Render project document
+
+Return a combined document view for a project: an LLM-generated natural-language summary alongside the full executable Vadalog program assembled from all concepts. The summary is cached and is automatically invalidated when concepts or context notes change. Pass `refresh=true` to force regeneration regardless of the cache state.
+
+```
+GET /knowledge/project/{project_id}/text
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `scope` | query | no | `"user"` | Workspace [scope](/integrations/rest-api#scope) of the project. |
+| `refresh` | query | no | `false` | Bypass the summary cache and regenerate unconditionally. |
+
+```bash
+curl "$BASE_URL/knowledge/project/$PROJECT_ID/text?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Project document rendered",
+  "data": {
+    "summary": "This project computes monthly revenue by region...",
+    "vadalog_text": "@input(\"orders\").\n@output(\"revenue_by_region\").\nrevenue_by_region(R, sum<V>) <- orders(_, R, V, _).",
+    "cached": true,
+    "generated_at": "2026-06-24T08:30:00+00:00"
+  }
+}
+```
