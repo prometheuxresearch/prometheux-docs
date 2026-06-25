@@ -86,6 +86,22 @@ Both forms compose: an inline Cypher body that references a Neo4j-bound predicat
 - **Heterogeneous sources** (files, mixed connectors) — each source keeps its own connector-native pushdown (predicate / projection / partition pruning, JDBC SQL, Cypher to Neo4j, Qdrant filter) and the engine performs the join over the pruned results.
 </Tip>
 
+<Note>
+**Cypher cells in the Prometheux platform**
+
+The Prometheux [platform](/platform/projects) authors programs as **cells**, each with a type — `vadalog`, `cypher`, `sql`, or `python`. In a **Cypher cell** you write the query directly, without wrapping it in a Vadalog rule head:
+
+```cypher
+MATCH (a:Person)-[:KNOWS]->(b:Person)
+WHERE a.age > 18
+RETURN a.name AS name, b.name AS friend
+```
+
+The platform binds the resulting columns to a predicate that the next cell can consume — Vadalog, Cypher, SQL, or Python alike. The pushdown behaviour described in the Tip above applies the same way.
+</Note>
+
+> **The rest of this page documents Cypher used inside a Vadalog cell** — i.e. the `predicate(...) <- MATCH ... .` rule-body form. Pick this when you want to **compose** a Cypher pattern with other Vadalog rules in the same cell; pick a plain Cypher cell when the query stands on its own.
+
 ---
 
 ## How Cypher patterns map to your data
