@@ -1,40 +1,202 @@
 ---
 title: "AI Assistant"
-description: "The AI code assistant that generates, runs, and iterates on Vadalog concepts, plus natural-language and SQL translation."
+description: "The conversational AI agent that works across your whole Prometheux workspace — it can create projects, connect and generate data, write and run concepts, build ontologies and dashboards, ingest documents, and remember context."
 ---
 
-Prometheux includes an AI code assistant powered by the **Vadalog AI Agent** — a streaming, conversational interface that can autonomously plan and execute data workflows. Working inside a project, the agent can generate Vadalog programs, run concepts, inspect results, and iterate based on what it finds.
+The **AI Assistant** is a conversational agent built into the platform. Unlike a
+plain chatbot, it doesn't just answer questions — it can **do the work for you**.
+Ask it in plain language and it will create projects, connect or generate data,
+write and run Vadalog concepts, read back results, model ontologies, build
+dashboards, and pull knowledge out of documents you upload.
 
-## What the agent can do
+It plans and chains multiple steps in a single turn, streams its progress as it
+goes, asks before doing anything destructive, and asks clarifying questions when
+your request is ambiguous rather than guessing.
 
-The agent maintains conversation history within a session, so follow-up messages have full context. In a single turn it can:
+<Frame caption="The AI Assistant panel docked on the right — message transcript, the model badge in the header, and the attach / new-chat / history controls.">
+  <img src="/images/ai-assistant/ai_panel.png" alt="The AI Assistant panel" />
+</Frame>
 
-- Generate a new Vadalog concept from a natural-language request.
-- Run concepts and read back their results.
-- Propose concept code for you to review and accept.
-- Iterate on a workflow based on the outcomes of the steps it ran.
+## Where to find it
 
-As the agent works, it streams its activity back: text replies, the tools it is calling, the concept code it proposes, and the results of each step. This drives the tight feedback loop you see in the assistant chat.
+| Entry point | How to open it |
+|---|---|
+| **Workspace home** | The chat is front and center on the Home screen — the default place to start. |
+| **Anywhere in a project** | Click the floating **Open AI Assistant** button (bottom-right) to open the docked side panel. |
+| **A specific concept** | In a saved concept's toolbar, click **✨ Ask AI** to open the assistant focused on that concept. |
 
-For the full request/response contract (the `POST /agent/{project_id}/chat` streaming endpoint, the NDJSON event types such as `tool_start`, `proposal`, `tool_result`, `content`, and `done`, and how to reset a session), see the [Agent API reference](/integrations/api-endpoints/agent).
+The panel header has a **New chat** button, a **Chat history** button, and a small
+badge showing which AI model is currently answering.
 
-## Translation helpers
+## What you can ask it to do
 
-Alongside the conversational agent, Prometheux can translate other inputs into Vadalog so you don't have to write it by hand:
+Everything below is something the assistant can carry out for you. Each section
+includes example prompts — phrase your own requests the same conversational way.
 
-- **Natural language → Vadalog** — describe what you want in plain English. You can reference existing concepts with `@concept_name` so their schemas are used as context for the translation.
-- **SQL → Vadalog** — convert a SQL query into an equivalent Vadalog program.
-- **RDF → Vadalog** — turn RDF data into Vadalog.
-- **OWL → Vadalog** — translate an OWL ontology into Vadalog rules (RDF/XML, Turtle, N3, and N-Triples), optionally saving the result as a concept.
+### Explore your workspace
 
-These translations are LLM-powered. For request parameters and response shapes, see the [Vadalingo (Translations) API reference](/integrations/api-endpoints/vadalingo).
+Ask about anything you already have and the assistant will look it up: your
+projects, connected data sources (with their columns and row counts), concepts
+and their code, ontologies, and dashboards. It can also preview the first rows of
+any data source.
+
+> *"What data sources do I have connected?"*
+> *"Preview the transactions table."*
+> *"List the concepts in this project and show me what `final_report` does."*
+
+### Create and manage projects
+
+The assistant can spin up a new project for you, and take a **snapshot**
+(point-in-time version) before you make big changes so you can roll back.
+
+> *"Create a project called Company Ownership for analysing shareholder data."*
+> *"Snapshot this project before we restructure the ontology."*
+
+### Bring in data — connect, upload, or generate
+
+You can give the assistant data in several ways:
+
+- **Connect an uploaded file.** Attach a CSV, Excel, Parquet, JSON, TSV, RDF/OWL,
+  or similar file and the assistant wires it up as a queryable data source.
+- **Generate mock data.** Describe the data you want and the assistant creates a
+  small CSV data source from it — useful for prototyping before real data is
+  connected. It always **previews the data in chat and waits for your OK** before
+  creating it.
+- **Generate sample facts.** Produce realistic example input or output facts for
+  your predicates, to test a concept or demonstrate its output.
+
+> *"Here's a CSV of transactions — connect it as a data source."* (attach the file first)
+> *"Make me 50 rows of mock customer data with name, country, and signup date."*
+> *"Generate sample facts for the `ownership` predicate so I can test the rule."*
+
+### Write, run, and fix logic
+
+This is the assistant's core skill. It generates Vadalog for you (you never have
+to write the syntax yourself), saves it as a concept, runs it, and reads back the
+results. If a run fails, it **automatically repairs the code and re-runs** —
+looping until it works or it has learned enough to explain the problem.
+
+> *"Create a concept that finds every company indirectly controlled by Acme."*
+> *"Run `controlled_companies` and show me the first rows."*
+> *"This concept is throwing an error — fix it."*
+
+<Tip>
+The assistant decides the steps. A single request like *"build a concept that …
+and run it"* typically becomes: inspect your data sources → generate the Vadalog →
+save the concept → run it → show you the output, all in one turn.
+</Tip>
+
+### Model your domain (ontology)
+
+The assistant can read your project's **ontology** and build or update it —
+adding entity types (nodes) and relationship types (edges). Because schema
+changes are harder to undo, it shows you the change and **asks for confirmation
+first**.
+
+> *"Add a Company node and a CONTROLS edge between companies."*
+> *"What does my current ontology look like?"*
+
+### Build dashboards
+
+Ask for a dashboard and the assistant assembles it, mapping your concepts to
+widgets — tables, line charts, pie charts, bar lists, stat cards, progress bars,
+badge tables, and more.
+
+> *"Build a dashboard that shows the top shareholders as a bar chart and the
+> ownership table below it."*
+> *"Delete the old 'scratch' dashboard."*
+
+### Work with documents and remembered context
+
+The assistant has a **Context Layer** — a memory of facts, preferences, and
+documents that persists across conversations and grounds future answers.
+
+- **Ingest documents.** Upload a PDF, policy, glossary, or regulatory text and the
+  assistant chunks and embeds it into the Context Layer so it can retrieve the
+  relevant passages later.
+- **Extract concepts from a document.** Have it scan an ingested document and
+  propose candidate concepts (rules) drawn from its contents.
+- **Remember facts and preferences.** Tell it a business definition or a working
+  preference and it saves a durable note; it recalls the relevant ones on every
+  future turn. It can also **promote a saved note into a concept**.
+
+> *"Import this AML policy PDF and use it as context."* (attach the PDF first)
+> *"Pull any rules out of that policy document and turn them into concepts."*
+> *"Remember that an 'active' customer is one with a purchase in the last 90 days."*
+
+### Ask about Prometheux and Vadalog
+
+The assistant can answer questions about the Prometheux product itself and search
+the Vadalog documentation for patterns and examples.
+
+> *"What is Prometheux and who is it for?"*
+> *"Show me how recursion works in Vadalog."*
+
+<Note>
+**Translating other formats.** The assistant generates Vadalog from natural
+language directly. To convert **SQL, RDF, or OWL** into Vadalog, use the
+translation features (the **✨** button in the concept editor, or the
+[Vadalingo API](/integrations/api-endpoints/vadalingo)).
+</Note>
+
+## How it works
+
+**It plans and acts, and streams as it goes.** As the assistant works you'll see
+its reply text appear live, the tools it's running ("Working…"), the changes it
+proposes, and the results of each step — the same tight loop whether it's writing
+one concept or building a whole workflow.
+
+**It confirms before risky changes — but not for things you asked for.** If you
+explicitly tell it to create or change something, it just does it. If it's
+*proactively suggesting* something you didn't ask for, or the action is hard to
+undo (changing the ontology, deleting a dashboard, creating mock data), it shows
+you what it intends to do and waits for your go-ahead.
+
+**It asks instead of guessing.** When a request can't be pinned down — e.g. you
+ask for "active" or "suspicious" records but those aren't defined anywhere — the
+assistant asks a **clarifying question with clickable options** rather than
+assuming what you meant.
+
+**It remembers.** Each conversation keeps full context, so follow-ups just work.
+Durable facts and preferences are saved to the Context Layer and recalled in later
+sessions. You can switch projects mid-conversation and it reloads context for the
+new project.
+
+**It stays on topic.** The assistant is scoped to your data, Vadalog, and the
+Prometheux platform; it politely declines unrelated requests. If your account
+isn't allowed to perform an action (for example, editing projects), it tells you
+that action is outside what it can do for you.
+
+## Attaching files
+
+Click the **paperclip** in the message box to attach one or more files (up to
+50 MB each). A chip shows each file's upload progress. Once attached, tell the
+assistant what to do with it — *"connect this as a data source"* or *"ingest this
+as context."*
+
+<Frame caption="A message with an attached PDF, and the assistant's response showing a proposal card and a clarifying question with selectable options.">
+  <img src="/images/ai-assistant/attachments.png" alt="Attachments, proposals, and clarification" />
+</Frame>
+
+## Managing conversations
+
+- **New chat** — start a fresh session (clears the current transcript).
+- **Chat history** — reopen past conversations; rename or delete them.
+- Conversations are titled automatically from their content.
 
 ## Learn more
 
-- [Agent API](/integrations/api-endpoints/agent) — streaming chat endpoint and event types.
-- [Vadalingo API](/integrations/api-endpoints/vadalingo) — NL/SQL/RDF/OWL to Vadalog translation.
-- [Thinking in Vadalog](/vadalog/thinking-in-vadalog) — how to frame problems the way the language expects.
-
-<Note>
-This page describes the AI assistant capabilities that the agent and translation APIs support. The product UI surface for these features (where the assistant lives in the app, the accept/reject controls for proposals, and any in-app translation buttons) still needs to be documented by a human.
-</Note>
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="play" href="/get-started/quickstart">
+    See where the assistant fits in the end-to-end app workflow.
+  </Card>
+  <Card title="Concepts & Lineage" icon="diagram-project" href="/platform/concepts-and-lineage">
+    Understand the concepts the assistant creates and runs.
+  </Card>
+  <Card title="Agent API" icon="code" href="/integrations/api-endpoints/agent">
+    Drive the assistant programmatically over the streaming chat API.
+  </Card>
+  <Card title="Thinking in Vadalog" icon="brain" href="/vadalog/thinking-in-vadalog">
+    Frame problems the way the language — and the assistant — expects.
+  </Card>
+</CardGroup>
