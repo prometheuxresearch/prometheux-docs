@@ -188,6 +188,7 @@
           "vadalog/explanations",
           "vadalog/graph-analytics",
           "vadalog/sql-integration",
+          "vadalog/cypher-integration",
           "vadalog/engine-api"
         ]
       },

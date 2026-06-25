@@ -364,6 +364,194 @@ vip(C, T) <- top_customers(C, T).
 @output("vip").
 ```
 
+### Cypher over Iceberg
+
+Iceberg-bound predicates accept **inline Cypher queries** in rule bodies the same way they accept SQL bodies. You write a Cypher pattern; the engine produces an execution plan that pushes filters, projections, partition pruning and file skipping into the Iceberg scan, then runs the join / aggregation / graph algorithm over the pruned data. There is no Neo4j server in the loop — the engine evaluates the Cypher locally against the Iceberg tables, and snapshots, branches, schema evolution and statistics work exactly as they do for plain Iceberg reads.
+
+The full Cypher language surface — patterns, `WHERE` operators, `RETURN` expressions, `WITH` pipelines, aggregations, GDS algorithms — is documented once for every source in [Cypher Integration](/vadalog/cypher-integration). This section focuses on the Iceberg-specific aspects: how a Cypher pattern lines up with an Iceberg table, what pushdown looks like, and how time travel / branches / mixed-source joins compose with Cypher bodies.
+
+#### Property-graph ↔ Iceberg layout
+
+For a Cypher pattern to line up with an Iceberg table, follow the property-graph ↔ relational convention used by every non-Neo4j source (see [Cypher Integration › How Cypher patterns map to your data](/vadalog/cypher-integration#how-cypher-patterns-map-to-your-data) for the full reference):
+
+| Cypher element | Iceberg table layout |
+| --- | --- |
+| Node label `(:Person)` | a table `person` (lower-cased) with an `id` column |
+| Relationship type `[:KNOWS]` | a table `knows` (lower-cased) with `src` / `dst` columns referencing node ids |
+| Property `p.age` | a column `age` |
+| Property of a relationship `r.weight` | a column `weight` on the relationship table |
+
+The Iceberg-flavoured examples in this section use the canonical bindings below — assume they are present at the top of every snippet:
+
+```prolog
+% A person table (id, name, age, city, balance, tags, since, ...).
+@bind("person", "iceberg", "prod_catalog.graph", "person").
+
+% A knows relationship (src, dst, since, weight) — endpoints reference person ids.
+@bind("knows",  "iceberg", "prod_catalog.graph", "knows").
+```
+
+#### Predicate and projection pushdown
+
+A single Cypher pattern with a `WHERE` is the most common case. The endpoint and property predicates and the `RETURN` projection are pushed into the Iceberg scan, so partitions, files and pages whose statistics are disjoint from the predicate are dropped at planning time — exactly as if you had written a SQL `WHERE`:
+
+```prolog
+adult_londoners(Name) <-
+    MATCH (p:Person)
+    WHERE p.age >= 18 AND p.city = "London"
+    RETURN p.name AS name.
+
+@output("adult_londoners").
+```
+
+A pattern that reads node properties across a relationship keeps Iceberg's pushdown on **each side independently** (column pruning + partition pruning + min/max file skipping), and the engine joins the projected results:
+
+```prolog
+adult_friends(Name, Friend) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person)
+    WHERE a.age > 18
+    RETURN a.name AS name, b.name AS friend.
+
+@output("adult_friends").
+```
+
+#### Graph algorithms over an Iceberg-backed graph
+
+Graph Data Science calls work directly over an Iceberg edge table. When the projected node label is itself backed by an `@bind`'d Iceberg table, the engine restricts the graph to edges whose endpoints exist in that table — a node-induced edge filter applied before the algorithm runs:
+
+```prolog
+% Only edges among `person` ids are scored; nodes that aren't in the person
+% table are dropped before PageRank runs.
+pagerank_persons(Node, Score) <-
+    CALL gds.graph.project('g', 'Person', 'KNOWS')
+    CALL gds.pageRank.stream('g')
+    YIELD nodeId, score
+    RETURN nodeId, score.
+
+@output("pagerank_persons").
+```
+
+See [Cypher Integration › Graph algorithms](/vadalog/cypher-integration#graph-algorithms-gds) for the full algorithm catalog and parameter options.
+
+#### Cypher pinned to a historical snapshot
+
+Time travel is a bind-level option on the Iceberg source, so the Cypher body stays unchanged — only the `@bind` changes. Pin a Cypher query to a snapshot id or an as-of timestamp:
+
+```prolog
+% Same Cypher, run against the orders table as it looked at midnight UTC on 2026-05-01.
+@bind("orders_may1", "iceberg as-of-timestamp='1746057600000'",
+      "prod_catalog.sales", "orders").
+
+high_value_then(O, A) <-
+    MATCH (o:orders_may1)
+    WHERE o.amount > 10000
+    RETURN o.order_id AS o, o.amount AS a.
+
+@output("high_value_then").
+```
+
+#### Cypher on a what-if branch
+
+The same trick with `branch='…'` lets you run Cypher (including GDS) on a non-`main` branch without touching production data:
+
+```prolog
+@bind("knows_dev", "iceberg branch='dev'", "prod_catalog.graph", "knows").
+
+dev_pagerank(Node, Score) <-
+    CALL gds.graph.project('g', 'Person', 'KNOWS_DEV')
+    CALL gds.pageRank.stream('g')
+    YIELD nodeId, score
+    RETURN nodeId, score.
+
+@output("dev_pagerank").
+```
+
+#### Mixed-source joins with Iceberg
+
+A single Cypher body can reference predicates bound to **different data layers**. The Iceberg side keeps its planning-time pushdown; the other side keeps its own connector-native pushdown (JDBC SQL, Cypher to Neo4j, Qdrant filter); the engine joins the projected results:
+
+```prolog
+@bind("person", "iceberg",    "prod_catalog.graph", "person"). % entity catalog in Iceberg
+@bind("knows",  "postgresql", "company_db",         "knows").  % operational edges in Postgres
+
+friends(Name, Friend) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person)
+    WHERE a.age > 18
+    RETURN a.name AS name, b.name AS friend.
+
+@output("friends").
+```
+
+For the rest of the Cypher surface — list / map / temporal operations, `WITH` pipelines, the full `WHERE` and `RETURN` expression library, and recipes for composing Vadalog rules on top of a Cypher result — see [Cypher Integration](/vadalog/cypher-integration).
+
+### Vadalog, SQL, and Cypher together over Iceberg
+
+The same Iceberg dataset can be queried with **plain Vadalog rules**, **inline SQL bodies**, or **inline Cypher bodies**. Pick the lens that best fits the query you're writing — they all share the same Iceberg planning-time pushdown (partition pruning, file skipping, column pruning) and they all compose with the rest of your program.
+
+Suppose your catalog contains an Iceberg `person` table (id, name, age, city) and an Iceberg `knows` table (src, dst, since). Three identical questions, expressed three ways:
+
+#### Lens 1 — Vadalog rules
+
+Best when the logic involves derivations, recursion, or rule-based reasoning the other lenses cannot express:
+
+```prolog
+@bind("person", "iceberg", "prod_catalog.graph", "person").
+@bind("knows",  "iceberg", "prod_catalog.graph", "knows").
+
+adult(Id, Name) :- person(Id, Name, Age, _), Age > 18.
+
+adult_friend(AName, BName) :-
+    adult(A, AName),
+    knows(A, B, _),
+    person(B, BName, _, _).
+
+@output("adult_friend").
+```
+
+#### Lens 2 — Inline SQL body
+
+Best for analytical queries — joins, aggregations, window functions, CTEs:
+
+```prolog
+@bind("person", "iceberg", "prod_catalog.graph", "person").
+@bind("knows",  "iceberg", "prod_catalog.graph", "knows").
+
+adult_friend() <-
+    SELECT a.name AS aname, b.name AS bname
+    FROM person a
+    JOIN knows k ON a.id = k.src
+    JOIN person b ON k.dst = b.id
+    WHERE a.age > 18.
+
+@output("adult_friend").
+```
+
+#### Lens 3 — Inline Cypher body
+
+Best when the question is naturally a graph pattern — multi-hop, variable-length, shortest path, GDS:
+
+```prolog
+@bind("person", "iceberg", "prod_catalog.graph", "person").
+@bind("knows",  "iceberg", "prod_catalog.graph", "knows").
+
+adult_friend(AName, BName) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person)
+    WHERE a.age > 18
+    RETURN a.name AS aname, b.name AS bname.
+
+@output("adult_friend").
+```
+
+The three produce the same result, take the same Iceberg planning-time benefits, and can be **freely mixed in the same program**: one rule can derive its inputs with Vadalog, another can pre-aggregate with SQL, and a third can pattern-match with Cypher — all consuming the same Iceberg tables and producing predicates the others can consume.
+
+<Tip>
+**Pick the right lens for the question**
+
+- **Vadalog** — recursion, derivations, the chase, AI / vector functions, hashing, anything the other lenses cannot express. See [Thinking in Vadalog](/vadalog/thinking-in-vadalog).
+- **SQL** — joins, aggregations, window functions, CTEs, anything that is naturally relational. See [SQL Integration](/vadalog/sql-integration).
+- **Cypher** — pattern matching, multi-hop traversals, `shortestPath`, GDS algorithms. See [Cypher Integration](/vadalog/cypher-integration).
+</Tip>
+
 ### Notes
 
 - All planning-time optimizations (partition pruning, min/max file skipping, bloom filters, CBO via table statistics) are owned by the Iceberg layer; Prometheux preserves the pushdown opportunity by keeping Vadalog-derived filters and projections adjacent to the Iceberg scan in the execution plan.
@@ -1211,7 +1399,7 @@ You still need a `@bind` annotation to provide the Neo4j connection details — 
 <Note>
 **Not just Neo4j**
 
-The same inline Cypher also runs over **non-Neo4j** sources — CSV/Parquet files, relational databases, and derived predicates. See [Cypher over non-Neo4j sources](#cypher-over-non-neo4j-sources-csv-files-databases) below.
+The same inline Cypher also runs over **non-Neo4j** sources — CSV/Parquet/Iceberg files, relational databases, vector stores, and derived predicates. See [Cypher Integration](/vadalog/cypher-integration) for the full language surface, or [Cypher over non-Neo4j sources](#cypher-over-non-neo4j-sources-csv-files-databases) below for the layout convention.
 </Note>
 
 ```prolog
@@ -1264,53 +1452,26 @@ path_result(StartName, EndName, Length) <-
 
 ### Cypher over non-Neo4j sources (CSV, files, databases)
 
-A Cypher body is **no longer limited to Neo4j**. The same inline Cypher also runs when the predicates it references are bound to CSV/Parquet files, a relational database (PostgreSQL, MariaDB, …), in-memory facts, or even a **derived predicate produced by another rule**. Write the query once and it works over a CSV file or a SQL table just as it does over Neo4j.
+A Cypher body is **not limited to Neo4j**. The same inline Cypher also runs when the predicates it references are bound to CSV / Parquet / Iceberg files, a relational database (PostgreSQL, MariaDB, Snowflake, …), in-memory facts, or even a **derived predicate produced by another rule**. The full Cypher language surface — patterns, `WHERE` operators, `RETURN` expressions, `WITH` pipelines, aggregations, GDS algorithms — is documented in [Cypher Integration](/vadalog/cypher-integration). This section focuses on what is specific to non-Neo4j sources: how a Cypher pattern lines up with relational tables and files.
 
 #### How to lay out your data
 
-For a Cypher pattern to line up with relational tables/files, name things as follows:
+For a Cypher pattern to line up with relational tables / files, name things as follows:
 
 | Cypher element | Relational layout |
 | --- | --- |
 | Node label `(:Person)` | a table `person` (lower-cased) with an `id` column |
 | Relationship type `[:KNOWS]` | a table `knows` (lower-cased) with `src` and `dst` columns |
-| Node / relationship property `p.age` | a column `age` by the same name |
+| Node or relationship property `p.age` | a column `age` by the same name |
 
-The field names used in Cypher must match a CSV header or a table/schema column — if there is no corresponding name, the query errors.
+The field names used in Cypher must match a CSV header or a table column — if there is no corresponding name, the query errors with `column not found`. Use [`@mapping`](/vadalog/annotations#mapping) to alias source columns into this layout when the underlying schema does not match.
 
-#### Single-relation patterns over files
+#### A representative example
 
-A pattern that touches a single table — one node label, or one relationship with no node properties — works over CSV/Parquet and databases alike.
-
-```prolog
-% knows.csv has the header: src,dst,since
-@bind("knows", "csv useHeaders=true", "data", "knows.csv").
-
-friends(A, B) <-
-    MATCH (a)-[:knows]->(b)
-    RETURN a, b.
-
-@output("friends").
-```
+A pattern that reads node properties across a relationship works over **files and databases alike**. The endpoints of the relationship reference the node `id`, so the node table is joined in to resolve its properties:
 
 ```prolog
-% person.csv has the header: id,name,age,city
-@bind("person", "csv useHeaders=true", "data", "person.csv").
-
-adults(Name) <-
-    MATCH (p:Person)
-    WHERE p.age > 18
-    RETURN p.name AS name.
-
-@output("adults").
-```
-
-#### Joining node properties across a relationship
-
-A pattern that reads node properties across a relationship — or spans multiple hops — works over **files and databases alike**. The endpoints of the relationship reference the node `id`, so the node table is joined in to resolve its properties:
-
-```prolog
-% person.csv: id,name,age,city  —  knows.csv: src,dst,since (src/dst are person ids)
+% person.csv: id, name, age, city  —  knows.csv: src, dst, since (src/dst are person ids)
 @bind("person", "csv useHeaders=true", "data", "person.csv").
 @bind("knows",  "csv useHeaders=true", "data", "knows.csv").
 
@@ -1335,68 +1496,15 @@ The exact same query runs unchanged against a database — just swap the binding
 For a join to line up, the relationship's `src`/`dst` must hold the values of the node `id` column (here, `knows.src`/`knows.dst` are `person.id` values). A label used on both endpoints (such as `Person` above) is joined once per endpoint automatically.
 </Tip>
 
-#### Graph algorithms (GDS)
+<Tip>
+**Where the join executes**
 
-Graph Data Science calls work over a file or database edge table too. Project a graph from your relationship table and run the algorithm — for example PageRank over a `knows.csv`:
-
-```prolog
-% knows.csv has the header: src,dst,since
-@bind("knows", "csv useHeaders=true", "data", "knows.csv").
-
-pagerank(Node, Score) <-
-    CALL gds.graph.project('g', 'Person', 'KNOWS')
-    CALL gds.pageRank.stream('g')
-    YIELD nodeId, score
-    RETURN nodeId, score.
-
-@output("pagerank").
-```
-
-The same shape applies by swapping the `gds.*` call. The supported graph algorithms are:
-
-| Cypher GDS call | Computes |
-| --- | --- |
-| `gds.pageRank.stream` (also `articleRank`) | PageRank importance score per node |
-| `gds.betweenness.stream` | Betweenness centrality (bridge nodes) |
-| `gds.degree.stream` | Degree centrality |
-| `gds.louvain` / `gds.labelPropagation` / `gds.scc` / `gds.wcc` | Connected components / communities |
-| `gds.triangleCount.stream` | Triangle enumeration |
-| `gds.bfs.stream` | Breadth-first levels from a source |
-| `gds.allShortestPaths.stream` | All-shortest-paths (weighted) |
-| `gds.shortestPath.dijkstra` / `bellmanFord` / `astar` | Single-source shortest path |
-
-Two common Cypher idioms are recognised as well, without an explicit `gds.*` call:
-
-```prolog
-% Shortest path between matched endpoints
-shortest(A, B, Len) <-
-    MATCH (a)-[:knows]->(b), p = shortestPath((a)-[:knows*]->(b))
-    RETURN a, b, length(p).
-
-% Variable-length reachability: every node reachable via :knows
-reachable(A, B) <-
-    MATCH (a)-[:knows*]->(b)
-    RETURN a, b.
-```
-
-Single-source shortest path and BFS take a `sourceNode` in the GDS config, which scopes the computation to that start node:
-
-```prolog
-% knows.csv has the header: src,dst,since
-@bind("knows", "csv useHeaders=true", "data", "knows.csv").
-
-sssp(Target, Distance) <-
-    CALL gds.graph.project('g', 'Person', 'KNOWS')
-    CALL gds.shortestPath.dijkstra.stream('g', {sourceNode: 'alice'})
-    YIELD targetNode, totalCost
-    RETURN targetNode, totalCost.
-
-@output("sssp").
-```
+When every predicate the pattern references is bound to the **same database** (PostgreSQL, Snowflake, …), the whole join is pushed down as a single statement to that database. When the sources are heterogeneous — files (CSV / Parquet / Iceberg), or a mix of connectors (Iceberg ⨝ PostgreSQL ⨝ Neo4j ⨝ Qdrant) — each source keeps its own connector-native pushdown (predicate / projection / partition pruning, JDBC SQL, Cypher to Neo4j, Qdrant filter) and the engine performs the join over the pruned results.
+</Tip>
 
 #### Reading from an intermediate result (positional columns)
 
-A node/relationship can resolve to a **derived predicate** (the head of another rule), to **facts**, or to a **headerless CSV**. These have no header names — only positional columns named `<predicate>_<index>` (`_0`, `_1`, …). Reference them positionally:
+A node or relationship can resolve to a **derived predicate** (the head of another rule), to **facts**, or to a **headerless CSV**. These have no header names — only positional columns named `<predicate>_<index>` (`_0`, `_1`, …). Reference them positionally:
 
 ```prolog
 @bind("air_routes_nodes_csv", "csv useHeaders=true", "data", "air-routes-nodes.csv").
@@ -1417,9 +1525,12 @@ regions(Region) <-
 
 <Tip>
 **Header names vs positional**
+
 - Use **property names** (`RETURN n.region`) when the source has headers — a CSV bound with `useHeaders=true`, or a database table.
 - Use **positional columns** (`RETURN airport_concept_1`) when the source is derived, headerless, or in-memory facts.
 </Tip>
+
+For the full Cypher surface — `WHERE` operators, projection / value transformation, aggregation, `WITH` pipelines, graph algorithms, and worked examples over each source kind — see [Cypher Integration](/vadalog/cypher-integration).
 
 ### Querying Neo4j with SQL
 

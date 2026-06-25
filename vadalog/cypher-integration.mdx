@@ -1,0 +1,797 @@
+---
+title: "Cypher Integration"
+description: "Embedding inline Cypher queries within Vadalog rules for pattern matching, multi-hop traversals, and graph analytics over any data source — files, databases, vector stores, and Neo4j."
+---
+
+## Why Cypher in Vadalog?
+
+Prometheux supports **native Cypher queries** embedded directly within Vadalog rules. A Cypher body is **not limited to Neo4j**: the same pattern runs whether the predicates it references are bound to CSV / Parquet / Iceberg files, a relational database (PostgreSQL, MariaDB, Snowflake, …), a vector store, in-memory facts, or a Neo4j server.
+
+- **Write graph queries against tabular data** — pattern-match nodes and relationships over rows in your existing tables and files, no graph database required
+- **Leverage existing Cypher skills** — `MATCH`, `WHERE`, `RETURN`, `WITH`, `OPTIONAL MATCH`, and the GDS algorithm family work the same everywhere
+- **Mix data layers** — a single Cypher query can join Iceberg with PostgreSQL, Neo4j, Qdrant, or in-memory facts; each side keeps its own connector-native pushdown
+- **Push down to the source** — for non-Neo4j sources the engine generates a SQL plan that pushes filters, projections, partition pruning and file skipping into the source scan; for Neo4j the Cypher is sent verbatim to the server
+- **Compose with Vadalog** — anything Cypher does not express (recursion, the chase, AI / vector functions, hashing) is added as a plain Vadalog rule on top of the Cypher result
+
+---
+
+## Two Ways to Use Cypher
+
+### 1. Cypher in Rule Bodies (over any source)
+
+When a rule body starts with a `MATCH` (or `OPTIONAL MATCH`, `CALL`, or `WITH`) keyword, it is interpreted as an inline Cypher query:
+
+```prolog
+result_predicate(...) <- MATCH (a)-[:R]->(b) WHERE a.prop = "x" RETURN a, b.
+```
+
+**Syntax**
+
+- The Cypher body starts with `MATCH` / `OPTIONAL MATCH` / `CALL` / `WITH` and ends with `.` (the rule terminator)
+- The head's arguments are positional projections of the Cypher `RETURN` list (one head arg per returned column)
+- All standard Cypher constructs are supported in the body — see [Patterns](#patterns), [Filtering](#filtering-in-where), [Projection](#projection-and-value-transformation), [Aggregation](#aggregation-grouping-and-paging), [WITH pipelines](#multi-stage-with-pipelines), [Graph algorithms](#graph-algorithms-gds)
+
+**CSV example**
+
+```prolog
+% person.csv has the header: id, name, age, city
+@bind("person", "csv useHeaders=true", "data", "person.csv").
+
+adults(Name) <-
+    MATCH (p:Person)
+    WHERE p.age > 18
+    RETURN p.name AS name.
+
+@output("adults").
+```
+
+The same query runs unchanged against a relational database — just swap the binding:
+
+```prolog
+@bind("person", "postgresql", "company_db", "person").
+
+adults(Name) <-
+    MATCH (p:Person)
+    WHERE p.age > 18
+    RETURN p.name AS name.
+
+@output("adults").
+```
+
+### 2. Cypher in Neo4j Bindings (server-side pushdown)
+
+When binding a Neo4j source, the bind's table slot accepts a **node label** or **relationship pattern**, and the engine generates the right `MATCH` to scan it server-side:
+
+```prolog
+% Bind every (:Person) node as a relation with the node's properties as columns.
+@bind("persons", "neo4j username='neo4j', password='pwd', host='neo4j-host', port=7687",
+      "neo4j", "(:Person)").
+
+% Bind every :FRIEND_OF relationship as a relation with src/dst and rel properties.
+@bind("friend_of", "neo4j username='neo4j', password='pwd', host='neo4j-host', port=7687",
+      "neo4j", "(:Person)-[:FRIEND_OF]->(:Person)").
+
+friends(SrcName, DstName) <- friend_of(SrcName, _, DstName, _).
+
+@output("friends").
+```
+
+Both forms compose: an inline Cypher body that references a Neo4j-bound predicate is sent verbatim to Neo4j; an inline Cypher body that references a CSV / Parquet / Iceberg / SQL-database predicate is translated into a SQL execution plan and run by the engine.
+
+<Tip>
+**Where the Cypher runs**
+
+- **All predicates bound to Neo4j** — the Cypher body is rewritten and pushed down to the Neo4j server as a single Cypher query. No data is loaded into memory.
+- **All predicates bound to the same SQL database** — the Cypher body becomes a single SQL `JOIN` pushed down to that database.
+- **Heterogeneous sources** (files, mixed connectors) — each source keeps its own connector-native pushdown (predicate / projection / partition pruning, JDBC SQL, Cypher to Neo4j, Qdrant filter) and the engine performs the join over the pruned results.
+</Tip>
+
+---
+
+## How Cypher patterns map to your data
+
+For a Cypher pattern to line up with relational tables and files, follow the property-graph ↔ relational convention below:
+
+| Cypher element | Relational layout |
+| --- | --- |
+| Node label `(:Person)` | a table `person` (lower-cased) with an `id` column |
+| Relationship type `[:KNOWS]` | a table `knows` (lower-cased) with `src` and `dst` columns referencing node ids |
+| Node property `p.age` | a column `age` on the node table |
+| Relationship property `r.weight` | a column `weight` on the relationship table |
+
+The field names used in Cypher must match a CSV header, a table column, or an `@mapping`-aliased column. If there is no corresponding name, the query errors with `column not found`.
+
+For Neo4j-bound predicates, no layout convention is required: the Cypher is sent verbatim to the server, which already understands the graph schema.
+
+---
+
+## Patterns
+
+### Single-relation pattern
+
+The most common case: a one-hop traversal. Pushed down to the source scan with column and predicate pruning.
+
+```prolog
+% knows.csv has the header: src, dst, since
+@bind("knows", "csv useHeaders=true", "data", "knows.csv").
+
+friends(A, B) <-
+    MATCH (a)-[:knows]->(b)
+    RETURN a, b.
+
+@output("friends").
+```
+
+### Joining node properties across a relationship
+
+A pattern that reads node properties across a relationship pulls in the node label table automatically. Each side keeps its own pushdown; the engine joins the projected results.
+
+```prolog
+@bind("person", "csv useHeaders=true", "data", "person.csv"). % id, name, age, city
+@bind("knows",  "csv useHeaders=true", "data", "knows.csv").  % src, dst, since
+
+adults_and_friends(Name, Friend) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person)
+    WHERE a.age > 18
+    RETURN a.name AS name, b.name AS friend.
+
+@output("adults_and_friends").
+```
+
+### Multi-hop traversal
+
+Comma-separated patterns and multi-hop chains are recognised; the engine wires up the joins for you.
+
+```prolog
+@bind("person", "csv useHeaders=true", "data", "person.csv").
+@bind("knows",  "csv useHeaders=true", "data", "knows.csv").
+
+foaf(Name, Foaf) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person)-[:KNOWS]->(c:Person)
+    WHERE a.name = "alice"
+    RETURN a.name AS name, c.name AS foaf.
+
+@output("foaf").
+```
+
+### Variable-length and bounded patterns
+
+Variable-length traversal `(a)-[:R*]->(b)` (with optional `*m..n` bounds) is recognised as a reachability query and lowered to a transitive-closure computation by the engine:
+
+```prolog
+@bind("knows", "csv useHeaders=true", "data", "knows.csv").
+
+reachable(A, B) <-
+    MATCH (a)-[:knows*]->(b)
+    RETURN a, b.
+
+reachable_bounded(A, B) <-
+    MATCH (a)-[:knows*1..3]->(b)
+    RETURN a, b.
+
+@output("reachable").
+@output("reachable_bounded").
+```
+
+### `shortestPath` / `allShortestPaths`
+
+```prolog
+@bind("knows", "csv useHeaders=true", "data", "knows.csv").
+
+shortest(A, B, Len) <-
+    MATCH (a)-[:knows]->(b), p = shortestPath((a)-[:knows*]->(b))
+    RETURN a, b, length(p).
+
+@output("shortest").
+```
+
+### `OPTIONAL MATCH` (left-join semantics)
+
+The matched companion plus a negated branch are emitted so rows that do not have the optional relationship still appear with `null` columns:
+
+```prolog
+@bind("person", "csv useHeaders=true", "data", "person.csv").
+@bind("knows",  "csv useHeaders=true", "data", "knows.csv").
+
+people_and_maybe_friend(Name, Friend) <-
+    MATCH (a:Person)
+    OPTIONAL MATCH (a)-[:KNOWS]->(b:Person)
+    RETURN a.name AS name, b.name AS friend.
+
+@output("people_and_maybe_friend").
+```
+
+---
+
+## Filtering in `WHERE`
+
+### Comparison and boolean composition
+
+```prolog
+mid_age(Name) <-
+    MATCH (p:Person)
+    WHERE (p.age >= 30 AND p.age <= 50) OR p.city = "London"
+    RETURN p.name AS name.
+
+@output("mid_age").
+```
+
+### Arithmetic on properties and literals
+
+```prolog
+near_legal(Name) <-
+    MATCH (p:Person)
+    WHERE p.age + 1 > 21 AND p.age * 2 < 80
+    RETURN p.name AS name.
+
+@output("near_legal").
+```
+
+### String predicates: `STARTS WITH`, `ENDS WITH`, `CONTAINS`
+
+```prolog
+a_names(Name) <-
+    MATCH (p:Person)
+    WHERE p.name STARTS WITH "Al"
+    RETURN p.name AS name.
+
+londoners(Name) <-
+    MATCH (p:Person)
+    WHERE p.city CONTAINS "ond"
+    RETURN p.name AS name.
+
+@output("a_names").
+@output("londoners").
+```
+
+### Regex `=~`
+
+```prolog
+al_names(Name) <-
+    MATCH (p:Person)
+    WHERE p.name =~ "^Al.*"
+    RETURN p.name AS name.
+
+@output("al_names").
+```
+
+### List membership `IN [list]`
+
+```prolog
+picked(Name) <-
+    MATCH (p:Person)
+    WHERE p.age IN [18, 21, 30, 40]
+    RETURN p.name AS name.
+
+@output("picked").
+```
+
+### Null tests `IS NULL` / `IS NOT NULL`
+
+```prolog
+has_nickname(Name, Nick) <-
+    MATCH (p:Person)
+    WHERE p.nick IS NOT NULL
+    RETURN p.name AS name, p.nick AS nick.
+
+@output("has_nickname").
+```
+
+### `NOT (…)`
+
+Negation is simplified when it sits in front of a single comparison (`NOT a > 65` becomes `a <= 65`); otherwise it wraps the inner condition.
+
+```prolog
+not_seniors(Name) <-
+    MATCH (p:Person)
+    WHERE NOT (p.age > 65)
+    RETURN p.name AS name.
+
+@output("not_seniors").
+```
+
+---
+
+## Projection and value transformation
+
+### Aliases, `DISTINCT`, ordering and paging
+
+```prolog
+top_ages(Name, Age) <-
+    MATCH (p:Person)
+    RETURN DISTINCT p.name AS name, p.age AS age
+    ORDER BY age DESC LIMIT 10.
+
+@output("top_ages").
+```
+
+### Arithmetic in `RETURN`
+
+```prolog
+next_age(Name, Next) <-
+    MATCH (p:Person)
+    RETURN p.name AS name, p.age + 1 AS next.
+
+@output("next_age").
+```
+
+### `coalesce` and `CASE WHEN`
+
+`coalesce(...)` returns the first non-null argument; `CASE` is rewritten into nested `if(...)`. Both forms are supported — the **searched form** (`CASE WHEN cond THEN …`) and the **simple form** (`CASE expr WHEN value THEN …`) — with any number of `WHEN` branches and a mandatory `ELSE`.
+
+```prolog
+display(Name, Who, Band) <-
+    MATCH (p:Person)
+    RETURN p.name AS name,
+           coalesce(p.nick, p.name) AS who,
+           CASE WHEN p.age > 65 THEN "senior"
+                WHEN p.age > 18 THEN "adult"
+                ELSE "minor"
+           END AS band.
+
+@output("display").
+```
+
+### Type conversions
+
+`toInteger`, `toFloat`, `toString`, `toBoolean`, `date(s)`, `datetime(s)` become a SQL `CAST(... AS ...)` on the source side (or a Vadalog `as_long` / `as_double` / `as_string` / … term in a multi-source join).
+
+```prolog
+ages_as_text(Name, Age, AgeStr) <-
+    MATCH (p:Person)
+    RETURN p.name AS name, toInteger(p.age) AS age, toString(p.age) AS agestr.
+
+@output("ages_as_text").
+```
+
+### Math functions
+
+`abs`, `ceil`, `floor`, `round`, `sqrt`, `sign`, `exp`, `log`, `pow`.
+
+```prolog
+balances(Name, Mag, Rounded) <-
+    MATCH (p:Person)
+    RETURN p.name AS name, abs(p.balance) AS mag, round(p.balance) AS rounded.
+
+@output("balances").
+```
+
+### String functions
+
+`toLower`, `toUpper`, `trim`, `replace`, `split`, `substring`, `size(string)`.
+
+```prolog
+loud(Name, Upper) <-
+    MATCH (p:Person)
+    WHERE toLower(p.name) CONTAINS "ali"
+    RETURN p.name AS name, toUpper(p.name) AS upper.
+
+@output("loud").
+```
+
+### Map projection (struct construction)
+
+A Cypher map projection in `RETURN` produces a single struct-typed column.
+
+```prolog
+profiles(Profile) <-
+    MATCH (p:Person)
+    RETURN p {.name, .age, city: p.city} AS profile.
+
+@output("profiles").
+```
+
+### Working with list-typed columns
+
+Over sources whose columns are **array** typed (Parquet, JSON, Iceberg, struct-aware databases), list length, slicing (end-exclusive), zero-based indexing, predicate functions (`any` / `all` / `none` / `single`), and list comprehensions are all supported:
+
+```prolog
+tag_stats(Name, N, FirstThree) <-
+    MATCH (p:Person)
+    RETURN p.name AS name, size(p.tags) AS n, p.tags[0..3] AS firstThree.
+
+has_priority_tag(Name) <-
+    MATCH (p:Person)
+    WHERE any(t IN p.tags WHERE t = "priority")
+    RETURN p.name AS name.
+
+tag_uppercase(Name, UpperTags) <-
+    MATCH (p:Person)
+    RETURN p.name AS name, [t IN p.tags | toUpper(t)] AS upperTags.
+
+@output("tag_stats").
+@output("has_priority_tag").
+@output("tag_uppercase").
+```
+
+### Temporal expressions
+
+Zero-argument `date()` / `datetime()` return the current date / timestamp; `duration.between(a, b)` returns the day difference between two date/timestamp values.
+
+```prolog
+tenure(Name, Days, Today) <-
+    MATCH (p:Person)
+    RETURN p.name AS name, duration.between(p.start, p.end) AS days, date() AS today.
+
+@output("tenure").
+```
+
+---
+
+## Aggregation, grouping and paging
+
+`count`, `count(*)`, `sum`, `avg`, `min`, `max`, `collect` are supported, with an implicit `GROUP BY` on the non-aggregated `RETURN` items. `ORDER BY` accepts multiple keys and `ASC` / `DESC`; `LIMIT` and `SKIP` translate to SQL `LIMIT` / `OFFSET`.
+
+```prolog
+city_stats(City, N, Avg) <-
+    MATCH (p:Person)
+    RETURN p.city AS city, count(*) AS n, avg(p.age) AS avg
+    ORDER BY n DESC, city ASC LIMIT 5.
+
+@output("city_stats").
+```
+
+---
+
+## Multi-stage `WITH` pipelines
+
+A `WITH` clause carries a projection (or an aggregate) into the next stage; a `WHERE` after the `WITH` filters those carried rows — including the canonical "filter on an aggregate" (`HAVING`-style) shape. Multiple `WITH` stages chain.
+
+### Project then filter
+
+```prolog
+adults_via_with(Name) <-
+    MATCH (p:Person)
+    WITH p.name AS name, p.age AS age WHERE age > 18
+    RETURN name.
+
+@output("adults_via_with").
+```
+
+### Aggregate then `HAVING`-style filter
+
+```prolog
+busy_cities(City, N) <-
+    MATCH (p:Person)
+    WITH p.city AS city, count(*) AS n WHERE n >= 2
+    RETURN city, n
+    ORDER BY n DESC.
+
+@output("busy_cities").
+```
+
+### Multi-stage chain
+
+```prolog
+seniors_via_with(Name) <-
+    MATCH (p:Person)
+    WITH p.name AS name, p.age AS age
+    WITH name AS name, age AS age WHERE age >= 65
+    RETURN name
+    ORDER BY name LIMIT 100.
+
+@output("seniors_via_with").
+```
+
+<Tip>
+A `WITH` stage that needs node properties carried *across a relationship* over file sources is best expressed as separate Cypher patterns: first project each side, then join in a downstream rule.
+</Tip>
+
+---
+
+## Graph algorithms (GDS)
+
+Graph Data Science calls work directly over any edge table. The shape is uniform: project a graph from the relationship table, then call the algorithm.
+
+```prolog
+@bind("knows", "csv useHeaders=true", "data", "knows.csv").
+
+pagerank(Node, Score) <-
+    CALL gds.graph.project('g', 'Person', 'KNOWS')
+    CALL gds.pageRank.stream('g')
+    YIELD nodeId, score
+    RETURN nodeId, score.
+
+@output("pagerank").
+```
+
+When a projected node label is itself backed by an `@bind`'d table, the engine restricts the graph to edges whose endpoints exist in that table — a node-induced edge filter applied before the algorithm runs.
+
+Algorithm parameters (`relationshipWeightProperty`, `sourceNode`, `dampingFactor`) are passed through to the function:
+
+```prolog
+sssp(Target, Distance) <-
+    CALL gds.graph.project('g', 'Person', 'KNOWS')
+    CALL gds.shortestPath.dijkstra.stream('g',
+        {sourceNode: 'alice', relationshipWeightProperty: 'weight'})
+    YIELD targetNode, totalCost
+    RETURN targetNode, totalCost.
+
+@output("sssp").
+```
+
+Two common Cypher idioms are recognised without an explicit `gds.*` call:
+
+```prolog
+% Variable-length reachability — lowered to transitive closure
+reachable(A, B) <-
+    MATCH (a)-[:knows*]->(b)
+    RETURN a, b.
+
+% Shortest path between matched endpoints
+shortest(A, B, Len) <-
+    MATCH (a)-[:knows]->(b), p = shortestPath((a)-[:knows*]->(b))
+    RETURN a, b, length(p).
+
+@output("reachable").
+@output("shortest").
+```
+
+The supported algorithm family covers PageRank, degree / betweenness centrality, connected components / communities (Louvain, WCC, SCC, Label Propagation), triangle count, BFS, single-source shortest path (Dijkstra / Bellman–Ford / A\*), and all-shortest-paths. The full catalog is documented in the [Graph Analytics reference](/vadalog/graph-analytics).
+
+---
+
+## Examples
+
+### Example 1: Cypher over CSV
+
+```prolog
+@bind("person", "csv useHeaders=true", "data", "person.csv"). % id, name, age, city
+@bind("knows",  "csv useHeaders=true", "data", "knows.csv").  % src, dst, since
+
+cohorts(Name, Band) <-
+    MATCH (p:Person)
+    WHERE p.name STARTS WITH "A" AND p.age IN [25, 30, 40]
+    RETURN toUpper(p.name) AS name,
+           CASE WHEN p.age > 18 THEN "adult" ELSE "minor" END AS band.
+
+@output("cohorts").
+```
+
+### Example 2: Cypher over a relational database
+
+The same query runs over PostgreSQL with no changes other than the binding — the whole Cypher is pushed down as a single SQL `JOIN` to the database:
+
+```prolog
+@bind("person", "postgresql", "company_db", "person").
+@bind("knows",  "postgresql", "company_db", "knows").
+
+friends(Name, Friend) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person)
+    WHERE a.age > 18
+    RETURN a.name AS name, b.name AS friend.
+
+@output("friends").
+```
+
+### Example 3: Cypher over Iceberg
+
+For Iceberg, the Cypher body benefits from partition pruning, file skipping via min/max stats, and bloom filters — the same planning-time optimizations that apply to a SQL body:
+
+```prolog
+@bind("person", "iceberg", "prod_catalog.graph", "person").
+@bind("knows",  "iceberg", "prod_catalog.graph", "knows").
+
+adult_friends(Name, Friend) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person)
+    WHERE a.age > 18 AND b.city = "London"
+    RETURN a.name AS name, b.name AS friend.
+
+@output("adult_friends").
+```
+
+See the [Iceberg Datasource](/vadalog/data-sources#iceberg-datasource) section for time travel, branches and the full unified showcase combining Vadalog, SQL, and Cypher over the same Iceberg dataset.
+
+### Example 4: Cypher pushed down to Neo4j
+
+When every predicate the body references is bound to Neo4j, the whole Cypher is sent verbatim to the server:
+
+```prolog
+@bind("knows", "neo4j username='neo4j', password='pwd', host='neo4j-host', port=7687",
+      "neo4j", "(:Person)-[:KNOWS]->(:Person)").
+
+friends(SrcId, DstId, SrcAge) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person)
+    WHERE a.age > 18
+    RETURN id(a) AS srcId, id(b) AS dstId, a.age AS srcAge.
+
+@output("friends").
+```
+
+### Example 5: Mixed-source join (files + database + Neo4j)
+
+A single Cypher body can reference predicates bound to **different data layers**. Each side keeps its own connector-native pushdown and the engine joins the projected results:
+
+```prolog
+@bind("person",  "iceberg",    "prod_catalog.graph", "person"). % entity catalog in Iceberg
+@bind("knows",   "postgresql", "company_db",         "knows").  % operational edges in Postgres
+@bind("profile", "neo4j username='neo4j', password='pwd', host='neo4j-host', port=7687",
+       "neo4j", "(:Person)").                                   % graph-resident extra facts
+
+enriched(Name, Friend, Score) <-
+    MATCH (a:Person)-[:KNOWS]->(b:Person), (a)-[:HAS_PROFILE]->(pr:profile)
+    WHERE a.age > 18
+    RETURN a.name AS name, b.name AS friend, pr.score AS score.
+
+@output("enriched").
+```
+
+### Example 6: Cypher reading from a derived predicate
+
+A Cypher body can also match against a predicate produced upstream by another rule. There is no `id` column on a derived predicate, so reference columns by their positional alias `predicateName_columnIndex`:
+
+```prolog
+% adult_concept is computed by an earlier Vadalog or SQL rule.
+adult_concept(1, "Alice", 30).
+adult_concept(2, "Bob",   25).
+adult_concept(3, "Carol", 17).
+
+adults(Name) <-
+    MATCH (a:adult_concept)
+    WHERE a.adult_concept_2 >= 18
+    RETURN a.adult_concept_1 AS name.
+
+@output("adults").
+```
+
+### Example 7: Cypher with GDS over a database edge table
+
+```prolog
+@bind("knows", "postgresql", "company_db", "knows").
+
+pagerank(NodeId, Score) <-
+    CALL gds.graph.project('g', 'Person', 'KNOWS')
+    CALL gds.pageRank.stream('g')
+    YIELD nodeId, score
+    RETURN nodeId AS nodeId, score AS score.
+
+@output("pagerank").
+```
+
+### Example 8: Cypher pipeline with `WITH` over CSV
+
+```prolog
+@bind("person", "csv useHeaders=true", "data", "person.csv").
+
+busy_cities(City, N) <-
+    MATCH (p:Person)
+    WITH p.city AS city, count(*) AS n
+    WHERE n >= 2
+    RETURN city, n
+    ORDER BY n DESC.
+
+@output("busy_cities").
+```
+
+---
+
+## Beyond the Cypher surface
+
+The engine's [expression library](/vadalog/expressions/overview) goes considerably beyond what core Cypher offers. When a query needs one of the following, drop into a Vadalog rule on top of the Cypher result:
+
+- **Hashing and ids**: `hash:md5`, `hash:sha1`, `hash:sha2`, `hash:hash`, `uuid()`, monotonically increasing ids.
+- **AI / vector-search functions**: `embeddings:vectorize`, `embeddings:cosine_sim`, `llm:generate`, and the `ask(...)` function for vector retrieval over Qdrant collections.
+- **Set algebra on arrays**: `|` (union), `&` (intersection), and `collections:difference` / `union` / `intersection`.
+- **Richer date arithmetic**: `date:add`, `date:sub`, `date:diff`, `date:next_day`, `date:prev_day`, `date:spec_day`, `date:format`, `date:to_timestamp`.
+- **Boolean and conditional families beyond `CASE`**: `xor`, `nand`, `nor`, `xnor`, `implies`, `iff`, plus `nullManagement:ifnull(x, fallback)` and `nullManagement:coalesce` over arbitrary expressions.
+- **JSON / struct round-tripping**: `as_json`, `as_struct`, `as_list`, `as_set`, `as_map`, `struct:get`.
+- **Recursive reasoning**: monotonic aggregations, fixed-point rules, the chase — the kind of inference that does not have a Cypher analog at all.
+
+Write clauses (`CREATE`, `MERGE`, `DELETE`, `SET`, `REMOVE`) are also expressed outside the Cypher body — writes go through `@bind` with the `saveMode` option.
+
+For instance, an MD5-fingerprinted profile, computed on top of a Cypher map projection:
+
+```prolog
+@bind("person", "iceberg", "prod_catalog.graph", "person").
+
+profiles(Id, Profile) <-
+    MATCH (p:Person)
+    RETURN p.id AS id, p {.name, .age, city: p.city} AS profile.
+
+profile_fp(Id, Fp) <-
+    profiles(Id, Profile),
+    Fp = hash:md5(as_json(Profile)).
+
+@output("profile_fp").
+```
+
+Or a semantic enrichment that combines a Cypher pattern with a vector search over a Qdrant collection:
+
+```prolog
+patient_drugs(Patient, Condition) <-
+    MATCH (p:Patient)-[:HAS_CONDITION]->(c:Condition)
+    RETURN p.name AS patient, c.name AS condition.
+
+with_suggestion(Patient, Condition, Suggested) <-
+    patient_drugs(Patient, Condition),
+    Suggested = ask("recommend a drug for ${condition}",
+                    "collection=drugs, limit=3",
+                    Condition).
+
+@output("with_suggestion").
+```
+
+---
+
+## Best Practices
+
+### 1. Choose Cypher vs SQL deliberately
+
+**Use Cypher in rule bodies when**
+
+- The query is naturally a graph pattern (multi-hop, variable-length, shortest path)
+- You want to call a GDS algorithm (PageRank, connected components, betweenness, …)
+- The graph layer is your mental model — labels, relationships, properties
+
+**Use SQL in rule bodies when**
+
+- The query is naturally relational (joins, aggregations, window functions, CTEs)
+- You need analytical SQL constructs (`WITH RECURSIVE`, window functions, `GROUPING SETS`)
+
+**Use plain Vadalog rules when**
+
+- You need recursion that goes beyond a single GDS call (the chase, monotonic aggregations, fixed-point)
+- The logic involves complex rule-based reasoning or inference
+- You need the engine's full expression library — hashing, AI, vectors, set algebra (see [Beyond the Cypher surface](#beyond-the-cypher-surface))
+
+### 2. Follow the layout convention
+
+For non-Neo4j sources, naming conventions are what let Cypher patterns line up:
+
+- **Node label** → lower-cased table name with an `id` column
+- **Relationship type** → lower-cased table name with `src` and `dst` columns
+- **Properties** → columns of the same name as the Cypher property
+
+Use `@mapping` annotations to alias source columns into this layout when the underlying schema does not match (see [`@mapping`](/vadalog/annotations#mapping)).
+
+### 3. Keep mixed-source queries focused
+
+A single Cypher body that spans Iceberg + PostgreSQL + Neo4j is fully supported, but each side keeps its own pushdown only on the predicates filtered locally. Push as much filtering as possible into the Cypher `WHERE` so each per-source projection is small before the engine joins them.
+
+### 4. Use binds that pre-select with `query=`
+
+If the underlying source needs a projection or `WHERE` more specific than the Cypher layout convention provides, lift it into the `@bind` itself with the `query=` option:
+
+```prolog
+% Pre-select only EU customers before the Cypher pattern even sees the table.
+@bind("eu_customers", "iceberg query=\"SELECT id, name, age FROM customers WHERE region = 'EU'\"",
+      "prod_catalog.sales", "customers").
+
+adults(Name) <-
+    MATCH (c:eu_customers)
+    WHERE c.age >= 18
+    RETURN c.name AS name.
+
+@output("adults").
+```
+
+### 5. Compose with Vadalog rather than over-stuffing the Cypher
+
+A long `WITH … WITH … RETURN` chain over multiple sources is often easier to read as a few Vadalog rules, each carrying one Cypher pattern:
+
+```prolog
+adult_people(Id, Name) <-
+    MATCH (p:Person) WHERE p.age > 18 RETURN p.id AS id, p.name AS name.
+
+adult_friends(NameA, NameB) <-
+    adult_people(A, NameA),
+    adult_people(B, NameB),
+    knows(A, B).
+
+@output("adult_friends").
+```
+
+---
+
+## Summary
+
+Cypher integration in Vadalog provides a single, source-agnostic graph query surface on top of every data layer Prometheux supports:
+
+✅ **Inline Cypher in rule bodies** over CSV / Parquet / Iceberg / JSON / relational databases / Neo4j / in-memory facts / derived predicates  
+✅ **Pattern matching** — single-relation, multi-hop, variable-length, `shortestPath`, `OPTIONAL MATCH`  
+✅ **Full expression surface** — arithmetic, string predicates, regex, `IN`, null tests, `coalesce`, multi-branch `CASE WHEN`, type conversions, math and string functions, map projection, list operations, temporal helpers  
+✅ **Aggregations** — `count`, `sum`, `avg`, `min`, `max`, `collect` with implicit `GROUP BY`, `ORDER BY`, `LIMIT`, `SKIP`  
+✅ **Multi-stage pipelines** — `WITH` chains with `HAVING`-style post-aggregation filters  
+✅ **Graph algorithms** — the full GDS catalog, with node-induced edge filters from `@bind`'d label tables  
+✅ **Mixed-source joins** — each side keeps its own connector-native pushdown; the engine joins the projected results  
+✅ **Compose with Vadalog** — drop into rules whenever the engine's full expression library or recursive reasoning is needed
