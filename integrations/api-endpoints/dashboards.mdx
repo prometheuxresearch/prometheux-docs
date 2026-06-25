@@ -1,180 +1,159 @@
 ---
 title: "Dashboards"
-description: "Create, read, update, and delete dashboards within your projects."
+description: "Create, update, retrieve, and delete user-defined dashboards within a project."
 ---
 
-Create, read, update, and delete dashboards within your projects.
+A **dashboard** is a named, project-scoped layout of data widgets built on top of concept output predicates. The Dashboards API lets you list, load, save, and delete dashboards.
 
-## List All Dashboards
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
 
-List dashboards across all projects in the workspace.
+## List all dashboards
 
-**HTTP Request:**
+Return metadata for every dashboard across all projects the caller can access. No definition payloads are included.
 
 ```
-GET /api/v1/dashboards/list?scope=user
+GET /dashboards/list
 ```
 
-**Query Parameters:**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the lookup. |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `scope` | string | No | Database scope. Default: `"user"` |
+```bash
+curl "$BASE_URL/dashboards/list?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
 
-**Response:**
-
-```json
+```jsonc
 {
+  "status": "success",
+  "message": "All dashboards listed successfully",
   "data": [
     {
-      "id": "dashboard-uuid",
-      "project_id": "project-uuid",
-      "name": "My Dashboard",
-      "created_at": "2026-01-15T10:30:00Z",
-      "updated_at": "2026-04-10T14:20:00Z"
+      "id": "dash_a1b2...",
+      "project_id": "proj_123",
+      "name": "Sales Overview"
     }
-  ],
-  "message": "All dashboards listed successfully",
-  "status": "success"
+  ]
 }
 ```
 
-## List Project Dashboards
+## List dashboards in a project
 
-List dashboards within a specific project (metadata only, no full definitions).
-
-**HTTP Request:**
+Return metadata for all dashboards in a single project. No definition payloads are included.
 
 ```
-GET /api/v1/dashboards/{project_id}/list?scope=user
+GET /dashboards/{project_id}/list
 ```
 
-**Path Parameters:**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
-
-**Query Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `scope` | string | No | Database scope. Default: `"user"` |
-
-## Get Dashboard
-
-Load a single dashboard with its full definition.
-
-**HTTP Request:**
-
-```
-GET /api/v1/dashboards/{project_id}/{dashboard_id}?scope=user
+```bash
+curl "$BASE_URL/dashboards/$PROJECT_ID/list?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-**Path Parameters:**
+`data` is an array of dashboard metadata objects (id, project\_id, name).
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
-| `dashboard_id` | string | Yes | The ID of the dashboard |
+## Get a dashboard
 
-**Query Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `scope` | string | No | Database scope. Default: `"user"` |
-
-## Save Dashboard
-
-Create or update a dashboard. When `dashboard.id` is omitted, a new UUID is generated server-side.
-
-**HTTP Request:**
+Return a single dashboard with its full definition.
 
 ```
-POST /api/v1/dashboards/{project_id}/save
+GET /dashboards/{project_id}/{dashboard_id}
 ```
 
-**Path Parameters:**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `dashboard_id` | path | yes | — | The dashboard ID. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
+```bash
+curl "$BASE_URL/dashboards/$PROJECT_ID/dash_a1b2...?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
 
-**Request Body:**
-
-```json
+```jsonc
 {
-  "scope": "user",
-  "dashboard": {
-    "id": "existing-dashboard-id",
-    "name": "My Dashboard",
-    "definition": { }
+  "status": "success",
+  "message": "Dashboard loaded successfully",
+  "data": {
+    "id": "dash_a1b2...",
+    "project_id": "proj_123",
+    "name": "Sales Overview",
+    "definition": { /* widget layout */ }
   }
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `scope` | string | No | Database scope. Default: `"user"` |
-| `dashboard` | object | Yes | The dashboard definition object |
+Returns `404` if no dashboard with that ID exists in the project.
 
-**Response:**
+## Save a dashboard
 
-```json
-{
-  "data": { "id": "dashboard-uuid" },
-  "message": "Dashboard 'dashboard-uuid' saved successfully",
-  "status": "success"
-}
-```
-
-## Delete Dashboard
-
-Permanently delete a dashboard.
-
-**HTTP Request:**
+Create or update a dashboard. When `dashboard.id` is absent, a new UUID is generated server-side. The assigned ID is always returned in the response.
 
 ```
-DELETE /api/v1/dashboards/{project_id}/{dashboard_id}?scope=user
+POST /dashboards/{project_id}/save
 ```
 
-**Path Parameters:**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+| `dashboard` | body | yes | — | The dashboard definition object. Include `id` to update an existing dashboard; omit it to create a new one. |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
-| `dashboard_id` | string | Yes | The ID of the dashboard |
-
-**Query Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `scope` | string | No | Database scope. Default: `"user"` |
-
-## Complete Workflow Example
+### Example
 
 ```bash
-# 1. List all dashboards
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/dashboards/list?scope=user" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# 2. Save a new dashboard
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/dashboards/my-project-id/save" \
+curl -X POST "$BASE_URL/dashboards/$PROJECT_ID/save" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "scope": "user",
     "dashboard": {
       "name": "Sales Overview",
-      "definition": { }
+      "definition": { "widgets": [] }
     }
   }'
+```
 
-# 3. Load a dashboard
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/dashboards/my-project-id/dashboard-uuid?scope=user" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```jsonc
+{
+  "status": "success",
+  "message": "Dashboard 'dash_a1b2...' saved successfully",
+  "data": { "id": "dash_a1b2..." }
+}
+```
 
-# 4. Delete a dashboard
-curl -X DELETE "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/dashboards/my-project-id/dashboard-uuid?scope=user" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+## Delete a dashboard
+
+Permanently delete a dashboard. This action is irreversible.
+
+```
+DELETE /dashboards/{project_id}/{dashboard_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `dashboard_id` | path | yes | — | The dashboard ID. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+
+```bash
+curl -X DELETE "$BASE_URL/dashboards/$PROJECT_ID/dash_a1b2...?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Dashboard 'dash_a1b2...' deleted successfully",
+  "data": null
+}
 ```

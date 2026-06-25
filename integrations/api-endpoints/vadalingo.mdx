@@ -1,196 +1,188 @@
 ---
-title: "Vadalingo (Translations)"
-description: "Translate natural language, SQL, RDF, and OWL into Vadalog programs using LLM-powered translation."
+title: "Vadalingo"
+description: "Translate natural language, SQL, RDF, and OWL ontologies into Vadalog programs."
 ---
 
-Translate natural language, SQL, RDF, and OWL into Vadalog programs using LLM-powered translation.
+Vadalingo is the translation layer that converts natural language descriptions, SQL queries, RDF data, and OWL ontologies into executable Vadalog rules. All paths are relative to the [base URL](/integrations/rest-api#base-url) and require [authentication](/integrations/api-endpoints/authentication). All responses use the standard [envelope](/integrations/rest-api#response-envelope).
 
-## Natural Language to Vadalog
+## Natural language → Vadalog
 
-Translate a natural language description into a Vadalog program. You can reference existing concepts using `@concept_name` in your description — their schemas will be used as context for the translation.
-
-**HTTP Request:**
+Translate a free-text description into a Vadalog program. The endpoint automatically loads every concept schema in the project to guide translation. Tag specific concepts with `@concept_name` in `domain_knowledge` to restrict context to only those schemas.
 
 ```
-POST /api/v1/vadalingo/{project_id}/translate/nl-to-vadalog
+POST /vadalingo/{project_id}/translate/nl-to-vadalog
 ```
 
-**Path Parameters:**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `domain_knowledge` | body | yes | — | Natural language description to translate. Reference a specific concept's schema with `@concept_name` (e.g. `"find all @owner records"`). |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
-
-**Request Body:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `domain_knowledge` | string | Yes | Natural language description to translate. Use `@concept_name` to reference existing concepts |
-
-**Example:**
+### Example
 
 ```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalingo/my-project-id/translate/nl-to-vadalog" \
+curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/nl-to-vadalog" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "domain_knowledge": "Find all companies that are transitively controlled by @owner through ownership chains"
+    "domain_knowledge": "find all companies and their @owner for each location"
   }'
 ```
 
-**Response:**
-
-```json
+```jsonc
 {
+  "status": "success",
+  "message": "Natural language to Vadalog translation completed successfully",
   "data": {
-    "domain_knowledge": "Find all companies that are transitively controlled by @owner...",
-    "vadalog_program": "control(X, Y) <- owner(X, Y, S), S > 0.5.\ncontrol(X, Z) <- control(X, Y), owner(Y, Z, S), S > 0.5.",
-    "project_id": "my-project-id",
+    "domain_knowledge": "find all companies and their @owner for each location",
+    "vadalog_program": "@output(\"result\").\nresult(C, O, L) :- company(C, L), owner(C, O).",
+    "project_id": "proj_123",
     "concepts_used": ["owner"],
     "concepts_source": "tagged"
-  },
-  "message": "Natural language to Vadalog translation completed successfully",
-  "status": "success"
+  }
 }
 ```
 
 <Tip>
-**Concept References**
-
-When you include `@concept_name` in the description, the API fetches those concepts' schemas and provides them as context to the LLM. If no `@` references are found, all project concepts are used as context.
+If no `@` tags are present, all concept schemas in the project are passed as context. Tag specific concepts when you want to constrain the translation or when the project has many concepts and precision matters.
 </Tip>
 
-## SQL to Vadalog
+## SQL → Vadalog
 
-Translate a SQL query into a Vadalog program.
-
-**HTTP Request:**
+Translate a SQL query into an equivalent Vadalog program.
 
 ```
-POST /api/v1/vadalingo/{project_id}/translate/sql-to-vadalog
+POST /vadalingo/{project_id}/translate/sql-to-vadalog
 ```
 
-**Path Parameters:**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `sql_data` | body | yes | — | SQL query string to translate. |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
-
-**Request Body:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `sql_data` | string | Yes | SQL query to translate |
-
-**Example:**
+### Example
 
 ```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalingo/my-project-id/translate/sql-to-vadalog" \
+curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/sql-to-vadalog" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "sql_data": "SELECT c.name, SUM(o.amount) FROM customers c JOIN orders o ON c.id = o.customer_id GROUP BY c.name"
+    "sql_data": "SELECT company, location FROM employees WHERE role = '\''engineer'\''"
   }'
 ```
 
-**Response:**
-
-```json
+```jsonc
 {
-  "data": {
-    "sql_data": "SELECT c.name, SUM(o.amount) ...",
-    "vadalog_program": "...",
-    "project_id": "my-project-id"
-  },
+  "status": "success",
   "message": "SQL to Vadalog translation completed successfully",
-  "status": "success"
+  "data": {
+    "sql_data": "SELECT company, location FROM employees WHERE role = 'engineer'",
+    "vadalog_program": "@output(\"result\").\nresult(C, L) :- employees(C, L, \"engineer\").",
+    "project_id": "proj_123"
+  }
 }
 ```
 
-## RDF to Vadalog
+## RDF → Vadalog
 
-Translate RDF data into a Vadalog program.
-
-**HTTP Request:**
+Translate RDF triples into Vadalog rules.
 
 ```
-POST /api/v1/vadalingo/{project_id}/translate/rdf-to-vadalog
+POST /vadalingo/{project_id}/translate/rdf-to-vadalog
 ```
 
-**Path Parameters:**
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `rdf_data` | body | yes | — | RDF data as a string (Turtle, N-Triples, or other RDF serializations). |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
-
-**Request Body:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `rdf_data` | string | Yes | RDF data to translate |
-
-**Example:**
+### Example
 
 ```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/vadalingo/my-project-id/translate/rdf-to-vadalog" \
+curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/rdf-to-vadalog" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "rdf_data": "<http://example.org/Alice> <http://xmlns.com/foaf/0.1/knows> <http://example.org/Bob> ."
+    "rdf_data": "@prefix ex: <http://example.org/> .\nex:Alice ex:worksAt ex:Acme ."
   }'
 ```
 
-## OWL to Vadalog
-
-Translate an OWL ontology into Vadalog rules. Supports RDF/XML, Turtle, N3, and N-Triples formats. Can optionally generate Parquet data files and save the result as a concept.
-
-**HTTP Request:**
-
-```
-POST /api/v1/vadalingo/{project_id}/translate/owl-to-vadalog
-```
-
-**Path Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
-
-**Request Body:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `owl_content` | string | Yes | OWL ontology content (RDF/XML, Turtle, N3, N-Triples) |
-| `base_namespace` | string | Yes | Base namespace for local classes and properties |
-| `data_base_path` | string | No | Relative path for Parquet output (e.g. `"owl"`) |
-| `add_concepts` | boolean | No | Save the result as a concept in the project. Default: `false` |
-| `options` | object | No | Configuration options (see below) |
-
-**Options:**
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `include_imports` | boolean | `false` | Process imported ontologies |
-| `include_schema` | boolean | `false` | Include schema documentation in Vadalog output |
-| `include_not_rules` | boolean | `false` | Generate integrity constraint rules using negation |
-
-**Response:**
-
-```json
+```jsonc
 {
+  "status": "success",
+  "message": "RDF to Vadalog translation completed successfully",
   "data": {
-    "owl_content_length": 4526,
-    "base_namespace": "http://example.org/ontology#",
-    "predicates": { },
-    "rules": [],
-    "vadalog_program": "...",
-    "data_bindings": [],
-    "saved_data_files": [],
-    "metadata": { },
-    "project_id": "my-project-id",
-    "concept_id": null
-  },
-  "message": "OWL to Vadalog translation completed successfully",
-  "status": "success"
+    "rdf_data": "@prefix ex: <http://example.org/> .\nex:Alice ex:worksAt ex:Acme .",
+    "vadalog_program": "@output(\"worksAt\").\nworksAt(\"Alice\", \"Acme\").",
+    "project_id": "proj_123"
+  }
 }
 ```
+
+## OWL → Vadalog
+
+Translate an OWL ontology into Vadalog rules. Accepts RDF/XML, Turtle, N3, and N-Triples serializations. When `data_base_path` is provided, Parquet datasets are written under `disk/` and `@bind` annotations are injected into the output program. When `add_concepts` is `true`, the resulting program is saved as a new concept named `owl_to_vadalog` in the project (overwriting any existing concept with that name).
+
+```
+POST /vadalingo/{project_id}/translate/owl-to-vadalog
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `owl_content` | body | yes | — | OWL ontology as a string (RDF/XML, Turtle, N3, or N-Triples). |
+| `base_namespace` | body | yes | — | Base namespace URI for resolving local classes and properties (e.g. `"http://example.org/"`). |
+| `data_base_path` | body | no | — | Relative path under `disk/` for Parquet output (e.g. `"owl"`). When set alongside `options.include_imports: true`, Parquet data is written and `@bind` annotations are injected into the program. |
+| `options.include_imports` | body | no | `false` | Process imported ontologies referenced in the OWL file. |
+| `options.include_schema` | body | no | `false` | Append a schema documentation section to the Vadalog output. |
+| `options.include_not_rules` | body | no | `false` | Generate integrity constraint rules using negation. |
+| `add_concepts` | body | no | `false` | Save the translated program as a concept named `owl_to_vadalog` in the project. |
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/owl-to-vadalog" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "owl_content": "<?xml version=\"1.0\"?><rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" xmlns:owl=\"http://www.w3.org/2002/07/owl#\">...</rdf:RDF>",
+    "base_namespace": "http://example.org/",
+    "data_base_path": "owl",
+    "options": {
+      "include_imports": true,
+      "include_schema": false,
+      "include_not_rules": false
+    },
+    "add_concepts": false
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "OWL to Vadalog translation completed successfully (3 Parquet datasets saved to owl)",
+  "data": {
+    "owl_content_length": 1842,
+    "base_namespace": "http://example.org/",
+    "predicates": {
+      "Person": ["id", "name"],
+      "worksAt": ["person_id", "org_id"]
+    },
+    "rules": [
+      "employee(P, O) :- worksAt(P, O), Person(P, _)."
+    ],
+    "vadalog_program": "@bind(\"Person\", \"parquet\", \"disk/owl/Person\").\n@output(\"employee\").\nemployee(P, O) :- worksAt(P, O), Person(P, _).",
+    "data_bindings": [
+      { "predicate": "Person", "path": "disk/owl/Person" }
+    ],
+    "saved_data_files": ["disk/owl/Person", "disk/owl/worksAt", "disk/owl/Organization"],
+    "metadata": { "class_count": 2, "property_count": 1 },
+    "project_id": "proj_123",
+    "concept_id": null
+  }
+}
+```
+
+<Note>
+`concept_id` is `null` unless `add_concepts` is `true`, in which case it contains the ID of the saved or updated concept.
+</Note>

@@ -1,0 +1,171 @@
+---
+title: "Engine API (Low-Level)"
+description: "The low-level REST API exposed directly by the Vadalog engine for evaluating programs and managing configuration."
+---
+
+<Warning>
+This page documents the **low-level Vadalog engine** API, served directly by the
+engine (default port `8080`). It is **not** the Prometheux platform API. If you
+are building an external integration against the platform, use the
+[platform REST API](/integrations/rest-api) instead — it is authenticated,
+workspace-aware, and stable. This engine API is intended for self-hosted,
+embedded, and advanced use.
+</Warning>
+
+The Vadalog engine offers a simple RESTful API for its core operations. Paths
+below are relative to the engine host, e.g. `http://localhost:8080`.
+
+## `/evaluate`
+
+Evaluate a Vadalog program and return the results as JSON.
+
+- **Method**: `POST`
+- **Data params**: the first param contains the entire program; the second
+  contains other programs it depends on as modules:
+  `program=[Vadalog-Program], otherPrograms=[[Vadalog-Programs]]`
+- **Response**: `{ "id": <integer>, "resultSet": { "<atom>": [<rows>] }, "types": { "<atom>": [<types>] }, "columnNames": { "<atom>": [<names>] } }`
+
+**Status codes**
+
+- `200 OK`: successful evaluation.
+- `400 BAD_REQUEST`: malformed Vadalog program; the response includes an error message.
+- `500 INTERNAL_SERVER_ERROR`: runtime or other exception during evaluation.
+
+**Sample call**
+
+```bash
+curl -X POST 'http://localhost:8080/evaluate' \
+  --data 'program=a(1,3).b(X,Y)<-a(X,Y).@output("b").'
+```
+
+```json
+{
+  "id": 1,
+  "resultSet": { "b": [[1, 3]] },
+  "types": { "b": ["INT", "INT"] },
+  "columnNames": { "b": ["X", "Y"] }
+}
+```
+
+**Sample call with modules**
+
+```bash
+curl 'http://localhost:8080/evaluate?program=@module(%22m1%22).@include(%22m2%22).a(1).&otherPrograms=@module(%22m2%22).b(X)<-a(X).@output(%22b%22).&modules=@module(%22m3%22).b(X)<-a(X).@output(%22b%22).'
+```
+
+```json
+{
+  "id": 1,
+  "resultSet": { "b": [[1]] },
+  "types": { "b": ["INT"] },
+  "columnNames": { "b": ["X"] }
+}
+```
+
+## `/evaluateFromRepoWithParams`
+
+Evaluate a program stored in the engine's `repository` folder, substituting the
+provided parameter values.
+
+- **Method**: `POST`
+- **Data params**: `programName=[Path-to-Vadalog-Program], params=[string ("X=value, Y=value")]`
+- **Response**: same shape as [`/evaluate`](#evaluate).
+
+**Sample call**
+
+```bash
+curl -X POST 'http://localhost:8080/evaluateFromRepoWithParams' \
+  --data 'programName=program.vada' --data 'params=X=1,Y=3'
+```
+
+```json
+{
+  "id": 1,
+  "resultSet": { "c": [[1, 3]] },
+  "types": { "c": ["INT", "INT"] },
+  "columnNames": { "c": ["A", "B"] }
+}
+```
+
+## `/evaluateFromRepoWithParamsProp`
+
+Set the specified properties in `vada.properties`, then evaluate a repository
+program with the given parameters.
+
+- **Method**: `POST`
+- **Data params**: `programName=[Path-to-Vadalog-Program], params=[string ("X=value, Y=value")], prop=[string ("propertyName=value")]`
+- **Response**: same shape as [`/evaluate`](#evaluate).
+
+**Sample call**
+
+```bash
+curl -X POST 'http://localhost:8080/evaluateFromRepoWithParamsProp' \
+  --data 'programName=program.vada' --data 'params=X=1,Y=3' \
+  --data 'prop=terminationStrategyMode=lightMode, linearization=true'
+```
+
+```json
+{
+  "id": 1,
+  "resultSet": { "c": [[1, 3]] },
+  "types": { "c": ["INT", "INT"] },
+  "columnNames": { "c": ["A", "B"] }
+}
+```
+
+## `/actuator/health`
+
+Validate the health of the system and its components (Vadalog distributed
+evaluation, disk space, and a ping check).
+
+- **Method**: `GET`
+- **Response**: a nested status object with an overall `status` (`UP`/`DOWN`/`UNKNOWN`) and per-component details.
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+## `/config-info/set`
+
+Set a single configuration key-value pair — useful for dynamically setting
+credentials such as database connection details or S3 access keys. See the
+[Configuration Reference](/get-started/installation/on-premises/cluster#configuration-reference)
+for available properties.
+
+- **Method**: `POST`
+- **Request body**:
+  ```json
+  { "key": "propertyName", "value": "propertyValue" }
+  ```
+- **Response**: `{ "status": "SUCCESS/FAILURE", "message": "Operation details" }`
+
+```bash
+curl -X POST "http://localhost:8080/config-info/set" \
+  -H "Content-Type: application/json" \
+  -d '{"key": "database.password", "value": "myDBPassword"}'
+```
+
+## `/config-info/setAll`
+
+Set multiple configuration key-value pairs at once.
+
+- **Method**: `POST`
+- **Request body**: a JSON object where each key is a configuration property:
+  ```json
+  {
+    "database.password": "myDBPassword",
+    "s3aAccessKey": "myAWSAccessKey",
+    "s3aSecretKey": "myAWSSecretKey"
+  }
+  ```
+- **Response**: `{ "status": "SUCCESS/FAILURE", "message": "All properties set successfully or error details" }`
+
+```bash
+curl -X POST "http://localhost:8080/config-info/setAll" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "database.password": "myDBPassword",
+    "s3aAccessKey": "myAWSAccessKey",
+    "s3aSecretKey": "myAWSSecretKey"
+  }'
+```
