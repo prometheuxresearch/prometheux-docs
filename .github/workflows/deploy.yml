@@ -39,6 +39,41 @@ jobs:
       - name: Upload to s3
         run: aws s3 sync ./build s3://docs.prometheux.ai --delete
 
+      - name: Sync CloudFront viewer-request function
+        # Keeps the redirectToIndexHtmlNew CloudFront function in sync with the
+        # source in .github/cloudfront/. We only update + publish when the LIVE
+        # code differs from the file in the repo to avoid unnecessary churn.
+        run: |-
+          set -euo pipefail
+          FUNCTION_NAME=redirectToIndexHtmlNew
+          SOURCE_FILE=.github/cloudfront/${FUNCTION_NAME}.js
+
+          tmpdir=$(mktemp -d)
+          aws cloudfront get-function \
+            --name "$FUNCTION_NAME" \
+            --stage LIVE \
+            "$tmpdir/live.js" > /dev/null
+
+          if cmp -s "$SOURCE_FILE" "$tmpdir/live.js"; then
+            echo "CloudFront function $FUNCTION_NAME already up to date; skipping."
+            exit 0
+          fi
+
+          echo "CloudFront function $FUNCTION_NAME differs from repo; updating..."
+          etag=$(aws cloudfront describe-function \
+            --name "$FUNCTION_NAME" \
+            --query 'ETag' --output text)
+          new_etag=$(aws cloudfront update-function \
+            --name "$FUNCTION_NAME" \
+            --function-config '{"Comment":"Rewrite paths to directory-style index.html for Mintlify export","Runtime":"cloudfront-js-2.0"}' \
+            --function-code "fileb://${SOURCE_FILE}" \
+            --if-match "$etag" \
+            --query 'ETag' --output text)
+          aws cloudfront publish-function \
+            --name "$FUNCTION_NAME" \
+            --if-match "$new_etag" > /dev/null
+          echo "Published $FUNCTION_NAME to LIVE."
+
       - name: Invalidate cloudfront
         run: |-
           aws cloudfront create-invalidation \
