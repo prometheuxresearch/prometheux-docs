@@ -513,10 +513,10 @@ pagerank(Node, Score) <-
 
 When a projected node label is itself backed by an `@bind`'d table, the engine restricts the graph to edges whose endpoints exist in that table — a node-induced edge filter applied before the algorithm runs.
 
-Algorithm parameters (`relationshipWeightProperty`, `sourceNode`, `dampingFactor`) are passed through to the function:
+Algorithm parameters (`relationshipWeightProperty`, `sourceNode`, `dampingFactor`) are passed through to the function. Single-source shortest path and BFS take a `sourceNode` that scopes the computation to that start node, and both report one row per reachable couple as `(source, target, distance)` — the source is constant for a single-source run, and for BFS the distance is the integer hop count (level):
 
 ```prolog
-sssp(Target, Distance) <-
+sssp(Source, Target, Distance) <-
     CALL gds.graph.project('g', 'Person', 'KNOWS')
     CALL gds.shortestPath.dijkstra.stream('g',
         {sourceNode: 'alice', relationshipWeightProperty: 'weight'})
@@ -524,6 +524,14 @@ sssp(Target, Distance) <-
     RETURN targetNode, totalCost.
 
 @output("sssp").
+
+bfs(Source, Target, Level) <-
+    CALL gds.graph.project('g', 'Person', 'KNOWS')
+    CALL gds.bfs.stream('g', {sourceNode: 'alice'})
+    YIELD nodeId
+    RETURN nodeId.
+
+@output("bfs").
 ```
 
 Two common Cypher idioms are recognised without an explicit `gds.*` call:
