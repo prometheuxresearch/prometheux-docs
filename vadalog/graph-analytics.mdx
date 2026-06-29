@@ -26,10 +26,10 @@ Variables on the head of the rule with the function receive the algorithm's resu
 | Function | Problem solved | Input predicate (arity) | Output variables | Notes |
 |----------|----------------|-------------------------|------------------|-------|
 | `#TC(P)` | **Transitive Closure** – reachability. | `P/2` `edge(U,V)` | `(X,Y)` | Directed graph. Includes self-loops from cycles. |
-| `#PATHS(P[,options])` | **All Paths** with configurable options. | `P/2` `edge(U,V)` + optional string | `(X,Y,Visited)` or `(X,Y)` | Optional parameters: `visited=true/false` (default `false`), `self_loops=true/false` (default `false`), `all_paths=true/false` (default `false`), `max_depth=N` (default `-1` = unlimited), `source=X` (only paths from node X), `target=Y` (only paths to node Y), `source_target_pairs=[s1:t1,s2:t2,...]` (only the listed origin–destination couples; mutually exclusive with `source`/`target`). Format: `"visited=true,max_depth=5,source=A,target=D"` or `"source_target_pairs=[A:D,B:D]"`. |
-| `#ASP(P[,options])` | **All‑Shortest Paths** (weighted). | `P/3` `edge(U,V,W)` + optional string | `(X,Y,Z)` or `(X,Y,Z,Visited)` | Parallel multi‑source Dijkstra. Can include self-loops from cycles. Optional parameters: `visited=true/false` (default `false`; when `true` returns all equal-cost shortest paths with the ordered list of visited nodes), `source=X` (only paths from node X), `target=Y` (only paths to node Y), `source_target_pairs=[s1:t1,s2:t2,...]` (only the listed origin–destination couples; mutually exclusive with `source`/`target`). Format: `"visited=true,source=1,target=4"` or `"source_target_pairs=[1:4,2:3]"`. |
-| `#SSSP(P[,options])` | **Single‑Source Shortest Path** (weighted). | `P/3` `edge(U,V,W)` + optional string | `(X,Y,Z)` or `(X,Y,Z,Visited)` | Same engine as `#ASP` but a source is **required**, so results are restricted to shortest paths from one source. Output is `(Source, Target, Distance)`; the trivial self-row is not emitted. Optional parameters: `visited=true/false` (default `false`), `target=Y` (only the path to node Y), `source_target_pairs=[...]` (satisfies the required-source rule). Format: `"source=1"` or `"source=1,target=4,visited=true"`. |
-| `#BFS(P[,options])` | **Breadth‑First Levels** (unweighted shortest path). | `P/2` `edge(U,V)` (or `P/3`, weights ignored) + optional string | `(X,Y,Level)` or `(X,Y,Level,Visited)` | Level = minimum number of hops between the couple, as an **integer**. Same engine as `#ASP` but with unit weights; any edge weight is ignored. Optional parameters: `source=X`, `target=Y`, `source_target_pairs=[...]`, `visited=true/false` (default `false`; adds the ordered fewest-hops path). Source is optional (all-sources by default). Format: `"source=1"` or `"source=1,visited=true"`. |
+| `#PATHS(P[,options])` | **All Paths** with configurable options. | `P/2` `edge(U,V)` + optional string | `(X,Y,Visited)` or `(X,Y)` | Optional parameters: `visited=true/false` (default `false`), `self_loops=true/false` (default `false`), `all_paths=true/false` (default `false`), `max_depth=N` (default `-1` = unlimited), `source=X` (only paths from node X), `target=Y` (only paths to node Y), `sources=[a,b,...]` (only paths from this set of nodes), `targets=[x,y,...]` (only paths to this set of nodes), `source_target_pairs=[s1:t1,s2:t2,...]` (only the listed origin–destination couples). `source`/`sources` are mutually exclusive (same for `target`/`targets`), and none of them can be combined with `source_target_pairs`. Format: `"visited=true,max_depth=5,source=A,target=D"`, `"sources=[A,B],targets=[D]"` or `"source_target_pairs=[A:D,B:D]"`. |
+| `#ASP(P[,options])` | **All‑Shortest Paths** (weighted). | `P/3` `edge(U,V,W)` + optional string | `(X,Y,Z)` or `(X,Y,Z,Visited)` | Parallel multi‑source Dijkstra. Can include self-loops from cycles. Optional parameters: `visited=true/false` (default `false`; when `true` returns all equal-cost shortest paths with the ordered list of visited nodes), `source=X` (only paths from node X), `target=Y` (only paths to node Y), `sources=[a,b,...]` (only paths from this set of nodes), `targets=[x,y,...]` (only paths to this set of nodes), `source_target_pairs=[s1:t1,s2:t2,...]` (only the listed origin–destination couples). `source`/`sources` are mutually exclusive (same for `target`/`targets`), and none of them can be combined with `source_target_pairs`. Format: `"visited=true,source=1,target=4"`, `"sources=[1,2],targets=[4]"` or `"source_target_pairs=[1:4,2:3]"`. |
+| `#SSSP(P[,options])` | **Single‑Source Shortest Path** (weighted). | `P/3` `edge(U,V,W)` + optional string | `(X,Y,Z)` or `(X,Y,Z,Visited)` | Same engine as `#ASP` but a source is **required**, so results are restricted to shortest paths from one source. Output is `(Source, Target, Distance)`; the trivial self-row is not emitted. Optional parameters: `visited=true/false` (default `false`), `target=Y` (only the path to node Y), `targets=[x,y,...]` (only paths to this set of nodes), `source_target_pairs=[...]` (satisfies the required-source rule). The required source may also be supplied as a single-element `sources=[X]`. Format: `"source=1"` or `"source=1,target=4,visited=true"`. |
+| `#BFS(P[,options])` | **Breadth‑First Levels** (unweighted shortest path). | `P/2` `edge(U,V)` (or `P/3`, weights ignored) + optional string | `(X,Y,Level)` or `(X,Y,Level,Visited)` | Level = minimum number of hops between the couple, as an **integer**. Same engine as `#ASP` but with unit weights; any edge weight is ignored. Optional parameters: `source=X`, `target=Y`, `sources=[a,b,...]`, `targets=[x,y,...]`, `source_target_pairs=[...]`, `visited=true/false` (default `false`; adds the ordered fewest-hops path). Source is optional (all-sources by default). Format: `"source=1"`, `"sources=[1,5]"` or `"source=1,visited=true"`. |
 | `#CC(P[,options])` | **Connected Components** with optional sorting and ID. | `P/2` `edge(U,V)` + optional string | `(X,Comp)` or `(X,ID,Comp)` | Optional parameters: `sort_component=true/false` (default `false`), `component_id=true/false` (default `false`). Format: `"sort_component=true,component_id=true"`. For undirected graphs (assumes edges are symmetric). |
 | `#WCC(P)` | **Weakly Connected Components**. | `P/2` | `(X,Comp)` | For directed graphs – ignores edge direction. |
 | `#TRI(P)` | **Triangle Enumeration**. | `P/2` | `(X,Y,Z)` | Unordered triangles. |
@@ -143,6 +143,47 @@ paths_pairs(X,Y) <- #PATHS(edge, "source_target_pairs=[1:4,2:3]").
 ```
 
 **`paths_pairs` Output**: `(1,4), (2,3)`. Square brackets and per-node quotes are optional; quote a node only when its identifier contains a separator (`:`, `,`, `|`) or whitespace, e.g. `source_target_pairs=['New York':'Boston']`. This option cannot be combined with `source`/`target` and works with `visited=true`/`all_paths=true` too.
+
+When you want **several** sources or targets (but not a fixed pairing between
+them), use the list options `sources` and `targets`. They generalise the single
+`source`/`target`: `sources=[a,b]` keeps paths starting from **any** of the
+listed nodes, `targets=[x,y]` keeps paths ending at **any** of them, and using
+both restricts to the cross-product (every listed source to every listed
+target):
+
+```prolog
+edge(1,2).
+edge(2,3).
+edge(3,4).
+edge(5,6).
+
+% Paths starting from node 1 or node 5
+paths_from_sources(X,Y) <- #PATHS(edge, "sources=[1,5]").
+
+% Paths ending at node 3 or node 4
+paths_to_targets(X,Y)   <- #PATHS(edge, "targets=[3,4]").
+
+% Cross-product: from {1,2} to {4}
+paths_cross(X,Y)        <- #PATHS(edge, "sources=[1,2],targets=[4]").
+
+@output("paths_from_sources").
+@output("paths_to_targets").
+@output("paths_cross").
+```
+
+**`paths_from_sources` Output**: `(1,2), (1,3), (1,4), (5,6)` — every path from
+node 1 plus the path from node 5.
+
+**`paths_to_targets` Output**: `(1,3), (2,3), (1,4), (2,4), (3,4)` — every path
+ending at 3 or 4.
+
+**`paths_cross` Output**: `(1,4), (2,4)` — only the source/target cross-product.
+
+`sources`/`targets` follow the same quoting rules as `source_target_pairs`
+(brackets and per-node quotes optional; quote a node only when its identifier
+contains a separator or whitespace, e.g. `sources=['New York','k']`). `source`
+and `sources` are mutually exclusive (likewise `target`/`targets`), and none of
+them can be combined with `source_target_pairs`.
 
 ### 2c  PATHS — every option on one graph (copy‑paste & compare)
 
@@ -270,6 +311,44 @@ identifier is a complex string that itself contains a separator character
 Square brackets are also optional. This option cannot be combined with
 `source`/`target`.
 
+To restrict the shortest-path computation to a **set** of sources and/or targets
+(without pinning specific couples), use the `sources` and `targets` list
+options. They generalise the single `source`/`target`: combining both keeps the
+cross-product (every listed source to every listed target):
+
+```prolog
+edge(1,2,10).
+edge(1,3,5).
+edge(2,3,2).
+edge(2,4,1).
+edge(3,4,9).
+
+% Shortest paths from node 1 or node 2
+asp_from_sources(X,Y,Z) <- #ASP(edge, "sources=[1,2]").
+
+% Shortest paths ending at node 3 or node 4
+asp_to_targets(X,Y,Z)   <- #ASP(edge, "targets=[3,4]").
+
+% Cross-product: from {1,2} to {4}
+asp_cross(X,Y,Z)        <- #ASP(edge, "sources=[1,2],targets=[4]").
+
+@output("asp_from_sources").
+@output("asp_to_targets").
+@output("asp_cross").
+```
+
+**`asp_from_sources` Output**: `(1,2,10), (1,3,5), (1,4,11), (2,3,2), (2,4,1)` —
+shortest paths from sources 1 and 2.
+
+**`asp_to_targets` Output**: `(1,3,5), (2,3,2), (1,4,11), (2,4,1), (3,4,9)` —
+shortest paths to targets 3 and 4.
+
+**`asp_cross` Output**: `(1,4,11), (2,4,1)` — the source/target cross-product.
+
+`sources`/`targets` use the same quoting rules as `source_target_pairs`.
+`source`/`sources` are mutually exclusive (likewise `target`/`targets`), and none
+of them can be combined with `source_target_pairs`.
+
 ### 3a  Single-Source Shortest Path
 
 `#SSSP` is the same weighted shortest-path engine as `#ASP`, but the `source`
@@ -296,11 +375,12 @@ sssp_from_node1(1, 3, 5)    % Shortest path 1 → 3
 sssp_from_node1(1, 4, 11)   % Shortest path 1 → 2 → 4
 ```
 
-The optional `target` and `visited` parameters from `#ASP` are also available,
-e.g. `#SSSP(edge, "source=1,target=4")` returns only `(1, 4, 11)`, and
+The optional `target`/`targets` and `visited` parameters from `#ASP` are also
+available, e.g. `#SSSP(edge, "source=1,target=4")` returns only `(1, 4, 11)`, and
 `#SSSP(edge, "source=1,visited=true")` adds the ordered list of visited nodes as
-a fourth column. `source_target_pairs` may also be used and satisfies the
-required-source rule (e.g. `#SSSP(edge, "source_target_pairs=[1:2,1:4]")`).
+a fourth column. The required source may equivalently be given as a single-element
+list `sources=[1]`; `source_target_pairs` also satisfies the required-source rule
+(e.g. `#SSSP(edge, "source_target_pairs=[1:2,1:4]")`).
 
 ### 3b  Shortest paths — every option on one graph (copy‑paste & compare)
 
@@ -376,10 +456,50 @@ bfs_from_1(Source, Target, Level) <- #BFS(edge, "source=1").
 
 **`bfs_from_1` Output**: `(1,2,1), (1,3,1), (1,4,2), (1,5,3)` — hop distance from node 1 to each reachable node.
 
-`#BFS` accepts the same options as `#ASP`: `source`/`target`/`source_target_pairs`
-restrict the couples, and `visited=true` adds the ordered fewest-hops path as a
-fourth column. The source is optional — omit it to compute levels between every
-reachable pair, e.g. `bfs_all(X,Y,L) <- #BFS(edge).`
+`#BFS` accepts the same options as `#ASP`:
+`source`/`target`/`sources`/`targets`/`source_target_pairs` restrict the couples,
+and `visited=true` adds the ordered fewest-hops path as a fourth column. The
+source is optional — omit it to compute levels between every reachable pair, e.g.
+`bfs_all(X,Y,L) <- #BFS(edge).`
+
+Use the `sources`/`targets` list options to restrict to a set of endpoints, e.g.
+levels from several start nodes at once:
+
+```prolog
+edge(1,2).
+edge(2,3).
+edge(5,6).
+
+% Levels from node 1 or node 5
+bfs_from_sources(Source, Target, Level) <- #BFS(edge, "sources=[1,5]").
+@output("bfs_from_sources").
+```
+
+**`bfs_from_sources` Output**: `(1,2,1), (1,3,2), (5,6,1)` — hop distances from
+nodes 1 and 5.
+
+#### Distance *to* a target
+
+You can also specify only `target` (without `source`) to get the hop-distance
+**from every node to that target**:
+
+```prolog
+to_target(X, Y, Level) <- #BFS(edge, "target='F'").
+```
+
+This works for `#PATHS`, `#ASP` and `#BFS` (but not `#SSSP`, which always
+requires a source). Note that `target`-only does **not** prune the computation —
+the engine groups by source, so it computes from all sources and then filters to
+the target. If "distance to one target" is a hot path on a large graph, reverse
+the edges and query by `source` instead, which runs a single traversal from the
+target:
+
+```prolog
+redge(Y,X)        <- edge(X,Y).
+to_target(X, T, L) <- #BFS(redge, "source='F'").
+```
+
+The same reversed-edge trick applies to `#PATHS` and `#ASP`.
 
 ### 4  Connected Components
 
