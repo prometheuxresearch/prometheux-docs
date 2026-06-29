@@ -106,6 +106,7 @@
         "pages": [
           "integrations/overview",
           "integrations/python-sdk",
+          "integrations/sdk-reference",
           "integrations/rest-api",
           "integrations/config",
           "integrations/chat-api",
@@ -128,15 +129,20 @@
             "pages": [
               "integrations/api-endpoints/authentication",
               "integrations/api-endpoints/projects",
+              "integrations/api-endpoints/sharing",
               "integrations/api-endpoints/concepts",
               "integrations/api-endpoints/data",
+              "integrations/api-endpoints/ontology",
               "integrations/api-endpoints/knowledge-graph",
               "integrations/api-endpoints/vadalog",
               "integrations/api-endpoints/vadalingo",
               "integrations/api-endpoints/dashboards",
               "integrations/api-endpoints/schedules",
               "integrations/api-endpoints/context-layer",
-              "integrations/api-endpoints/agent"
+              "integrations/api-endpoints/agent",
+              "integrations/api-endpoints/chat-history",
+              "integrations/api-endpoints/alerts",
+              "integrations/api-endpoints/compute"
             ]
           }
         ]

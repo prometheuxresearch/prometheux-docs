@@ -1,0 +1,253 @@
+---
+title: "Project Sharing"
+description: "Share projects with other users as viewer or editor, manage your outbox, and accept, leave, or sync shares from your inbox."
+---
+
+The Project Sharing API lets a project owner grant another user **viewer** or
+**editor** access to a project, and lets the recipient accept, leave, and
+reconcile shares from their inbox. Sharing issues a scoped token to the
+recipient under the hood; the raw token is never returned to the sharer — it is
+delivered to the recipient and claimed on accept.
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+
+<Note>
+Endpoints split into **sharer-side** (you own the project and grant access) and
+**recipient-side** (a project has been shared with you). Recipient-side
+endpoints additionally rely on your Supabase session, sent via the
+`X-Supabase-Token` header, so row-level security scopes the results to you.
+</Note>
+
+## Sharer-side
+
+### Share a project
+
+Grant another user access to one of your projects. Identify the recipient by
+`sub`, by `email`, or by `username` together with `organization`.
+
+```
+POST /projects/share
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | body | yes | — | ID of the project to share. |
+| `recipient` | body | yes | — | Recipient object: `{ "sub": "..." }`, `{ "email": "..." }`, or `{ "username": "...", "organization": "..." }`. |
+| `share_role` | body | yes | — | `"viewer"` or `"editor"`. |
+| `expires_in_minutes` | body | no | `null` | Lifetime of the share; omit or `null` for no expiration. |
+
+```bash
+curl -X POST "$BASE_URL/projects/share" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_id": "'$PROJECT_ID'",
+    "recipient": { "email": "alice@example.com" },
+    "share_role": "viewer"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Project shared successfully.",
+  "data": {
+    "share_id": "shr_a1b2...",
+    "project_id": "proj_123",
+    "share_role": "viewer",
+    "status": "pending"
+  }
+}
+```
+
+### List shares (outbox)
+
+Return every share you have created, most recent first. Optionally filter to a
+single project.
+
+```
+GET /projects/share/list
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | query | no | — | Filter the outbox to a single project. |
+
+```bash
+curl "$BASE_URL/projects/share/list" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+`data` is an array of share objects (`share_id`, `project_id`, `share_role`,
+`status`, recipient identity, and timestamps).
+
+### Update a share's role
+
+Change a share between `viewer` and `editor` in place — the recipient is not
+forced to re-accept. Updating to the role it already has is a no-op that returns
+`data.changed = false`.
+
+```
+POST /projects/share/update-role
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `share_id` | body | yes | — | The share to update. |
+| `share_role` | body | yes | — | New role: `"viewer"` or `"editor"`. |
+
+```bash
+curl -X POST "$BASE_URL/projects/share/update-role" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "share_id": "shr_a1b2...", "share_role": "editor" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Share role updated successfully.",
+  "data": { "share_id": "shr_a1b2...", "share_role": "editor", "changed": true }
+}
+```
+
+### Revoke a share
+
+Revoke access you previously granted. Pass either a `share_id`, or a
+`project_id` together with a `recipient_sub`. Revoking is idempotent.
+
+```
+POST /projects/share/revoke
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `share_id` | body | conditional | — | The share to revoke. |
+| `project_id` | body | conditional | — | Project ID — use with `recipient_sub` instead of `share_id`. |
+| `recipient_sub` | body | conditional | — | Recipient's auth ID — use with `project_id`. |
+
+```bash
+curl -X POST "$BASE_URL/projects/share/revoke" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "share_id": "shr_a1b2..." }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Share revoked successfully.",
+  "data": { "share_id": "shr_a1b2...", "status": "revoked" }
+}
+```
+
+## Recipient-side
+
+### List inbox
+
+Return every share currently visible to you as a recipient — pending
+invitations and already-accepted shares. Each entry is annotated with
+`has_local_token` so you can tell "accepted on this workspace" from "accepted
+elsewhere".
+
+```
+GET /projects/share/inbox
+```
+
+This endpoint takes no parameters.
+
+```bash
+curl "$BASE_URL/projects/share/inbox" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Supabase-Token: $SUPABASE_TOKEN"
+```
+
+`data` is an array of inbox entries (`share_id`, `project_id`, `share_role`,
+`status`, `has_local_token`, sharer identity, and timestamps).
+
+### Accept a share
+
+Claim a pending share. The scoped token is vaulted into your workspace so you
+can open the shared project. Idempotent for shares already accepted on this
+workspace.
+
+```
+POST /projects/share/accept
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `share_id` | body | yes | — | The share to accept. |
+
+```bash
+curl -X POST "$BASE_URL/projects/share/accept" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Supabase-Token: $SUPABASE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "share_id": "shr_a1b2..." }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Share accepted successfully.",
+  "data": { "share_id": "shr_a1b2...", "status": "accepted" }
+}
+```
+
+### Leave a share
+
+Detach yourself from a share you previously accepted (or a pending one). This
+removes the local token and marks the share `left`. Idempotent.
+
+```
+POST /projects/share/leave
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `share_id` | body | yes | — | The share to leave. |
+
+```bash
+curl -X POST "$BASE_URL/projects/share/leave" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Supabase-Token: $SUPABASE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "share_id": "shr_a1b2..." }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Share left successfully.",
+  "data": { "share_id": "shr_a1b2...", "status": "left" }
+}
+```
+
+### Sync inbox
+
+Reconcile your locally-vaulted shares against the source of truth. Local entries
+whose share is no longer `accepted` (revoked, superseded, left, or missing) are
+pruned. Use this as a safety net to catch up after a missed real-time update.
+
+```
+POST /projects/share/sync
+```
+
+This endpoint takes no parameters.
+
+```bash
+curl -X POST "$BASE_URL/projects/share/sync" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Supabase-Token: $SUPABASE_TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Inbox synced successfully.",
+  "data": { "pruned": 1, "active": 3 }
+}
+```

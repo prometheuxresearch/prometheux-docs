@@ -1,0 +1,149 @@
+---
+title: "Alerts"
+description: "Ingest alerts from Prometheus and Grafana webhooks, browse alert history, and reprocess an alert to re-run its associated concept."
+---
+
+The Alerts API connects external monitoring systems to Prometheux. An alert
+carries `project_id` and `concept` labels; when it fires, the platform stores it
+and can automatically run the targeted concept. You can then browse the alert
+history and reprocess any alert to re-run its concept on demand.
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+
+## Webhooks
+
+Point your monitoring system's webhook receiver at these endpoints. Each alert
+rule should set two labels — `project_id` (the Prometheux project) and `concept`
+(the concept to run when the alert fires).
+
+| Source | Endpoint |
+|---|---|
+| Prometheus Alertmanager | `POST /alerts/webhook/prometheus` |
+| Grafana | `POST /alerts/webhook/grafana` |
+| Test / verification | `POST /alerts/webhook/test` |
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) the alert is stored under. |
+| *(body)* | body | yes | — | The raw alert payload sent by the monitoring system. |
+
+```bash
+curl -X POST "$BASE_URL/alerts/webhook/prometheus?scope=user" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "firing",
+    "commonLabels": { "alertname": "HighErrorRate", "project_id": "proj_123", "concept": "error_summary" }
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Alert processed and concept executed",
+  "data": {
+    "alert_id": "alt_a1b2...",
+    "alertname": "HighErrorRate",
+    "status": "firing",
+    "project_id": "proj_123",
+    "concept": "error_summary",
+    "processed": true
+  }
+}
+```
+
+<Tip>
+Use `POST /alerts/webhook/test` to verify connectivity from your monitoring
+system. It echoes back the payload and metadata without storing an alert or
+running a concept.
+</Tip>
+
+## Alert history
+
+Return stored alerts, most recent first, with offset/limit pagination.
+
+```
+GET /alerts/history
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `limit` | query | no | `100` | Maximum alerts to return (1–1000). |
+| `offset` | query | no | `0` | Number of alerts to skip. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) to read from. |
+
+```bash
+curl "$BASE_URL/alerts/history?limit=50&offset=0&scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Retrieved 2 alerts",
+  "data": {
+    "alerts": [
+      {
+        "alert_id": "alt_a1b2...",
+        "source": "prometheus",
+        "alertname": "HighErrorRate",
+        "status": "firing",
+        "severity": "critical",
+        "project_id": "proj_123",
+        "concept": "error_summary",
+        "received_at": "2026-06-25T09:00:00+00:00"
+      }
+    ],
+    "count": 2,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+<Note>
+The alert history table is created lazily the first time an alert is stored. If
+you call `/alerts/history` on a workspace that has never received an alert, you
+may see an error until the first webhook arrives.
+</Note>
+
+## Reprocess an alert
+
+Re-run the concept associated with a stored alert — useful for backfilling after
+fixing a concept or compute issue.
+
+```
+POST /alerts/{alert_id}/reprocess
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `alert_id` | path | yes | — | The ID of the alert to reprocess. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the alert. |
+| `compute` | body | no | `{}` | [Compute](/integrations/rest-api#compute) target for the re-run. |
+
+```bash
+curl -X POST "$BASE_URL/alerts/alt_a1b2.../reprocess" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "scope": "user" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Alert processed and concept executed",
+  "data": {
+    "alert_id": "alt_a1b2...",
+    "alertname": "HighErrorRate",
+    "status": "firing",
+    "project_id": "proj_123",
+    "concept": "error_summary",
+    "processed": true
+  }
+}
+```
+
+Returns `404` if no alert with that ID exists in the given scope.

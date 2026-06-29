@@ -379,6 +379,52 @@ curl -X POST "$BASE_URL/projects/import-workspace" \
 }
 ```
 
+## Create from context
+
+Create a brand-new project from free-text context and/or file attachments. The
+platform analyzes the input with the LLM to extract entities and relationships,
+generates a project name and description, and uses
+[Vadalingo](/integrations/api-endpoints/vadalingo) to translate the domain
+knowledge into Vadalog concepts.
+
+This endpoint is sent as `multipart/form-data` (form fields, not JSON) because it
+accepts file uploads.
+
+```
+POST /projects/create-from-context
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `context` | form | conditional | `""` | Text describing the domain or task. Required if no files are attached. |
+| `scope` | form | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new project. |
+| `concept_names` | form | no | `"[]"` | JSON array (as a string) of existing concept names whose schemas should inform generation. |
+| `files` | form | no | — | One or more file attachments. Supported: PDF, CSV, TXT/MD, and images (JPG, PNG, GIF, BMP, TIFF, WEBP — OCR'd via computer vision). |
+
+Provide at least one of `context` or `files`; supplying neither returns a `400`.
+
+```bash
+curl -X POST "$BASE_URL/projects/create-from-context" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "context=Model suppliers, the parts they make, and which factories consume them." \
+  -F "scope=user" \
+  -F "files=@/local/path/supply_chain.pdf"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Project 'Supply Chain Model' created successfully from context, 0 table(s), and 1 file(s)",
+  "data": {
+    "id": "proj_new123",
+    "name": "Supply Chain Model",
+    "description": "...",
+    "nodes": [ /* extracted entities */ ],
+    "edges": [ /* extracted relationships */ ]
+  }
+}
+```
+
 ## Snapshots
 
 Snapshots are point-in-time captures of a project's full state — concepts, data
