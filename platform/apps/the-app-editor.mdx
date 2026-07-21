@@ -1,6 +1,6 @@
 ---
 title: "The App Editor"
-description: "The three-pane environment where you build and maintain Dynamic Apps."
+description: "The three-pane environment where you build and maintain apps."
 ---
 
 The App Editor is where you build and maintain apps. Open it with **New App** in the Apps catalog, or via **Edit** on any app card. Editing requires app-editing permission; viewers only ever see the finished app.
@@ -9,7 +9,7 @@ The App Editor is where you build and maintain apps. Open it with **New App** in
 
 The editor is a live preview of your app flanked by two rails — Structure / Data / Concepts panels on the left, the Inspector or Versions panel on the right:
 
-![The App Editor: outline on the left, live preview in the center, the selected widget's inspector on the right](/images/dynamic-apps/editor-layout.png)
+![The App Editor: outline on the left, live preview in the center, the selected widget's inspector on the right](/images/apps/editor-layout.png)
 
 **The preview is the canvas.** There is no separate design surface: what you see in the center is the running app. Click any widget to select it and edit it in the inspector — above, the master table is selected and the inspector shows its tap binding, column subset, format rules and row-select key.
 
@@ -35,7 +35,7 @@ The toolbar has a mode toggle:
 
 The toolbar's **Visual / JSON** toggle swaps the canvas for the raw definition. It's a full editor, not a read-only view: valid JSON you type is applied to the working draft (the visual panes stay in sync), and if the JSON is momentarily invalid you see *"Invalid JSON — changes not applied"* until it parses again. Use it to paste in a definition, make bulk edits, or copy a pattern from these docs.
 
-![The JSON view: the raw definition replaces the canvas, the side panels stay in sync](/images/dynamic-apps/editor-json-view.png)
+![The JSON view: the raw definition replaces the canvas, the side panels stay in sync](/images/apps/editor-json-view.png)
 
 ## Saving and validation
 
@@ -48,7 +48,7 @@ The toolbar's **Visual / JSON** toggle swaps the canvas for the raw definition. 
 
 If anything fails you get the full list of errors — most include a *"did you mean …?"* suggestion — and **nothing is saved**. Fix and save again. There is no way to persist an app that references things that don't exist.
 
-![A failed save: every dangling reference is listed and nothing is persisted](/images/dynamic-apps/editor-validation.png)
+![A failed save: every dangling reference is listed and nothing is persisted](/images/apps/editor-validation.png)
 
 **Cancel** leaves the editor without saving. The toolbar shows an unsaved-changes indicator whenever your draft differs from the last save.
 
@@ -60,7 +60,7 @@ Every successful save appends a **version checkpoint**. Open the Versions panel 
 - **bookmark** the ones you care about (bookmarked versions are kept forever; unbookmarked history is pruned oldest-first after 50 versions),
 - **restore** any version — after a confirmation, the checkpoint's definition replaces your current draft. Restoring is non-destructive: it creates a new state, nothing is deleted.
 
-![The Versions panel: one checkpoint per save, newest first](/images/dynamic-apps/editor-versions.png)
+![The Versions panel: one checkpoint per save, newest first](/images/apps/editor-versions.png)
 
 ## Export and import
 
@@ -71,7 +71,7 @@ Apps round-trip as JSON files:
 
 Hovering an app's card in the catalog reveals its actions — export, edit, and delete:
 
-![A catalog card's hover actions: export, edit, delete](/images/dynamic-apps/catalog-card-actions.png)
+![A catalog card's hover actions: export, edit, delete](/images/apps/catalog-card-actions.png)
 
 Use export/import to move an app between environments or keep a copy alongside your project assets.
 

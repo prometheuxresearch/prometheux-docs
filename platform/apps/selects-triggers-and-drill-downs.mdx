@@ -3,7 +3,7 @@ title: "Selects, triggers and drill-downs"
 description: "Auto-loading data, reactive filters, master–detail layouts and table presentation."
 ---
 
-The first two tutorials used explicit triggers: a button click, a form submit. This one covers the reactive side of Dynamic Apps — data that loads **when the page opens**, refreshes **when a select changes**, and drills down **when a row is clicked** — plus the table presentation options and multi-column layouts that make a dense app readable.
+The first two tutorials used explicit triggers: a button click, a form submit. This one covers the reactive side of apps — data that loads **when the page opens**, refreshes **when a select changes**, and drills down **when a row is clicked** — plus the table presentation options and multi-column layouts that make a dense app readable.
 
 We'll build a small lead dashboard: a master table of leads that loads automatically, a status filter, and a detail panel for the selected lead.
 
@@ -71,7 +71,7 @@ Two kinds of reference appear here:
 
 In the editor's Data panel the three groups read as a wiring table; here the drill-down group is selected, showing its `auto` trigger and the row-selection binding:
 
-![The Data panel with the three run groups and the drill-down group's inspector](/images/dynamic-apps/leads-run-groups.png)
+![The Data panel with the three run groups and the drill-down group's inspector](/images/apps/leads-run-groups.png)
 
 ## 3. Layout: column stacks
 
@@ -172,18 +172,18 @@ The master table demonstrates the `rich_table` presentation pack:
 
 Open the app: the master table fills immediately (`load`), and the right rail shows the MQL leads — the select's default fired the `auto` group, no button anywhere:
 
-![The app freshly opened: master table loaded, filter table populated from the select's default](/images/dynamic-apps/leads-app-loaded.png)
+![The app freshly opened: master table loaded, filter table populated from the select's default](/images/apps/leads-app-loaded.png)
 
 Changing the select re-filters the right-rail table, and clicking a lead row fires the second `auto` group — the detail panel fills in:
 
-![After clicking a row: the lead detail panel is populated](/images/dynamic-apps/leads-drill-down.png)
+![After clicking a row: the lead detail panel is populated](/images/apps/leads-drill-down.png)
 
 <Note>
 **The generic button widget.** The *Open CRM* button is a `button` widget, not a `run_button`. Its `action` can `open_url` (link out), `set_context` (publish a value, as if a row had been selected), or `run_group` (re-fire any group — handy for a "refresh" button on a `load` group).
 </Note>
 
 <Tip>
-**Other display widgets.** Everything shown for tables applies to the other tap-bound widgets too: `stat_card` for KPIs, `line_chart` / `area_chart` / `bar_chart` / `pie_chart` for series (with `x`, `y`, and optional `seriesCol` to pivot long-format data), `heatmap`, and `text` for markdown — bound to a tap or with static `content`. See the [reference](/platform/dynamic-apps/schema-reference#widgets).
+**Other display widgets.** Everything shown for tables applies to the other tap-bound widgets too: `stat_card` for KPIs, `line_chart` / `area_chart` / `bar_chart` / `pie_chart` for series (with `x`, `y`, and optional `seriesCol` to pivot long-format data), `heatmap`, and `text` for markdown — bound to a tap or with static `content`. See the [reference](/platform/apps/schema-reference#widgets).
 </Tip>
 
-You now know the whole interaction model. Next, get comfortable with the tool you build it all in: [The App Editor](/platform/dynamic-apps/the-app-editor).
+You now know the whole interaction model. Next, get comfortable with the tool you build it all in: [The App Editor](/platform/apps/the-app-editor).

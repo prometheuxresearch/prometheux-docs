@@ -3,7 +3,7 @@ title: "Your first app"
 description: "The smallest useful app: one button that runs a concept, and one table that shows the result."
 ---
 
-The smallest useful app: **one button** that runs a concept, and **one table** that shows the result. If you understand this page, you understand the core of Dynamic Apps — everything else is more of the same.
+The smallest useful app: **one button** that runs a concept, and **one table** that shows the result. If you understand this page, you understand the core of Apps — everything else is more of the same.
 
 ## 1. Prepare two concepts
 
@@ -38,16 +38,16 @@ In a real project these would read from your data sources instead of inline fact
 
 Once both concepts are saved and run, your project's lineage shows the chain the app will execute:
 
-![The project lineage: customer_totals feeding top_customers](/images/dynamic-apps/first-app-lineage.png)
+![The project lineage: customer_totals feeding top_customers](/images/apps/first-app-lineage.png)
 
 ## 2. Create the app
 
 1. Open **Apps** in the product navigation and click **New App**.
 2. Pick the project that holds your two concepts, give the app a name (say, *Top Customers*), and continue.
 
-![The New app screen with the name and project filled in](/images/dynamic-apps/first-app-new-app.png)
+![The New app screen with the name and project filled in](/images/apps/first-app-new-app.png)
 
-You land in the [App Editor](/platform/dynamic-apps/the-app-editor) with an empty app: one page, one empty section.
+You land in the [App Editor](/platform/apps/the-app-editor) with an empty app: one page, one empty section.
 
 ## 3. Add a run group
 
@@ -60,7 +60,7 @@ A **run group** says *what to execute and when*. This app needs exactly one:
 
 Selecting the run group shows its full wiring in the inspector — trigger, execute list and output taps:
 
-![The Data panel with the run group selected and its inspector open](/images/dynamic-apps/first-app-run-group.png)
+![The Data panel with the run group selected and its inspector open](/images/apps/first-app-run-group.png)
 
 ## 4. Add the two widgets
 
@@ -71,13 +71,13 @@ In the **Structure** panel, add two widgets to the section:
 
 The live preview in the center updates as you go — before the first run, the table shows a placeholder:
 
-![The editor with the run button and table in place](/images/dynamic-apps/first-app-editor.png)
+![The editor with the run button and table in place](/images/apps/first-app-editor.png)
 
 ## 5. Save and run
 
 Click **Save app**. The definition is validated against your project — if you typo'd a concept name, you get an error now, not at runtime. Then click **Open app** (or find it in the Apps catalog): you'll see your button; clicking it runs the concept and the table fills with the customers over 1,000.
 
-![The finished app after clicking the button](/images/dynamic-apps/first-app-result.png)
+![The finished app after clicking the button](/images/apps/first-app-result.png)
 
 ## The whole app as JSON
 
@@ -126,7 +126,7 @@ Read it top to bottom and you can see the whole flow: the page binds to a projec
 </Note>
 
 <Tip>
-**No button at all.** Change the run group's trigger from `button` to `load` and delete the run button widget — the table then fills automatically when the app opens. Triggers are covered in [Selects, triggers and drill-downs](/platform/dynamic-apps/selects-triggers-and-drill-downs).
+**No button at all.** Change the run group's trigger from `button` to `load` and delete the run button widget — the table then fills automatically when the app opens. Triggers are covered in [Selects, triggers and drill-downs](/platform/apps/selects-triggers-and-drill-downs).
 </Tip>
 
-Next: let the user tell the concept *what* to compute — [Forms and parameters](/platform/dynamic-apps/forms-and-parameters).
+Next: let the user tell the concept *what* to compute — [Forms and parameters](/platform/apps/forms-and-parameters).

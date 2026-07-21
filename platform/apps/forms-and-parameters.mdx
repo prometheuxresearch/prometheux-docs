@@ -3,7 +3,7 @@ title: "Forms and parameters"
 description: "Collect user input with forms and pass the values to your concepts' @params."
 ---
 
-[Your first app](/platform/dynamic-apps/your-first-app) ran a fixed concept. Real apps let the user decide *what* to compute. In Dynamic Apps, user input flows into concepts through **`@param`s**: a form field binds to a parameter, and the run group passes the value when it executes.
+[Your first app](/platform/apps/your-first-app) ran a fixed concept. Real apps let the user decide *what* to compute. In an app, user input flows into concepts through **`@param`s**: a form field binds to a parameter, and the run group passes the value when it executes.
 
 This tutorial builds an order search: a form with a region picker and a minimum total, and a table of matching orders.
 
@@ -62,7 +62,7 @@ Forms have layout controls of their own — `layout: "grid"` places fields on a 
 
 With the form in place, the preview renders it live, and selecting it shows its configuration in the inspector:
 
-![The editor with the form added and its inspector open](/images/dynamic-apps/forms-form-added.png)
+![The editor with the form added and its inspector open](/images/apps/forms-form-added.png)
 
 ## 3. Bind the form to a run group
 
@@ -79,7 +79,7 @@ The keys on the left of `params` must be `@param` names declared by concepts in 
 
 In the Data panel the group reads as a wiring table — form trigger, both param bindings, execute and tap — and the inspector edits each piece:
 
-![The run group with its form trigger and param bindings in the inspector](/images/dynamic-apps/forms-run-group.png)
+![The run group with its form trigger and param bindings in the inspector](/images/apps/forms-run-group.png)
 
 ## 4. Place the widgets
 
@@ -156,15 +156,15 @@ In the section, add:
 
 Save, open the app, pick *North*, set the minimum to *1000*, submit — the table shows orders 1 and 3.
 
-![The finished app: form submitted, matching orders in the table](/images/dynamic-apps/forms-app-done.png)
+![The finished app: form submitted, matching orders in the table](/images/apps/forms-app-done.png)
 
 ## Beyond scalar fields
 
 Two things you'll reach for as forms grow:
 
-- **Standalone inputs.** A field doesn't have to live in a form. A page-level input (type `select`, `text`, …) placed with an `input_ref` widget publishes its value continuously — useful with `auto`-triggered run groups, as shown in [the next tutorial](/platform/dynamic-apps/selects-triggers-and-drill-downs).
-- **Record groups (facts).** A form field of type `record_group` lets the user enter *rows*, not a single value. The rows are serialized as ground facts and fed to an **input predicate** — an empty concept that only declares its columns via `@model` — through the run group's `facts` binding: `"facts": { "price_adjustment": "{{scenarioForm.adjustments}}" }`. Use this for what-if inputs. See the [reference](/platform/dynamic-apps/schema-reference#form-fields) for the full field list.
+- **Standalone inputs.** A field doesn't have to live in a form. A page-level input (type `select`, `text`, …) placed with an `input_ref` widget publishes its value continuously — useful with `auto`-triggered run groups, as shown in [the next tutorial](/platform/apps/selects-triggers-and-drill-downs).
+- **Record groups (facts).** A form field of type `record_group` lets the user enter *rows*, not a single value. The rows are serialized as ground facts and fed to an **input predicate** — an empty concept that only declares its columns via `@model` — through the run group's `facts` binding: `"facts": { "price_adjustment": "{{scenarioForm.adjustments}}" }`. Use this for what-if inputs. See the [reference](/platform/apps/schema-reference#form-fields) for the full field list.
 
 Available field types: `text`, `number`, `select`, `combobox`, `date`, `multi_select`, `checkbox`, `password`, `textarea` — plus `record_group` inside forms. Fields support `required`, `min`/`max`, `pattern`, `default`, `placeholder`, and conditional visibility via `visibleWhen`.
 
-Next: [Selects, triggers and drill-downs](/platform/dynamic-apps/selects-triggers-and-drill-downs).
+Next: [Selects, triggers and drill-downs](/platform/apps/selects-triggers-and-drill-downs).
