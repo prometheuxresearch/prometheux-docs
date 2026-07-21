@@ -95,7 +95,18 @@
           "platform/concepts-and-lineage",
           "platform/project-workspace",
           "platform/concept-editor",
-          "platform/dashboards",
+          {
+            "group": "Dynamic Apps",
+            "pages": [
+              "platform/dynamic-apps/overview",
+              "platform/dynamic-apps/your-first-app",
+              "platform/dynamic-apps/forms-and-parameters",
+              "platform/dynamic-apps/selects-triggers-and-drill-downs",
+              "platform/dynamic-apps/the-app-editor",
+              "platform/dynamic-apps/how-apps-run",
+              "platform/dynamic-apps/schema-reference"
+            ]
+          },
           "platform/ai-assistant",
           "platform/compute",
           "platform/settings"

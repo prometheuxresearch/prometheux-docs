@@ -1,0 +1,118 @@
+---
+title: "Your first app"
+description: "The smallest useful app: one button that runs a concept, and one table that shows the result."
+---
+
+The smallest useful app: **one button** that runs a concept, and **one table** that shows the result. If you understand this page, you understand the core of Dynamic Apps — everything else is more of the same.
+
+## 1. Prepare two concepts
+
+In a project of your choice, create two concepts. The first computes a total per customer from a few inline facts:
+
+```prolog Concept: customer_totals
+customer_orders("Acme", 1200.0).
+customer_orders("Acme", 800.0).
+customer_orders("Birch & Co", 450.0).
+customer_orders("Corella", 3100.0).
+customer_orders("Dunmore", 890.0).
+customer_orders("Dunmore", 300.0).
+
+customer_totals(Name, Total) :-
+    customer_orders(Name, Amount),
+    Total = msum(Amount).
+
+@output("customer_totals").
+```
+
+The second builds on it and keeps only the big spenders:
+
+```prolog Concept: top_customers
+top_customers(Name, Total) :-
+    customer_totals(Name, Total),
+    Total > 1000.0.
+
+@output("top_customers").
+```
+
+In a real project these would read from your data sources instead of inline facts — the app works exactly the same way.
+
+## 2. Create the app
+
+1. Open **Apps** in the product navigation and click **New App**.
+2. Pick the project that holds your two concepts, give the app a name (say, *Top Customers*), and continue.
+
+You land in the [App Editor](/platform/dynamic-apps/the-app-editor) with an empty app: one page, one empty section.
+
+## 3. Add a run group
+
+A **run group** says *what to execute and when*. This app needs exactly one:
+
+1. Open the **Data** panel in the left rail and add a run group.
+2. Set its **trigger** to `button` — it will run when the user clicks a button.
+3. Under **execute**, add `top_customers`. This is the concept the button runs; executing it computes its whole upstream lineage, including `customer_totals`.
+4. Add an **output tap** on `top_customers` and give it the id `top`. Taps are the named handles widgets read from.
+
+## 4. Add the two widgets
+
+In the **Structure** panel, add two widgets to the section:
+
+1. A **run button** bound to your run group. This renders the button that fires it.
+2. A **rich table** bound to the output tap `top`. This renders the results.
+
+The live preview in the center updates as you go — before the first run, the table shows a placeholder.
+
+## 5. Save and run
+
+Click **Save app**. The definition is validated against your project — if you typo'd a concept name, you get an error now, not at runtime. Then click **Open app** (or find it in the Apps catalog): you'll see your button; clicking it runs the concept and the table fills with the customers over 1,000.
+
+## The whole app as JSON
+
+The editor also has a **JSON view** showing the definition you just built visually. It looks like this:
+
+```json
+{
+  "schemaVersion": 2,
+  "id": "…generated…",
+  "name": "Top Customers",
+  "header": { "title": "Top Customers" },
+  "pages": [
+    {
+      "id": "page_1",
+      "label": "Top Customers",
+      "project": { "id": "<your project id>" },
+      "inputs": [],
+      "runGroups": [
+        {
+          "id": "load_top",
+          "label": "Compute top customers",
+          "trigger": "button",
+          "execute": ["top_customers"],
+          "outputs": [{ "id": "top", "concept": "top_customers" }]
+        }
+      ],
+      "sections": [
+        {
+          "id": "section_1",
+          "layout": "grid",
+          "widgets": [
+            { "id": "w_btn", "type": "run_button", "groupId": "load_top", "span": 3 },
+            { "id": "w_table", "type": "rich_table", "outputId": "top", "span": 12 }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Read it top to bottom and you can see the whole flow: the page binds to a project, the run group executes `top_customers` and exposes the tap `top`, and the two widgets point at the group and the tap.
+
+<Note>
+**Execute vs. display.** `execute` and `outputs` don't have to name the same concept. One run computes the whole upstream lineage, so a tap can read any concept along the way. Add a second tap `{ "id": "totals", "concept": "customer_totals" }` and a second table bound to it — one button click now fills both tables from a single execution.
+</Note>
+
+<Tip>
+**No button at all.** Change the run group's trigger from `button` to `load` and delete the run button widget — the table then fills automatically when the app opens. Triggers are covered in [Selects, triggers and drill-downs](/platform/dynamic-apps/selects-triggers-and-drill-downs).
+</Tip>
+
+Next: let the user tell the concept *what* to compute — [Forms and parameters](/platform/dynamic-apps/forms-and-parameters).
