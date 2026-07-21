@@ -144,7 +144,7 @@
               "integrations/api-endpoints/knowledge-graph",
               "integrations/api-endpoints/vadalog",
               "integrations/api-endpoints/vadalingo",
-              "integrations/api-endpoints/dashboards",
+              "integrations/api-endpoints/apps",
               "integrations/api-endpoints/schedules",
               "integrations/api-endpoints/context-layer",
               "integrations/api-endpoints/agent"
