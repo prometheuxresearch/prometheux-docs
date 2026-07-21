@@ -39,14 +39,14 @@ leads_by_status(Name, Company, Employees) :-
 
 And a key–value detail for one lead:
 
-```prolog Concept: lead_detail
+```prolog Concept: lead_info
 @param("lead_name", "").
 
-lead_detail("Email", Email) :- leads(Name, Email, _, _, _), Name = ${lead_name}.
-lead_detail("Company", Company) :- leads(Name, _, Company, _, _), Name = ${lead_name}.
-lead_detail("Status", Status) :- leads(Name, _, _, Status, _), Name = ${lead_name}.
+lead_info("Email", Email) :- leads(Name, Email, _, _, _), Name = ${lead_name}.
+lead_info("Company", Company) :- leads(Name, _, Company, _, _), Name = ${lead_name}.
+lead_info("Status", Status) :- leads(Name, _, _, Status, _), Name = ${lead_name}.
 
-@output("lead_detail").
+@output("lead_info").
 ```
 
 ## 2. The two reactive triggers
@@ -62,12 +62,16 @@ This app uses one of each, plus a second `auto` group:
 |---|---|---|---|---|
 | `load_leads` | `load` | — | `leads` | `leadsTap` |
 | `by_status` | `auto` | `status` ← `{{statusPick}}` | `leads_by_status` | `statusTap` |
-| `detail` | `auto` | `lead_name` ← `{{selectedLead.name}}` | `lead_detail` | `detailTap` |
+| `detail` | `auto` | `lead_name` ← `{{selectedLead.name}}` | `lead_info` | `detailTap` |
 
 Two kinds of reference appear here:
 
 - `{{statusPick}}` — a **standalone input**. Unlike form fields, a page-level input publishes its value continuously; an `auto` group bound to it re-runs on every change. Because the input has a `default`, the group also fires once when the page opens.
 - `{{selectedLead.name}}` — a **row selection**. The master table below publishes its clicked row under the key `selectedLead`; the dotted path reads the row's `name` column. Until a row is clicked the reference is empty, so the detail group simply doesn't run.
+
+In the editor's Data panel the three groups read as a wiring table; here the drill-down group is selected, showing its `auto` trigger and the row-selection binding:
+
+![The Data panel with the three run groups and the drill-down group's inspector](/images/dynamic-apps/leads-run-groups.png)
 
 ## 3. Layout: column stacks
 
@@ -123,8 +127,8 @@ The master table demonstrates the `rich_table` presentation pack:
           "id": "detail",
           "trigger": "auto",
           "params": { "lead_name": "{{selectedLead.name}}" },
-          "execute": ["lead_detail"],
-          "outputs": [{ "id": "detailTap", "concept": "lead_detail" }]
+          "execute": ["lead_info"],
+          "outputs": [{ "id": "detailTap", "concept": "lead_info" }]
         }
       ],
       "sections": [
@@ -166,7 +170,13 @@ The master table demonstrates the `rich_table` presentation pack:
 }
 ```
 
-Open the app: the master table fills immediately (`load`), the right rail shows the MQL leads (the select's default fired the `auto` group), changing the select re-filters without any button, and clicking a lead row populates the detail panel.
+Open the app: the master table fills immediately (`load`), and the right rail shows the MQL leads — the select's default fired the `auto` group, no button anywhere:
+
+![The app freshly opened: master table loaded, filter table populated from the select's default](/images/dynamic-apps/leads-app-loaded.png)
+
+Changing the select re-filters the right-rail table, and clicking a lead row fires the second `auto` group — the detail panel fills in:
+
+![After clicking a row: the lead detail panel is populated](/images/dynamic-apps/leads-drill-down.png)
 
 <Note>
 **The generic button widget.** The *Open CRM* button is a `button` widget, not a `run_button`. Its `action` can `open_url` (link out), `set_context` (publish a value, as if a row had been selected), or `run_group` (re-fire any group — handy for a "refresh" button on a `load` group).
