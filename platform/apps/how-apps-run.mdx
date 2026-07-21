@@ -45,20 +45,20 @@ An app is stored in its **home project** — the project you picked when creatin
 
 ## The API surface
 
-Everything the catalog and editor do goes through the dashboards API — apps are fully manageable programmatically, and the same save-time validation applies regardless of who calls it:
+Everything the catalog and editor do goes through the Apps API — apps are fully manageable programmatically, and the same save-time validation applies regardless of who calls it:
 
 | Operation | Endpoint |
 |---|---|
-| List all apps | `GET /dashboards/list` |
-| List a project's apps | `GET /dashboards/{project_id}/list` |
-| Get a definition | `GET /dashboards/{project_id}/{dashboard_id}` |
-| Create / update (validates) | `POST /dashboards/{project_id}/save` |
-| Delete (incl. history) | `DELETE /dashboards/{project_id}/{dashboard_id}` |
-| List versions | `GET /dashboards/{project_id}/{dashboard_id}/versions` |
-| Restore a version | `POST /dashboards/{project_id}/{dashboard_id}/versions/{version_id}/restore` |
-| Bookmark a version | `PATCH /dashboards/{project_id}/{dashboard_id}/versions/{version_id}/bookmark` |
+| List all apps | `GET /apps/list` |
+| List a project's apps | `GET /apps/{project_id}/list` |
+| Get a definition | `GET /apps/{project_id}/{app_id}` |
+| Create / update (validates) | `POST /apps/{project_id}/save` |
+| Delete (incl. history) | `DELETE /apps/{project_id}/{app_id}` |
+| List versions | `GET /apps/{project_id}/{app_id}/versions` |
+| Restore a version | `POST /apps/{project_id}/{app_id}/versions/{version_id}/restore` |
+| Bookmark a version | `PATCH /apps/{project_id}/{app_id}/versions/{version_id}/bookmark` |
 
-See the [Dashboards API reference](/integrations/api-endpoints/dashboards) for request and response shapes. The AI assistant uses the same operations through its MCP tools, so apps it creates obey the same validation as apps you build in the editor.
+See the [Apps API reference](/integrations/api-endpoints/apps) for request and response shapes. The AI assistant uses the same operations through its MCP tools, so apps it creates obey the same validation as apps you build in the editor.
 
 ## The pieces, end to end
 
