@@ -36,10 +36,16 @@ top_customers(Name, Total) :-
 
 In a real project these would read from your data sources instead of inline facts — the app works exactly the same way.
 
+Once both concepts are saved and run, your project's lineage shows the chain the app will execute:
+
+![The project lineage: customer_totals feeding top_customers](/images/dynamic-apps/first-app-lineage.png)
+
 ## 2. Create the app
 
 1. Open **Apps** in the product navigation and click **New App**.
 2. Pick the project that holds your two concepts, give the app a name (say, *Top Customers*), and continue.
+
+![The New app screen with the name and project filled in](/images/dynamic-apps/first-app-new-app.png)
 
 You land in the [App Editor](/platform/dynamic-apps/the-app-editor) with an empty app: one page, one empty section.
 
@@ -52,6 +58,10 @@ A **run group** says *what to execute and when*. This app needs exactly one:
 3. Under **execute**, add `top_customers`. This is the concept the button runs; executing it computes its whole upstream lineage, including `customer_totals`.
 4. Add an **output tap** on `top_customers` and give it the id `top`. Taps are the named handles widgets read from.
 
+Selecting the run group shows its full wiring in the inspector — trigger, execute list and output taps:
+
+![The Data panel with the run group selected and its inspector open](/images/dynamic-apps/first-app-run-group.png)
+
 ## 4. Add the two widgets
 
 In the **Structure** panel, add two widgets to the section:
@@ -59,11 +69,15 @@ In the **Structure** panel, add two widgets to the section:
 1. A **run button** bound to your run group. This renders the button that fires it.
 2. A **rich table** bound to the output tap `top`. This renders the results.
 
-The live preview in the center updates as you go — before the first run, the table shows a placeholder.
+The live preview in the center updates as you go — before the first run, the table shows a placeholder:
+
+![The editor with the run button and table in place](/images/dynamic-apps/first-app-editor.png)
 
 ## 5. Save and run
 
 Click **Save app**. The definition is validated against your project — if you typo'd a concept name, you get an error now, not at runtime. Then click **Open app** (or find it in the Apps catalog): you'll see your button; clicking it runs the concept and the table fills with the customers over 1,000.
+
+![The finished app after clicking the button](/images/dynamic-apps/first-app-result.png)
 
 ## The whole app as JSON
 
