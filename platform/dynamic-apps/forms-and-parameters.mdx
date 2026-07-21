@@ -11,23 +11,23 @@ This tutorial builds an order search: a form with a region picker and a minimum 
 
 First, a small concept whose output will populate the region picker:
 
-```prolog Concept: region_options
+```prolog Concept: sales_regions
 regions("North").
 regions("South").
 regions("East").
 regions("West").
 
-region_options(Region) :- regions(Region).
+sales_regions(Region) :- regions(Region).
 
-@model("region_options", "['region:string']").
-@output("region_options").
+@model("sales_regions", "['region:string']").
+@output("sales_regions").
 ```
 
 The `@model` matters here: it names the column (`region`), and the app will refer to that column by name.
 
 Second, the search itself. It declares two `@param`s and filters with them:
 
-```prolog Concept: order_finder
+```prolog Concept: matching_orders
 @param("region", "North").
 @param("min_total", 0.0).
 
@@ -37,12 +37,12 @@ orders(3, "North", "shipped", 2320.0).
 orders(4, "West", "delivered", 150.0).
 orders(5, "North", "delivered", 990.0).
 
-order_finder(OrderId, Region, Status, Total) :-
+matching_orders(OrderId, Region, Status, Total) :-
     orders(OrderId, Region, Status, Total),
     Region = ${region},
     Total >= ${min_total}.
 
-@output("order_finder").
+@output("matching_orders").
 ```
 
 The values in the `@param` declarations are just defaults for running the concept by hand — the app overrides them on every run.
@@ -53,12 +53,16 @@ Create a new app in the same project, then in the **Data** panel add an input of
 
 | Field id | Type | Notes |
 |---|---|---|
-| `region` | `combobox` | Options come from a concept: set **optionsSource** to concept `region_options`, value column `region`. |
+| `region` | `combobox` | Options come from a concept: set **optionsSource** to concept `sales_regions`, value column `region`. |
 | `min_total` | `number` | Set a default of `0`. |
 
 Field ids matter: they are how run groups refer to the values, as `{{searchForm.region}}` and `{{searchForm.min_total}}`.
 
 Forms have layout controls of their own — `layout: "grid"` places fields on a 12-column grid where each field's `span` sets its width, and `labelPosition` puts labels above (`top`) or beside (`left`) the fields. Two fields with `"span": 6` sit side by side.
+
+With the form in place, the preview renders it live, and selecting it shows its configuration in the inspector:
+
+![The editor with the form added and its inspector open](/images/dynamic-apps/forms-form-added.png)
 
 ## 3. Bind the form to a run group
 
@@ -68,10 +72,14 @@ Add a run group with:
 - **params**: map each concept parameter to a form value:
   - `region` → `{{searchForm.region}}`
   - `min_total` → `{{searchForm.min_total}}`
-- **execute**: `order_finder`
-- **outputs**: a tap `orders` on `order_finder`
+- **execute**: `matching_orders`
+- **outputs**: a tap `orders` on `matching_orders`
 
 The keys on the left of `params` must be `@param` names declared by concepts in the project; the `{{…}}` references on the right must point at inputs or form fields that exist. Both are checked at save time — a typo gives you an error like *"param 'regon' is not declared as @param by any concept in this project; did you mean 'region'?"*.
+
+In the Data panel the group reads as a wiring table — form trigger, both param bindings, execute and tap — and the inspector edits each piece:
+
+![The run group with its form trigger and param bindings in the inspector](/images/dynamic-apps/forms-run-group.png)
 
 ## 4. Place the widgets
 
@@ -110,7 +118,7 @@ In the section, add:
                   "span": 6,
                   "label": "Region",
                   "required": true,
-                  "optionsSource": { "concept": "region_options", "valueCol": "region", "labelCol": "region" }
+                  "optionsSource": { "concept": "sales_regions", "valueCol": "region", "labelCol": "region" }
                 },
                 { "id": "min_total", "type": "number", "span": 6, "label": "Minimum total", "default": 0 }
               ]
@@ -127,8 +135,8 @@ In the section, add:
             "region": "{{searchForm.region}}",
             "min_total": "{{searchForm.min_total}}"
           },
-          "execute": ["order_finder"],
-          "outputs": [{ "id": "orders", "concept": "order_finder" }]
+          "execute": ["matching_orders"],
+          "outputs": [{ "id": "orders", "concept": "matching_orders" }]
         }
       ],
       "sections": [
@@ -147,6 +155,8 @@ In the section, add:
 ```
 
 Save, open the app, pick *North*, set the minimum to *1000*, submit — the table shows orders 1 and 3.
+
+![The finished app: form submitted, matching orders in the table](/images/dynamic-apps/forms-app-done.png)
 
 ## Beyond scalar fields
 
