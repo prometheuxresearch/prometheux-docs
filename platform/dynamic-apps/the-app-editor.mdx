@@ -1,0 +1,79 @@
+---
+title: "The App Editor"
+description: "The three-pane environment where you build and maintain Dynamic Apps."
+---
+
+The App Editor is where you build and maintain apps. Open it with **New App** in the Apps catalog, or via **Edit** on any app card. Editing requires app-editing permission; viewers only ever see the finished app.
+
+## Layout
+
+The editor is a live preview of your app flanked by two rails:
+
+```
+┌──────────┬──────────────────────────────┬────────────┐
+│ Left rail│                              │ Right rail │
+│          │                              │            │
+│ Structure│      Live preview            │ Inspector  │
+│ Data     │      (the canvas)            │    or      │
+│ Concepts │                              │ Versions   │
+└──────────┴──────────────────────────────┴────────────┘
+```
+
+**The preview is the canvas.** There is no separate design surface: what you see in the center is the running app. Click any widget to select it and edit it in the inspector.
+
+### Left rail
+
+- **Structure** — the outline tree: pages → sections → widgets (form fields appear as children of their form). Use it to add, select, reorder and remove elements.
+- **Data** — the wiring view: the page's inputs, forms, run groups, output taps, and the `params`/`facts` bindings between them. This is where the execution side of the app lives.
+- **Concepts** — the concept library of the page's project: browse concepts, their parameters and output columns while you wire things up.
+
+### Center: preview, Select vs. Interact
+
+The toolbar has a mode toggle:
+
+- **Select** — clicking a widget selects it for editing.
+- **Interact** — the preview behaves like the real app: type in inputs, submit forms, click buttons, run groups for real.
+
+### Right rail
+
+- **Inspector** — edits the selected element's fields directly: labels, spans, variants, format rules; for run groups, the trigger, the `execute` list, and the `params`/`facts` bindings as key–value editors.
+- **Versions** — the app's checkpoint history (below).
+
+## JSON view
+
+The toolbar's **Visual / JSON** toggle swaps the canvas for the raw definition. It's a full editor, not a read-only view: valid JSON you type is applied to the working draft (the visual panes stay in sync), and if the JSON is momentarily invalid you see *"Invalid JSON — changes not applied"* until it parses again. Use it to paste in a definition, make bulk edits, or copy a pattern from these docs.
+
+## Saving and validation
+
+**Save app** validates the entire definition against the referenced projects' concepts before anything is stored:
+
+- every concept in `execute`, `outputs`, `optionsSource` and `seedFrom` must exist in the page's project,
+- every `params` key must be a declared `@param`, and every `{{…}}` reference must point at a real input, form field or row-select key,
+- every column named in `columns`, `formatRules`, `columnFormats` and `optionsSource` must be a column of the relevant concept (matched case-insensitively),
+- `facts` may only feed input predicates (empty concepts declaring their columns via `@model`).
+
+If anything fails you get the full list of errors — most include a *"did you mean …?"* suggestion — and **nothing is saved**. Fix and save again. There is no way to persist an app that references things that don't exist.
+
+**Cancel** leaves the editor without saving. The toolbar shows an unsaved-changes indicator whenever your draft differs from the last save.
+
+## Versions
+
+Every successful save appends a **version checkpoint**. Open the Versions panel to:
+
+- browse checkpoints newest-first,
+- **bookmark** the ones you care about (bookmarked versions are kept forever; unbookmarked history is pruned oldest-first after 50 versions),
+- **restore** any version — after a confirmation, the checkpoint's definition replaces your current draft. Restoring is non-destructive: it creates a new state, nothing is deleted.
+
+## Export and import
+
+Apps round-trip as JSON files:
+
+- **Export** — the download action on an app's catalog card saves `<AppName>.json`, self-contained including its project reference.
+- **Import** — the import action in the catalog header takes such a file, assigns the app a fresh identity, and saves it (running the same validation as any save — so importing into a project that lacks the referenced concepts fails with the usual errors).
+
+Use export/import to move an app between environments or keep a copy alongside your project assets.
+
+## Creating and deleting
+
+- **New App** asks for the home project and a name, then opens the editor with an empty one-page scaffold. Nothing is persisted until your first save.
+- **Delete** (on the catalog card) removes the app *and its version history* after a confirmation. This cannot be undone — export a copy first if in doubt.

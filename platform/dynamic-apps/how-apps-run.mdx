@@ -1,0 +1,76 @@
+---
+title: "How apps run"
+description: "The runtime model: tab context, the run-group lifecycle, triggers, storage and the API surface."
+---
+
+This page explains what actually happens between a click and a filled table — useful when designing non-trivial apps, and when something doesn't behave the way you expected.
+
+## The catalog
+
+**Apps** in the product navigation lists every app you can see, as cards showing the app's name, home project, author and creation date. Users with app-editing permission also get the authoring actions there: New App, Import, and per-card Export / Edit / Delete. Opening a card runs the app.
+
+## Pages, tabs and context
+
+An app with several pages renders them as tabs. Three rules define the runtime model:
+
+1. **One project per tab.** Each page is bound to exactly one project, and everything on that page — concepts, parameters, columns — resolves against that project's lineage. Different tabs may use different projects.
+2. **Tabs keep their state.** Switching tabs never discards another tab's inputs or results; every tab stays alive in the background.
+3. **Each tab has its own context.** The *tab context* is a key–value space where inputs publish their values (`statusPick`), forms publish their fields (`searchForm.region`), and tables publish selected rows (`selectedLead`). Run-group bindings (`{{…}}` references) read from it. Context never leaks across tabs.
+
+## The run-group lifecycle
+
+When a run group fires — whatever the trigger — the same four steps happen:
+
+1. **Resolve bindings.** Every `params` template is resolved against the tab context (unset values are dropped); every `facts` template must resolve to at least one record-group row, or the run stops with a message asking the user to submit the form first.
+2. **Serialize facts.** Record-group rows become Vadalog ground facts, one per row, arguments in the record group's declared field order — strings quoted, numbers bare, booleans as `#T`/`#F`. These travel with the run as *preamble facts*: they exist only for that execution and are never persisted.
+3. **Execute.** Each concept in `execute` runs in order, with the resolved parameters and preamble facts, and with intermediate concepts materialized — which is why an output tap can read *any* concept computed along the way, not just the executed one.
+4. **Fetch taps.** Each output tap's results are fetched and handed to the widgets bound to it.
+
+### Triggers, precisely
+
+| Trigger | Fires |
+|---|---|
+| `button` | when a `run_button` bound to the group — or a `button` widget with a `run_group` action — is clicked. |
+| `form` | when the bound form is submitted. The submitted values are used immediately for that run. |
+| `load` | once, when the tab first opens. Multiple `load` groups on a tab run one after another. |
+| `auto` | whenever the context values it binds to change — debounced briefly, and only once **all** of its references have values. A drill-down bound to a row selection simply waits until the first click. |
+
+## Tables at runtime
+
+A `rich_table`'s pagination, sorting and search are **server-side**: the table fetches pages on demand rather than loading the whole result. Large results are therefore fine to tap directly — the first page arrives quickly and the rest is fetched as the user navigates.
+
+## Where apps live
+
+An app is stored in its **home project** — the project you picked when creating it (its pages may reference other projects). Along with the definition, the platform keeps the version history: every save appends a checkpoint, bookmarked and published checkpoints are kept forever, and unbookmarked history is pruned oldest-first beyond the 50 most recent.
+
+## The API surface
+
+Everything the catalog and editor do goes through the dashboards API — apps are fully manageable programmatically, and the same save-time validation applies regardless of who calls it:
+
+| Operation | Endpoint |
+|---|---|
+| List all apps | `GET /dashboards/list` |
+| List a project's apps | `GET /dashboards/{project_id}/list` |
+| Get a definition | `GET /dashboards/{project_id}/{dashboard_id}` |
+| Create / update (validates) | `POST /dashboards/{project_id}/save` |
+| Delete (incl. history) | `DELETE /dashboards/{project_id}/{dashboard_id}` |
+| List versions | `GET /dashboards/{project_id}/{dashboard_id}/versions` |
+| Restore a version | `POST /dashboards/{project_id}/{dashboard_id}/versions/{version_id}/restore` |
+| Bookmark a version | `PATCH /dashboards/{project_id}/{dashboard_id}/versions/{version_id}/bookmark` |
+
+See the [Dashboards API reference](/integrations/api-endpoints/dashboards) for request and response shapes. The AI assistant uses the same operations through its MCP tools, so apps it creates obey the same validation as apps you build in the editor.
+
+## The pieces, end to end
+
+```
+Apps catalog ──▶ App (definition JSON, stored in its home project)
+                   │
+                   ▼ per tab
+              Tab context  ◀── inputs, form submits, row selections
+                   │
+                   ▼ trigger fires
+              Run group ── params (@param) + facts (preamble) ──▶ concept execution
+                   │                                              (project lineage)
+                   ▼
+              Output taps ──▶ widgets (tables, charts, stat cards, text)
+```

@@ -1,0 +1,179 @@
+---
+title: "Selects, triggers and drill-downs"
+description: "Auto-loading data, reactive filters, master–detail layouts and table presentation."
+---
+
+The first two tutorials used explicit triggers: a button click, a form submit. This one covers the reactive side of Dynamic Apps — data that loads **when the page opens**, refreshes **when a select changes**, and drills down **when a row is clicked** — plus the table presentation options and multi-column layouts that make a dense app readable.
+
+We'll build a small lead dashboard: a master table of leads that loads automatically, a status filter, and a detail panel for the selected lead.
+
+## 1. Prepare the concepts
+
+A master concept with a declared model (the column names matter — widgets and bindings refer to them):
+
+```prolog Concept: leads
+lead_facts("Ifan Mccarty", "ifan@techyx.com", "Techyx", "MQL", 50).
+lead_facts("Zakir Felix", "zak@cyberlabs.com", "Cyberlabs", "SQL", 20).
+lead_facts("Perry Estes", "perry@kitech.com", "Kitech", "MQL", 10).
+lead_facts("Traci Doyle", "traci@jtech.com", "Jtech", "Disqualified", 60).
+lead_facts("Nia Duran", "nia@vonics.com", "Vonics", "SQL", 80).
+
+leads(Name, Email, Company, Status, Employees) :-
+    lead_facts(Name, Email, Company, Status, Employees).
+
+@model("leads", "['name:string','email:string','company:string','status:string','employees:int']").
+@output("leads").
+```
+
+A filtered view driven by a parameter:
+
+```prolog Concept: leads_by_status
+@param("status", "MQL").
+
+leads_by_status(Name, Company, Employees) :-
+    leads(Name, _, Company, Status, Employees),
+    Status = ${status}.
+
+@output("leads_by_status").
+```
+
+And a key–value detail for one lead:
+
+```prolog Concept: lead_detail
+@param("lead_name", "").
+
+lead_detail("Email", Email) :- leads(Name, Email, _, _, _), Name = ${lead_name}.
+lead_detail("Company", Company) :- leads(Name, _, Company, _, _), Name = ${lead_name}.
+lead_detail("Status", Status) :- leads(Name, _, _, Status, _), Name = ${lead_name}.
+
+@output("lead_detail").
+```
+
+## 2. The two reactive triggers
+
+Alongside `button` and `form`, run groups support:
+
+- **`load`** — runs once when the tab first opens. Use it for data the user should see immediately, with no interaction.
+- **`auto`** — runs whenever the values it binds to change (debounced, and only once every bound reference has a value). Use it for filters and drill-downs.
+
+This app uses one of each, plus a second `auto` group:
+
+| Group | Trigger | Binds | Executes | Tap |
+|---|---|---|---|---|
+| `load_leads` | `load` | — | `leads` | `leadsTap` |
+| `by_status` | `auto` | `status` ← `{{statusPick}}` | `leads_by_status` | `statusTap` |
+| `detail` | `auto` | `lead_name` ← `{{selectedLead.name}}` | `lead_detail` | `detailTap` |
+
+Two kinds of reference appear here:
+
+- `{{statusPick}}` — a **standalone input**. Unlike form fields, a page-level input publishes its value continuously; an `auto` group bound to it re-runs on every change. Because the input has a `default`, the group also fires once when the page opens.
+- `{{selectedLead.name}}` — a **row selection**. The master table below publishes its clicked row under the key `selectedLead`; the dotted path reads the row's `name` column. Until a row is clicked the reference is empty, so the detail group simply doesn't run.
+
+## 3. Layout: column stacks
+
+So far we've used the default `grid` layout (widgets flow onto a 12-column grid via `span`). For master–detail screens use **`layout: "columns"`**: widgets declare which column stack they join (`column: 1`, `column: 2`, …) and the section's `weights` sets the relative stack widths — `[8, 4]` gives a wide master and a narrow detail rail.
+
+## 4. Table presentation
+
+The master table demonstrates the `rich_table` presentation pack:
+
+- **`columns`** — show a subset of the tap's columns, in your order (here we hide `email`).
+- **`formatRules`** — conditional styling: rows where `status` equals `MQL` get a blue **badge**.
+- **`columnFormats`** — value formatting per column: `employees` rendered as a number.
+- **`variant`** — chrome level: `full` (search, sort, export, pagination), `compact` (no search bar), `plain` (bare rows — right for key–value detail panels).
+- **`onRowSelect`** — publish the clicked row into context, wiring the drill-down.
+
+## 5. The whole app as JSON
+
+```json
+{
+  "schemaVersion": 2,
+  "id": "…generated…",
+  "name": "Lead Dashboard",
+  "header": { "title": "Lead Dashboard" },
+  "pages": [
+    {
+      "id": "page_1",
+      "label": "Leads",
+      "project": { "id": "<your project id>" },
+      "inputs": [
+        {
+          "id": "statusPick",
+          "type": "select",
+          "label": "Status filter",
+          "options": ["MQL", "SQL", "Disqualified"],
+          "default": "MQL"
+        }
+      ],
+      "runGroups": [
+        {
+          "id": "load_leads",
+          "trigger": "load",
+          "execute": ["leads"],
+          "outputs": [{ "id": "leadsTap", "concept": "leads" }]
+        },
+        {
+          "id": "by_status",
+          "trigger": "auto",
+          "params": { "status": "{{statusPick}}" },
+          "execute": ["leads_by_status"],
+          "outputs": [{ "id": "statusTap", "concept": "leads_by_status" }]
+        },
+        {
+          "id": "detail",
+          "trigger": "auto",
+          "params": { "lead_name": "{{selectedLead.name}}" },
+          "execute": ["lead_detail"],
+          "outputs": [{ "id": "detailTap", "concept": "lead_detail" }]
+        }
+      ],
+      "sections": [
+        {
+          "id": "master_detail",
+          "layout": "columns",
+          "weights": [8, 4],
+          "widgets": [
+            {
+              "id": "w_leads",
+              "type": "rich_table",
+              "outputId": "leadsTap",
+              "column": 1,
+              "label": "All leads — click a row for details",
+              "columns": ["name", "company", "status", "employees"],
+              "variant": "full",
+              "columnFormats": { "employees": "number" },
+              "formatRules": [
+                { "column": "status", "operator": "equals", "value": "MQL", "color": "blue", "display": "badge" }
+              ],
+              "onRowSelect": { "set": "selectedLead" }
+            },
+            { "id": "w_detail", "type": "rich_table", "outputId": "detailTap", "column": 2, "label": "Lead detail", "variant": "plain" },
+            { "id": "w_status", "type": "input_ref", "inputId": "statusPick", "column": 2 },
+            { "id": "w_filtered", "type": "rich_table", "outputId": "statusTap", "column": 2, "variant": "compact" },
+            {
+              "id": "w_crm",
+              "type": "button",
+              "column": 2,
+              "label": "Open CRM",
+              "buttonStyle": "outline",
+              "action": { "type": "open_url", "url": "https://example-crm.com" }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Open the app: the master table fills immediately (`load`), the right rail shows the MQL leads (the select's default fired the `auto` group), changing the select re-filters without any button, and clicking a lead row populates the detail panel.
+
+<Note>
+**The generic button widget.** The *Open CRM* button is a `button` widget, not a `run_button`. Its `action` can `open_url` (link out), `set_context` (publish a value, as if a row had been selected), or `run_group` (re-fire any group — handy for a "refresh" button on a `load` group).
+</Note>
+
+<Tip>
+**Other display widgets.** Everything shown for tables applies to the other tap-bound widgets too: `stat_card` for KPIs, `line_chart` / `area_chart` / `bar_chart` / `pie_chart` for series (with `x`, `y`, and optional `seriesCol` to pivot long-format data), `heatmap`, and `text` for markdown — bound to a tap or with static `content`. See the [reference](/platform/dynamic-apps/schema-reference#widgets).
+</Tip>
+
+You now know the whole interaction model. Next, get comfortable with the tool you build it all in: [The App Editor](/platform/dynamic-apps/the-app-editor).
