@@ -178,10 +178,11 @@ Both MCP servers dynamically expose the following tools to AI agents. The tool c
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `list_dashboards` | List all dashboards across every project in the workspace | `scope` |
-| `get_dashboard` | Load a single dashboard with its full definition | `project_id`, `dashboard_id`, `scope` |
-| `save_dashboard` | Create or update a dashboard for a project | `project_id`, `dashboard`, `scope` |
-| `delete_dashboard` | Permanently delete a dashboard | `project_id`, `dashboard_id`, `scope` |
+| `list_apps` | List all apps across every project in the workspace | `scope` |
+| `get_app` | Load a single app with its full definition | `project_id`, `dashboard_id`, `scope` |
+| `get_app_schema` | Return the JSON Schema for an app definition | — |
+| `save_app` | Create or update an app for a project | `project_id`, `dashboard`, `scope` |
+| `delete_app` | Permanently delete an app | `project_id`, `dashboard_id`, `scope` |
 
 ### Company Knowledge
 
@@ -208,7 +209,7 @@ Once configured, just chat naturally with your AI agent. The agent will automati
 
 > "Generate a Vadalog program that finds all transitive suppliers for a company"
 
-> "Create a dashboard showing the results of churn_prediction"
+> "Create an app showing the results of churn_prediction"
 
 > "What does the Vadalog documentation say about recursive rules?"
 
