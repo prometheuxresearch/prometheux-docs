@@ -39,13 +39,13 @@ The rendered app header also links to the app's home project automatically.
 
 ## Pages
 
-A page is one tab of the app.
+A page is one screen of the app, rendered as a tab.
 
 | Field | Type | Notes |
 |---|---|---|
 | `id` ✱ | string | Unique across pages. |
-| `label` ✱ | string | Tab label. |
-| `project.id` ✱ | string | The single project this tab binds to. Every concept the page references must exist there. |
+| `label` ✱ | string | Page label, shown on its tab. |
+| `project.id` ✱ | string | The single project this page binds to. Every concept the page references must exist there. |
 | `inputs` ✱ | array | Scalar inputs and forms (may be empty). |
 | `runGroups` ✱ | array | Execution bindings (may be empty). |
 | `sections` ✱ | array | Layout containers holding widgets. |
@@ -56,11 +56,12 @@ An input is either a **scalar input** or a **form**.
 
 ### Scalar input types
 
-`text`, `number`, `select`, `combobox`, `date`, `multi_select`, `checkbox`, `password`, `textarea`
+`text`, `number`, `select`, `combobox`, `date`, `multi_select`, `checkbox`, `radio`, `password`, `textarea`
 
 - `checkbox` is a single boolean; its `placeholder` renders as the inline label.
+- `radio` is one choice from an always-visible set — a dropdown alternative for a few options.
 - `password` is masked; `textarea` is multi-line.
-- `select` / `combobox` / `multi_select` take options from `options` (static) or `optionsSource` (from a concept).
+- `select` / `combobox` / `multi_select` / `radio` take options from `options` (static) or `optionsSource` (from a concept).
 
 ### Scalar input fields
 
@@ -70,12 +71,12 @@ An input is either a **scalar input** or a **form**.
 | `type` ✱ | string | One of the scalar types, or `form`. |
 | `label` | string | |
 | `required` | boolean | |
-| `default` | any | Also seeds the tab context when the page opens. |
+| `default` | any | Also seeds the variable when the page opens. |
 | `placeholder` | string | |
 | `options` | string[] | Static choices. |
 | `optionsSource` | object | `{ "concept", "valueCol", "labelCol" }` — choices from a concept's output. The concept must exist; the columns must be columns of that concept. |
 
-A standalone scalar input publishes its value to the tab context continuously — pair it with an `auto` run group for buttonless filtering. Place it on the page with an `input_ref` widget.
+A standalone scalar input publishes its value as a page variable continuously — pair it with an `auto` run group for buttonless filtering. Place it on the page with an `input_ref` widget.
 
 ### Forms
 
@@ -88,7 +89,7 @@ An input with `type: "form"` groups fields behind a single submit.
 | `layout` | string | `flow` (default) or `grid` — `grid` places fields on a 12-column grid using each field's `span`. |
 | `labelPosition` | string | `top` (default) or `left`. |
 
-Submitted values enter the tab context as `{{formId.fieldId}}`. A form is placed on the page with a `form_ref` widget and usually paired with a `trigger: "form"` run group.
+Submitted values become page variables referenced as `{{formId.fieldId}}`. A form is placed on the page with a `form_ref` widget and usually paired with a `trigger: "form"` run group.
 
 ## Form fields
 
@@ -136,8 +137,8 @@ Triggers:
 |---|---|
 | `button` | on click of a `run_button` (or a `button` widget with a `run_group` action). |
 | `form` | on submit of the form named by `formId`. |
-| `load` | once when the tab first opens; multiple `load` groups run sequentially. |
-| `auto` | when the bound context values change — only after all references have values. |
+| `load` | once when the page first opens; multiple `load` groups run sequentially. |
+| `auto` | when a bound variable changes — only after all references have values. |
 
 ## Sections
 
@@ -173,7 +174,7 @@ Common fields: `id` ✱, `type` ✱, `label`, `span` (grid layouts, 1–12), `co
 | `action.type` | Fields | Effect |
 |---|---|---|
 | `open_url` | `url` ✱ | Opens a link. |
-| `set_context` | `key` ✱, `value` | Publishes a value into the tab context (can drive `auto` groups). |
+| `set_context` | `key` ✱, `value` | Sets a page variable (can drive `auto` groups). |
 | `run_group` | `groupId` ✱ | Fires a run group — e.g. a refresh button for a `load` group. |
 
 `buttonStyle`: `primary`, `outline`, or `ghost`.
@@ -186,7 +187,7 @@ Common fields: `id` ✱, `type` ✱, `label`, `span` (grid layouts, 1–12), `co
 | `columns` | string[] | Subset and order of the tap's columns to display. |
 | `formatRules` | array | `{ "column", "operator", "value", "color", "display" }` — operators: `less_than`, `greater_than`, `equals`, `not_equals`; colors: `red`, `green`, `amber`, `blue`, `neutral`; display: `text` (default) or `badge`. |
 | `columnFormats` | object | `"column": format` — formats: `number`, `percent`, `signed_percent`. |
-| `onRowSelect` | object | `{ "set": "contextKey" }` — publish the clicked row for drill-downs. |
+| `onRowSelect` | object | `{ "set": "variableName" }` — makes rows selectable: the clicked row is saved as a page variable (and highlighted) for drill-downs. |
 
 ## What save-time validation checks
 
