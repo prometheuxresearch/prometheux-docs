@@ -1,6 +1,6 @@
 ---
 title: "How apps run"
-description: "The runtime model: tab context, the run-group lifecycle, triggers, storage and the API surface."
+description: "The runtime model: page variables, the run-group lifecycle, triggers, storage and the API surface."
 ---
 
 This page explains what actually happens between a click and a filled table — useful when designing non-trivial apps, and when something doesn't behave the way you expected.
@@ -9,19 +9,19 @@ This page explains what actually happens between a click and a filled table — 
 
 **Apps** in the product navigation lists every app you can see, as cards showing the app's name, home project, author and creation date. Users with app-editing permission also get the authoring actions there: New App, Import, and per-card Export / Edit / Delete. Opening a card runs the app.
 
-## Pages, tabs and context
+## Pages and variables
 
 An app with several pages renders them as tabs. Three rules define the runtime model:
 
-1. **One project per tab.** Each page is bound to exactly one project, and everything on that page — concepts, parameters, columns — resolves against that project's lineage. Different tabs may use different projects.
-2. **Tabs keep their state.** Switching tabs never discards another tab's inputs or results; every tab stays alive in the background.
-3. **Each tab has its own context.** The *tab context* is a key–value space where inputs publish their values (`statusPick`), forms publish their fields (`searchForm.region`), and tables publish selected rows (`selectedLead`). Run-group bindings (`{{…}}` references) read from it. Context never leaks across tabs.
+1. **One project per page.** Each page is bound to exactly one project, and everything on that page — concepts, parameters, columns — resolves against that project's lineage. Different pages may use different projects.
+2. **Pages keep their state.** Switching pages never discards another page's inputs or results; every page stays alive in the background.
+3. **Each page has its own variables.** *Page variables* are named values: inputs publish their value (`statusPick`), forms publish their fields (`searchForm.region`), and selectable tables publish the clicked row (`selectedLead`). Run-group bindings (`{{…}}` references) read them. Variables never leak across pages.
 
 ## The run-group lifecycle
 
 When a run group fires — whatever the trigger — the same four steps happen:
 
-1. **Resolve bindings.** Every `params` template is resolved against the tab context (unset values are dropped); every `facts` template must resolve to at least one record-group row, or the run stops with a message asking the user to submit the form first.
+1. **Resolve bindings.** Every `params` template is resolved against the page's variables (unset values are dropped); every `facts` template must resolve to at least one record-group row, or the run stops with a message asking the user to submit the form first.
 2. **Serialize facts.** Record-group rows become Vadalog ground facts, one per row, arguments in the record group's declared field order — strings quoted, numbers bare, booleans as `#T`/`#F`. These travel with the run as *preamble facts*: they exist only for that execution and are never persisted.
 3. **Execute.** Each concept in `execute` runs in order, with the resolved parameters and preamble facts, and with intermediate concepts materialized — which is why an output tap can read *any* concept computed along the way, not just the executed one.
 4. **Fetch taps.** Each output tap's results are fetched and handed to the widgets bound to it.
@@ -32,8 +32,8 @@ When a run group fires — whatever the trigger — the same four steps happen:
 |---|---|
 | `button` | when a `run_button` bound to the group — or a `button` widget with a `run_group` action — is clicked. |
 | `form` | when the bound form is submitted. The submitted values are used immediately for that run. |
-| `load` | once, when the tab first opens. Multiple `load` groups on a tab run one after another. |
-| `auto` | whenever the context values it binds to change — debounced briefly, and only once **all** of its references have values. A drill-down bound to a row selection simply waits until the first click. |
+| `load` | once, when the page first opens. Multiple `load` groups on a page run one after another. |
+| `auto` | whenever a variable it binds to changes — debounced briefly, and only once **all** of its references have values. A drill-down bound to a row selection simply waits until the first click. |
 
 ## Tables at runtime
 
@@ -65,8 +65,8 @@ See the [Apps API reference](/integrations/api-endpoints/apps) for request and r
 ```
 Apps catalog ──▶ App (definition JSON, stored in its home project)
                    │
-                   ▼ per tab
-              Tab context  ◀── inputs, form submits, row selections
+                   ▼ per page
+              Page variables  ◀── inputs, form submits, row selections
                    │
                    ▼ trigger fires
               Run group ── params (@param) + facts (preamble) ──▶ concept execution

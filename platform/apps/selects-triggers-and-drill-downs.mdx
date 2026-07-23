@@ -53,7 +53,7 @@ lead_info("Status", Status) :- leads(Name, _, _, Status, _), Name = ${lead_name}
 
 Alongside `button` and `form`, run groups support:
 
-- **`load`** — runs once when the tab first opens. Use it for data the user should see immediately, with no interaction.
+- **`load`** — runs once when the page first opens. Use it for data the user should see immediately, with no interaction.
 - **`auto`** — runs whenever the values it binds to change (debounced, and only once every bound reference has a value). Use it for filters and drill-downs.
 
 This app uses one of each, plus a second `auto` group:
@@ -85,7 +85,7 @@ The master table demonstrates the `rich_table` presentation pack:
 - **`formatRules`** — conditional styling: rows where `status` equals `MQL` get a blue **badge**.
 - **`columnFormats`** — value formatting per column: `employees` rendered as a number.
 - **`variant`** — chrome level: `full` (search, sort, export, pagination), `compact` (no search bar), `plain` (bare rows — right for key–value detail panels).
-- **`onRowSelect`** — publish the clicked row into context, wiring the drill-down.
+- **`onRowSelect`** — save the clicked row as a page variable, wiring the drill-down.
 
 ## 5. The whole app as JSON
 
