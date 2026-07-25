@@ -24,7 +24,7 @@ importing a project you choose the scope it lands in.
 
 The platform supports the full lifecycle of a project. Each of these operations
 is also available through the SDK and REST API (see the
-[Projects API reference](/integrations/api-endpoints/projects)):
+[Ontologies API reference](/integrations/api-endpoints/ontologies)):
 
 - **Create or update** — save a new project with a name and optional description, or update an existing one.
 - **List** — browse the projects available in your selected scopes.
@@ -58,22 +58,22 @@ import os
 os.environ['PMTX_TOKEN'] = 'my_pmtx_token'
 px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/my-org/my-user")
 
-# Create a new project
-project_id = px.save_project(project_name="test_project")
+# Create a new ontology
+ontology_id = px.save_ontology(ontology_name="test_ontology")
 
-# List all projects
-projects = px.list_projects()
-print(f"Available projects: {projects}")
+# List all ontologies
+ontologies = px.list_ontologies()
+print(f"Available ontologies: {ontologies}")
 
-# Load the created project
-project_data = px.load_project(project_id)
+# Load the created ontology
+ontology_data = px.load_ontology(ontology_id)
 
 # Clean up when done
-px.cleanup_projects(project_id=project_id)
+px.cleanup_ontologies(ontology_id=ontology_id)
 ```
 
 ## Next steps
 
-- [Projects API reference](/integrations/api-endpoints/projects) — full SDK and REST details for every project operation.
+- [Ontologies API reference](/integrations/api-endpoints/ontologies) — full SDK and REST details for every ontology operation.
 - [Concepts and lineage](/platform/concepts-and-lineage) — the building blocks you author inside a project.
 - [Platform overview](/get-started/platform-overview) — how projects fit into the wider platform.

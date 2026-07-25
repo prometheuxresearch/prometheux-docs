@@ -28,7 +28,7 @@ px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/{organization}
 
 ```python
 # Create a new project
-project_id = px.save_project(project_name="my_first_project")
+ontology_id = px.save_ontology(ontology_name="my_first_ontology")
 print(f"Created project: {project_id}")
 ```
 
@@ -138,11 +138,11 @@ The API is organized into the following categories:
 |----------|-------------|
 | [**Config**](/integrations/config) | SDK configuration, LLM setup, and account/usage helpers |
 | [**Authentication**](/integrations/api-endpoints/authentication) | Issue, list, and revoke API tokens |
-| [**Projects**](/integrations/api-endpoints/projects) | Project management, templates, snapshots, create-from-context |
-| [**Project Sharing**](/integrations/api-endpoints/sharing) | Share projects and manage inbox/outbox |
+| [**Ontologies**](/integrations/api-endpoints/ontologies) | Ontology management, templates, snapshots, create-from-context |
+| [**Ontology Sharing**](/integrations/api-endpoints/sharing) | Share ontologies and manage inbox/outbox |
 | [**Concepts**](/integrations/api-endpoints/concepts) | Concept execution, reordering, and management |
 | [**Data Sources**](/integrations/api-endpoints/data) | Data connections, schema inference, file store, joins |
-| [**Ontology**](/integrations/api-endpoints/ontology) | Ontology persistence, node/edge roles, OWL import |
+| [**Schema**](/integrations/api-endpoints/schema) | Schema persistence, node/edge roles, OWL import |
 | [**Knowledge Graph**](/integrations/api-endpoints/knowledge-graph) | Graph building and analytics over concept output |
 | [**Vadalog**](/integrations/api-endpoints/vadalog) | Vadalog program analysis and evaluation |
 | [**Vadalingo**](/integrations/api-endpoints/vadalingo) | NL, SQL, RDF, and OWL to Vadalog translation |

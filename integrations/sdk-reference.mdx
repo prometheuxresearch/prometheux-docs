@@ -9,7 +9,7 @@ function is re-exported at the top level, so you call it as `px.<function>(...)`
 ```python
 import prometheux_chain as px
 
-project_id = px.save_project(project_name="my_project")
+ontology_id = px.save_ontology(ontology_name="my_ontology")
 ```
 
 Each function is a thin wrapper around a REST endpoint — follow the **Endpoint**
@@ -34,39 +34,39 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `config.set(key, value)` | Set a local config value. |
 | `config.update_config(updates)` | Set multiple config values at once. |
 
-## Projects
+## Ontologies
 
 | Function | Endpoint | Description |
 |---|---|---|
-| `save_project(...)` | [`POST /projects/save`](/integrations/api-endpoints/projects#save-a-project) | Create or update a project. |
-| `list_projects(...)` | [`GET /projects/list`](/integrations/api-endpoints/projects#list-projects) | List visible projects across scopes. |
-| `load_project(...)` | [`GET /projects/load`](/integrations/api-endpoints/projects#load-a-project) | Load full details for one project. |
-| `copy_project(...)` | [`POST /projects/copy`](/integrations/api-endpoints/projects#copy-a-project) | Duplicate a project. |
-| `list_templates(...)` | [`GET /projects/list-templates`](/integrations/api-endpoints/projects#list-templates) | Browse marketplace templates. |
-| `import_template(...)` | [`POST /projects/import-template`](/integrations/api-endpoints/projects#import-a-template) | Create a project from a template. |
-| `export_project(...)` | [`POST /projects/export-project`](/integrations/api-endpoints/projects#export-a-project) | Serialize a project to a portable payload. |
-| `import_project(...)` | [`POST /projects/import-project`](/integrations/api-endpoints/projects#import-a-project) | Restore a project from a payload. |
-| `export_workspace(...)` | [`POST /projects/export-workspace`](/integrations/api-endpoints/projects#export-workspace) | Export every project in the workspace. |
-| `import_workspace(...)` | [`POST /projects/import-workspace`](/integrations/api-endpoints/projects#import-workspace) | Restore a full workspace. |
-| `create_project_from_context(...)` | [`POST /projects/create-from-context`](/integrations/api-endpoints/projects#create-from-context) | Build a project from text/files via the LLM. |
-| `create_snapshot(...)` | [`POST /projects/snapshots/create`](/integrations/api-endpoints/projects#create-a-snapshot) | Capture a point-in-time snapshot. |
-| `list_snapshots(...)` | [`GET /projects/snapshots/list`](/integrations/api-endpoints/projects#list-snapshots) | List a project's snapshots. |
-| `restore_snapshot(...)` | [`POST /projects/snapshots/restore`](/integrations/api-endpoints/projects#restore-a-snapshot) | Restore a project from a snapshot. |
-| `delete_snapshot(...)` | [`POST /projects/snapshots/delete`](/integrations/api-endpoints/projects#delete-a-snapshot) | Delete a snapshot. |
-| `cleanup_projects(...)` | [`POST /projects/cleanup`](/integrations/api-endpoints/projects#other-operations) | Delete one project or all. |
+| `save_ontology(...)` | [`POST /ontologies/save`](/integrations/api-endpoints/ontologies#save-an-ontology) | Create or update an ontology. |
+| `list_ontologies(...)` | [`GET /ontologies/list`](/integrations/api-endpoints/ontologies#list-ontologies) | List visible ontologies across scopes. |
+| `load_ontology(...)` | [`GET /ontologies/load`](/integrations/api-endpoints/ontologies#load-an-ontology) | Load full details for one ontology. |
+| `copy_ontology(...)` | [`POST /ontologies/copy`](/integrations/api-endpoints/ontologies#copy-an-ontology) | Duplicate an ontology. |
+| `list_templates(...)` | [`GET /ontologies/list-templates`](/integrations/api-endpoints/ontologies#list-templates) | Browse marketplace templates. |
+| `import_template(...)` | [`POST /ontologies/import-template`](/integrations/api-endpoints/ontologies#import-a-template) | Create an ontology from a template. |
+| `export_ontology(...)` | [`POST /ontologies/export-project`](/integrations/api-endpoints/ontologies#export-an-ontology) | Serialize an ontology to a portable payload. |
+| `import_ontology(...)` | [`POST /ontologies/import-project`](/integrations/api-endpoints/ontologies#import-an-ontology) | Restore an ontology from a payload. |
+| `export_workspace(...)` | [`POST /ontologies/export-workspace`](/integrations/api-endpoints/ontologies#export-workspace) | Export every ontology in the workspace. |
+| `import_workspace(...)` | [`POST /ontologies/import-workspace`](/integrations/api-endpoints/ontologies#import-workspace) | Restore a full workspace. |
+| `create_ontology_from_context(...)` | [`POST /ontologies/create-from-context`](/integrations/api-endpoints/ontologies#create-from-context) | Build an ontology from text/files via the LLM. |
+| `create_snapshot(...)` | [`POST /ontologies/snapshots/create`](/integrations/api-endpoints/ontologies#create-a-snapshot) | Capture a point-in-time snapshot. |
+| `list_snapshots(...)` | [`GET /ontologies/snapshots/list`](/integrations/api-endpoints/ontologies#list-snapshots) | List an ontology's snapshots. |
+| `restore_snapshot(...)` | [`POST /ontologies/snapshots/restore`](/integrations/api-endpoints/ontologies#restore-a-snapshot) | Restore an ontology from a snapshot. |
+| `delete_snapshot(...)` | [`POST /ontologies/snapshots/delete`](/integrations/api-endpoints/ontologies#delete-a-snapshot) | Delete a snapshot. |
+| `cleanup_ontologies(...)` | [`POST /ontologies/cleanup`](/integrations/api-endpoints/ontologies#other-operations) | Delete one ontology or all. |
 
-## Project sharing
+## Ontology sharing
 
 | Function | Endpoint | Description |
 |---|---|---|
-| `create_share(...)` | [`POST /projects/share`](/integrations/api-endpoints/sharing#share-a-project) | Share a project as viewer/editor. |
-| `list_shares(...)` | [`GET /projects/share/list`](/integrations/api-endpoints/sharing#list-shares-outbox) | List shares you created (outbox). |
-| `update_share_role(...)` | [`POST /projects/share/update-role`](/integrations/api-endpoints/sharing#update-a-shares-role) | Change a share between viewer/editor. |
-| `revoke_share(...)` | [`POST /projects/share/revoke`](/integrations/api-endpoints/sharing#revoke-a-share) | Revoke a share you granted. |
-| `list_inbox(...)` | [`GET /projects/share/inbox`](/integrations/api-endpoints/sharing#list-inbox) | List shares granted to you (inbox). |
-| `accept_share(...)` | [`POST /projects/share/accept`](/integrations/api-endpoints/sharing#accept-a-share) | Accept a pending share. |
-| `leave_share(...)` | [`POST /projects/share/leave`](/integrations/api-endpoints/sharing#leave-a-share) | Detach from an accepted share. |
-| `sync_inbox(...)` | [`POST /projects/share/sync`](/integrations/api-endpoints/sharing#sync-inbox) | Reconcile local shares with the source of truth. |
+| `create_share(...)` | [`POST /ontologies/share`](/integrations/api-endpoints/sharing#share-an-ontology) | Share an ontology as viewer/editor. |
+| `list_shares(...)` | [`GET /ontologies/share/list`](/integrations/api-endpoints/sharing#list-shares-outbox) | List shares you created (outbox). |
+| `update_share_role(...)` | [`POST /ontologies/share/update-role`](/integrations/api-endpoints/sharing#update-a-shares-role) | Change a share between viewer/editor. |
+| `revoke_share(...)` | [`POST /ontologies/share/revoke`](/integrations/api-endpoints/sharing#revoke-a-share) | Revoke a share you granted. |
+| `list_inbox(...)` | [`GET /ontologies/share/inbox`](/integrations/api-endpoints/sharing#list-inbox) | List shares granted to you (inbox). |
+| `accept_share(...)` | [`POST /ontologies/share/accept`](/integrations/api-endpoints/sharing#accept-a-share) | Accept a pending share. |
+| `leave_share(...)` | [`POST /ontologies/share/leave`](/integrations/api-endpoints/sharing#leave-a-share) | Detach from an accepted share. |
+| `sync_inbox(...)` | [`POST /ontologies/share/sync`](/integrations/api-endpoints/sharing#sync-inbox) | Reconcile local shares with the source of truth. |
 
 ## Concepts
 
@@ -108,16 +108,15 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `download_file(...)` | [`GET /data/files/download`](/integrations/api-endpoints/data#download-file) | Download a file from `disk/`. |
 | `cleanup_sources(...)` | [`POST /data/cleanup`](/integrations/api-endpoints/data#other-operations) | Remove data sources. |
 
-## Ontology
+## Schema
 
 | Function | Endpoint | Description |
 |---|---|---|
-| `save_ontology(...)` | [`POST /concepts/{project_id}/save-ontology`](/integrations/api-endpoints/ontology#save-the-ontology) | Persist a project's ontology. |
-| `load_ontology(...)` | [`GET /concepts/{project_id}/load-ontology`](/integrations/api-endpoints/ontology#load-the-ontology) | Load a project's ontology. |
-| `update_concept_ontology_type(...)` | [`PATCH /concepts/{project_id}/concepts/{concept_name}/ontology-type`](/integrations/api-endpoints/ontology#set-a-concepts-ontology-type) | Mark a concept as node/edge. |
-| `add_to_lineage(...)` | [`POST /concepts/{project_id}/add-to-lineage`](/integrations/api-endpoints/ontology#add-to-lineage) | Add a node/edge to the lineage. |
-| `describe_ontology(...)` | [`POST /concepts/{project_id}/describe-ontology`](/integrations/api-endpoints/ontology#describe-the-ontology) | LLM-describe an ontology. |
-| `import_owl(...)` | [`POST /concepts/{project_id}/import-owl`](/integrations/api-endpoints/ontology#import-an-owl-ontology) | Import OWL into editor JSON. |
+| `save_ontology_schema(...)` | [`POST /concepts/{project_id}/save-ontology-schema`](/integrations/api-endpoints/schema#save-the-schema) | Persist an ontology's schema. |
+| `load_ontology_schema(...)` | [`GET /concepts/{project_id}/load-ontology-schema`](/integrations/api-endpoints/schema#load-the-schema) | Load an ontology's schema. |
+| `update_concept_ontology_schema_type(...)` | [`PATCH /concepts/{project_id}/concepts/{concept_name}/ontology-schema-type`](/integrations/api-endpoints/schema#set-a-concepts-schema-type) | Mark a concept as node/edge. |
+| `add_to_lineage(...)` | [`POST /concepts/{project_id}/add-to-lineage`](/integrations/api-endpoints/schema#add-to-lineage) | Add a node/edge to the lineage. |
+| `import_owl(...)` | [`POST /concepts/{project_id}/import-owl`](/integrations/api-endpoints/schema#import-an-owl-ontology) | Import OWL into editor JSON. |
 
 ## Knowledge graph
 
@@ -140,7 +139,7 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `search_context_notes(...)` | [`POST /knowledge/context/search`](/integrations/api-endpoints/context-layer#semantic-search) | Semantic search over notes. |
 | `create_context_notes_from_file(...)` | [`POST /knowledge/context/from-file`](/integrations/api-endpoints/context-layer#ingest-a-file-as-context) | Ingest a file as context notes. |
 | `auto_seed(...)` <Icon icon="bolt" /> | [`POST /knowledge/auto-seed`](/integrations/api-endpoints/context-layer#auto-seed-from-data-sources) | Profile sources, stream observations. |
-| `project_text(...)` | [`GET /knowledge/project/{project_id}/text`](/integrations/api-endpoints/context-layer#render-project-document) | Render the project document. |
+| `ontology_text(...)` | [`GET /knowledge/project/{project_id}/text`](/integrations/api-endpoints/context-layer#render-project-document) | Render the ontology document. |
 | `interview_template(...)` | `GET /knowledge/interview/template` | Onboarding interview template. |
 | `submit_interview(...)` | `POST /knowledge/interview` | Submit onboarding interview answers. |
 | `onboarding_status(...)` | `GET /knowledge/onboarding-status` | Report onboarding progress. |
