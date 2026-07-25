@@ -1,10 +1,10 @@
 ---
-title: "Project Sharing"
-description: "Share projects with other users as viewer or editor, manage your outbox, and accept, leave, or sync shares from your inbox."
+title: "Ontology Sharing"
+description: "Share ontologies with other users as viewer or editor, manage your outbox, and accept, leave, or sync shares from your inbox."
 ---
 
-The Project Sharing API lets a project owner grant another user **viewer** or
-**editor** access to a project, and lets the recipient accept, leave, and
+The Ontology Sharing API lets an ontology owner grant another user **viewer** or
+**editor** access to an ontology, and lets the recipient accept, leave, and
 reconcile shares from their inbox. Sharing issues a scoped token to the
 recipient under the hood; the raw token is never returned to the sharer — it is
 delivered to the recipient and claimed on accept.
@@ -14,32 +14,32 @@ require [authentication](/integrations/api-endpoints/authentication). All
 responses use the standard [envelope](/integrations/rest-api#response-envelope).
 
 <Note>
-Endpoints split into **sharer-side** (you own the project and grant access) and
-**recipient-side** (a project has been shared with you). Recipient-side
+Endpoints split into **sharer-side** (you own the ontology and grant access) and
+**recipient-side** (an ontology has been shared with you). Recipient-side
 endpoints additionally rely on your Supabase session, sent via the
 `X-Supabase-Token` header, so row-level security scopes the results to you.
 </Note>
 
 ## Sharer-side
 
-### Share a project
+### Share an ontology
 
-Grant another user access to one of your projects. Identify the recipient by
+Grant another user access to one of your ontologies. Identify the recipient by
 `sub`, by `email`, or by `username` together with `organization`.
 
 ```
-POST /projects/share
+POST /ontologies/share
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | body | yes | — | ID of the project to share. |
+| `project_id` | body | yes | — | ID of the ontology to share. |
 | `recipient` | body | yes | — | Recipient object: `{ "sub": "..." }`, `{ "email": "..." }`, or `{ "username": "...", "organization": "..." }`. |
 | `share_role` | body | yes | — | `"viewer"` or `"editor"`. |
 | `expires_in_minutes` | body | no | `null` | Lifetime of the share; omit or `null` for no expiration. |
 
 ```bash
-curl -X POST "$BASE_URL/projects/share" \
+curl -X POST "$BASE_URL/ontologies/share" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -52,7 +52,7 @@ curl -X POST "$BASE_URL/projects/share" \
 ```jsonc
 {
   "status": "success",
-  "message": "Project shared successfully.",
+  "message": "Ontology shared successfully.",
   "data": {
     "share_id": "shr_a1b2...",
     "project_id": "proj_123",
@@ -65,18 +65,18 @@ curl -X POST "$BASE_URL/projects/share" \
 ### List shares (outbox)
 
 Return every share you have created, most recent first. Optionally filter to a
-single project.
+single ontology.
 
 ```
-GET /projects/share/list
+GET /ontologies/share/list
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | query | no | — | Filter the outbox to a single project. |
+| `project_id` | query | no | — | Filter the outbox to a single ontology. |
 
 ```bash
-curl "$BASE_URL/projects/share/list" \
+curl "$BASE_URL/ontologies/share/list" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -90,7 +90,7 @@ forced to re-accept. Updating to the role it already has is a no-op that returns
 `data.changed = false`.
 
 ```
-POST /projects/share/update-role
+POST /ontologies/share/update-role
 ```
 
 | Parameter | In | Required | Default | Description |
@@ -99,7 +99,7 @@ POST /projects/share/update-role
 | `share_role` | body | yes | — | New role: `"viewer"` or `"editor"`. |
 
 ```bash
-curl -X POST "$BASE_URL/projects/share/update-role" \
+curl -X POST "$BASE_URL/ontologies/share/update-role" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "share_id": "shr_a1b2...", "share_role": "editor" }'
@@ -119,17 +119,17 @@ Revoke access you previously granted. Pass either a `share_id`, or a
 `project_id` together with a `recipient_sub`. Revoking is idempotent.
 
 ```
-POST /projects/share/revoke
+POST /ontologies/share/revoke
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `share_id` | body | conditional | — | The share to revoke. |
-| `project_id` | body | conditional | — | Project ID — use with `recipient_sub` instead of `share_id`. |
+| `project_id` | body | conditional | — | Ontology ID — use with `recipient_sub` instead of `share_id`. |
 | `recipient_sub` | body | conditional | — | Recipient's auth ID — use with `project_id`. |
 
 ```bash
-curl -X POST "$BASE_URL/projects/share/revoke" \
+curl -X POST "$BASE_URL/ontologies/share/revoke" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "share_id": "shr_a1b2..." }'
@@ -153,13 +153,13 @@ invitations and already-accepted shares. Each entry is annotated with
 elsewhere".
 
 ```
-GET /projects/share/inbox
+GET /ontologies/share/inbox
 ```
 
 This endpoint takes no parameters.
 
 ```bash
-curl "$BASE_URL/projects/share/inbox" \
+curl "$BASE_URL/ontologies/share/inbox" \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-Supabase-Token: $SUPABASE_TOKEN"
 ```
@@ -170,11 +170,11 @@ curl "$BASE_URL/projects/share/inbox" \
 ### Accept a share
 
 Claim a pending share. The scoped token is vaulted into your workspace so you
-can open the shared project. Idempotent for shares already accepted on this
+can open the shared ontology. Idempotent for shares already accepted on this
 workspace.
 
 ```
-POST /projects/share/accept
+POST /ontologies/share/accept
 ```
 
 | Parameter | In | Required | Default | Description |
@@ -182,7 +182,7 @@ POST /projects/share/accept
 | `share_id` | body | yes | — | The share to accept. |
 
 ```bash
-curl -X POST "$BASE_URL/projects/share/accept" \
+curl -X POST "$BASE_URL/ontologies/share/accept" \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-Supabase-Token: $SUPABASE_TOKEN" \
   -H "Content-Type: application/json" \
@@ -203,7 +203,7 @@ Detach yourself from a share you previously accepted (or a pending one). This
 removes the local token and marks the share `left`. Idempotent.
 
 ```
-POST /projects/share/leave
+POST /ontologies/share/leave
 ```
 
 | Parameter | In | Required | Default | Description |
@@ -211,7 +211,7 @@ POST /projects/share/leave
 | `share_id` | body | yes | — | The share to leave. |
 
 ```bash
-curl -X POST "$BASE_URL/projects/share/leave" \
+curl -X POST "$BASE_URL/ontologies/share/leave" \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-Supabase-Token: $SUPABASE_TOKEN" \
   -H "Content-Type: application/json" \
@@ -233,13 +233,13 @@ whose share is no longer `accepted` (revoked, superseded, left, or missing) are
 pruned. Use this as a safety net to catch up after a missed real-time update.
 
 ```
-POST /projects/share/sync
+POST /ontologies/share/sync
 ```
 
 This endpoint takes no parameters.
 
 ```bash
-curl -X POST "$BASE_URL/projects/share/sync" \
+curl -X POST "$BASE_URL/ontologies/share/sync" \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-Supabase-Token: $SUPABASE_TOKEN"
 ```

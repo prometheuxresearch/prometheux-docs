@@ -1,0 +1,210 @@
+---
+title: "Schema"
+description: "Save and load an ontology's schema, set concept schema roles (node/edge), grow the lineage, and import OWL ontologies."
+---
+
+A **schema** is the semantic layer over an ontology's concepts — it labels each
+concept as a graph **node** or **edge**, records the relationships between them,
+and drives the schema/lineage view. The Schema API lets you persist and
+reload the schema document, assign schema roles to individual concepts, add
+elements to the lineage one at a time, and import an existing OWL file into the
+editor's JSON format.
+
+These endpoints are mounted under the `/concepts` prefix. All paths are relative
+to the [base URL](/integrations/rest-api#base-url) and require
+[authentication](/integrations/api-endpoints/authentication). All responses use
+the standard [envelope](/integrations/rest-api#response-envelope).
+
+<Note>
+On the wire the path slot and payload still use `project`-prefixed keys
+(`project_id`, `ontology_schema_data`, `ontology_schema_type`) for the ontology
+that owns the schema.
+</Note>
+
+## Save the schema
+
+Persist an ontology's full schema document (nodes and edges) for later reload.
+
+```
+POST /concepts/{project_id}/save-ontology-schema
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The ontology ID. |
+| `ontology_schema_data` | body | yes | — | The schema document — an object with `nodes` and `edges`, or a JSON string. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+
+```bash
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/save-ontology-schema" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scope": "user",
+    "ontology_schema_data": {
+      "nodes": [{ "id": "company", "label": "Company" }],
+      "edges": [{ "source": "company", "target": "location", "label": "located_in" }]
+    }
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology schema for ontology my-ontology-001 saved successfully",
+  "data": null
+}
+```
+
+## Load the schema
+
+Return the schema document for an ontology. `data` is `null` when the ontology
+has no saved schema yet.
+
+```
+GET /concepts/{project_id}/load-ontology-schema
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The ontology ID. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+
+```bash
+curl "$BASE_URL/concepts/$PROJECT_ID/load-ontology-schema?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology schema loaded successfully",
+  "data": {
+    "nodes": [{ "id": "company", "label": "Company" }],
+    "edges": [{ "source": "company", "target": "location", "label": "located_in" }]
+  }
+}
+```
+
+## Set a concept's schema type
+
+Assign a schema role to a single concept: mark it as a graph `node`, as an
+`edge` (which requires `edge_source` and `edge_target`), or reset it to the
+default by omitting `ontology_schema_type`.
+
+```
+PATCH /concepts/{project_id}/concepts/{concept_name}/ontology-schema-type
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The ontology ID. |
+| `concept_name` | path | yes | — | The concept predicate name. |
+| `ontology_schema_type` | body | no | — | `"node"`, `"edge"`, or omit/`null` to reset to default. |
+| `edge_source` | body | conditional | — | Source node predicate. **Required** when `ontology_schema_type` is `"edge"`. |
+| `edge_target` | body | conditional | — | Target node predicate. **Required** when `ontology_schema_type` is `"edge"`. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+
+```bash
+curl -X PATCH "$BASE_URL/concepts/$PROJECT_ID/concepts/located_in/ontology-schema-type" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ontology_schema_type": "edge",
+    "edge_source": "company",
+    "edge_target": "location",
+    "scope": "user"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Concept ontology schema type updated",
+  "data": { "concept_name": "located_in", "ontology_schema_type": "edge" }
+}
+```
+
+## Add to lineage
+
+Add a single schema element — a node or an edge — to the ontology lineage
+without rewriting the whole schema document.
+
+```
+POST /concepts/{project_id}/add-to-lineage
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The ontology ID. |
+| `element_type` | body | yes | — | `"node"` or `"edge"`. |
+| `element_data` | body | yes | — | The element definition object. |
+| `all_nodes` | body | no | `[]` | Current node list, used to resolve edge endpoints. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+
+```bash
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/add-to-lineage" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "element_type": "node",
+    "element_data": { "id": "supplier", "label": "Supplier" },
+    "all_nodes": [],
+    "scope": "user"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Added to lineage: supplier",
+  "data": { "predicate_name": "supplier" }
+}
+```
+
+## Import an OWL ontology
+
+Convert an OWL file into the schema editor's JSON format (nodes and edges).
+When `base_namespace` is omitted, the platform attempts to auto-detect it from
+the OWL `xml:base` or `ontologyIRI` — if neither is present a `400` is returned
+asking you to supply it explicitly.
+
+```
+POST /concepts/{project_id}/import-owl
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The ontology ID. |
+| `owl_content` | body | yes | — | The OWL ontology as a string (RDF/XML, Turtle, N3, or N-Triples). |
+| `base_namespace` | body | no | auto-detected | Base namespace URI (e.g. `"http://example.org/onto#"`). Required if it cannot be auto-detected. |
+
+```bash
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/import-owl" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "owl_content": "<?xml version=\"1.0\"?><rdf:RDF ...>...</rdf:RDF>",
+    "base_namespace": "http://example.org/onto#"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "OWL imported successfully. Found 4 nodes and 3 edges",
+  "data": {
+    "ontology_schema_data": {
+      "nodes": [{ "id": "Person", "label": "Person" }],
+      "edges": [{ "source": "Person", "target": "Organization", "label": "worksAt" }]
+    },
+    "warnings": []
+  }
+}
+```
+
+<Tip>
+To turn an OWL ontology directly into an executable Vadalog program (with
+`@bind` annotations and optional Parquet output) rather than editor JSON, use
+[OWL → Vadalog](/integrations/api-endpoints/vadalingo#owl-vadalog) instead.
+</Tip>

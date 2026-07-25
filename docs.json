@@ -128,11 +128,11 @@
             "group": "API Reference",
             "pages": [
               "integrations/api-endpoints/authentication",
-              "integrations/api-endpoints/projects",
+              "integrations/api-endpoints/ontologies",
               "integrations/api-endpoints/sharing",
               "integrations/api-endpoints/concepts",
               "integrations/api-endpoints/data",
-              "integrations/api-endpoints/ontology",
+              "integrations/api-endpoints/schema",
               "integrations/api-endpoints/knowledge-graph",
               "integrations/api-endpoints/vadalog",
               "integrations/api-endpoints/vadalingo",
