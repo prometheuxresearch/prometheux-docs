@@ -1,0 +1,170 @@
+---
+title: "Forms and parameters"
+description: "Collect user input with forms and pass the values to your concepts' @params."
+---
+
+[Your first app](/platform/apps/your-first-app) ran a fixed concept. Real apps let the user decide *what* to compute. In an app, user input flows into concepts through **`@param`s**: a form field binds to a parameter, and the run group passes the value when it executes.
+
+This tutorial builds an order search: a form with a region picker and a minimum total, and a table of matching orders.
+
+## 1. Prepare the concepts
+
+First, a small concept whose output will populate the region picker:
+
+```prolog Concept: sales_regions
+regions("North").
+regions("South").
+regions("East").
+regions("West").
+
+sales_regions(Region) :- regions(Region).
+
+@model("sales_regions", "['region:string']").
+@output("sales_regions").
+```
+
+The `@model` matters here: it names the column (`region`), and the app will refer to that column by name.
+
+Second, the search itself. It declares two `@param`s and filters with them:
+
+```prolog Concept: matching_orders
+@param("region", "North").
+@param("min_total", 0.0).
+
+orders(1, "North", "delivered", 1250.0).
+orders(2, "South", "pending", 480.0).
+orders(3, "North", "shipped", 2320.0).
+orders(4, "West", "delivered", 150.0).
+orders(5, "North", "delivered", 990.0).
+
+matching_orders(OrderId, Region, Status, Total) :-
+    orders(OrderId, Region, Status, Total),
+    Region = ${region},
+    Total >= ${min_total}.
+
+@output("matching_orders").
+```
+
+The values in the `@param` declarations are just defaults for running the concept by hand — the app overrides them on every run.
+
+## 2. Add a form
+
+Create a new app in the same project, then in the **Data** panel add an input of type **form** with id `searchForm`. Give it two fields:
+
+| Field id | Type | Notes |
+|---|---|---|
+| `region` | `combobox` | Options come from a concept: set **optionsSource** to concept `sales_regions`, value column `region`. |
+| `min_total` | `number` | Set a default of `0`. |
+
+Field ids matter: they are how run groups refer to the values, as `{{searchForm.region}}` and `{{searchForm.min_total}}`.
+
+Forms have layout controls of their own — `layout: "grid"` places fields on a 12-column grid where each field's `span` sets its width, and `labelPosition` puts labels above (`top`) or beside (`left`) the fields. Two fields with `"span": 6` sit side by side.
+
+With the form in place, the preview renders it live, and selecting it shows its configuration in the inspector:
+
+![The editor with the form added and its inspector open](/images/apps/forms-form-added.png)
+
+## 3. Bind the form to a run group
+
+Add a run group with:
+
+- **trigger**: `form`, with **formId** `searchForm` — submitting the form *is* the trigger; no separate button needed.
+- **params**: map each concept parameter to a form value:
+  - `region` → `{{searchForm.region}}`
+  - `min_total` → `{{searchForm.min_total}}`
+- **execute**: `matching_orders`
+- **outputs**: a tap `orders` on `matching_orders`
+
+The keys on the left of `params` must be `@param` names declared by concepts in the project; the `{{…}}` references on the right must point at inputs or form fields that exist. Both are checked at save time — a typo gives you an error like *"param 'regon' is not declared as @param by any concept in this project; did you mean 'region'?"*.
+
+In the Data panel the group reads as a wiring table — form trigger, both param bindings, execute and tap — and the inspector edits each piece:
+
+![The run group with its form trigger and param bindings in the inspector](/images/apps/forms-run-group.png)
+
+## 4. Place the widgets
+
+In the section, add:
+
+1. A **form** widget (`form_ref`) bound to `searchForm`.
+2. A **rich table** bound to the tap `orders`.
+
+## 5. The whole app as JSON
+
+```json
+{
+  "schemaVersion": 2,
+  "id": "…generated…",
+  "name": "Order Search",
+  "header": { "title": "Order Search" },
+  "pages": [
+    {
+      "id": "page_1",
+      "label": "Find orders",
+      "project": { "id": "<your project id>" },
+      "inputs": [
+        {
+          "id": "searchForm",
+          "type": "form",
+          "label": "Search",
+          "submitLabel": "Find orders",
+          "layout": "grid",
+          "sections": [
+            {
+              "title": "Criteria",
+              "fields": [
+                {
+                  "id": "region",
+                  "type": "combobox",
+                  "span": 6,
+                  "label": "Region",
+                  "required": true,
+                  "optionsSource": { "concept": "sales_regions", "valueCol": "region", "labelCol": "region" }
+                },
+                { "id": "min_total", "type": "number", "span": 6, "label": "Minimum total", "default": 0 }
+              ]
+            }
+          ]
+        }
+      ],
+      "runGroups": [
+        {
+          "id": "search",
+          "trigger": "form",
+          "formId": "searchForm",
+          "params": {
+            "region": "{{searchForm.region}}",
+            "min_total": "{{searchForm.min_total}}"
+          },
+          "execute": ["matching_orders"],
+          "outputs": [{ "id": "orders", "concept": "matching_orders" }]
+        }
+      ],
+      "sections": [
+        {
+          "id": "section_1",
+          "layout": "grid",
+          "widgets": [
+            { "id": "w_form", "type": "form_ref", "inputId": "searchForm", "span": 12 },
+            { "id": "w_table", "type": "rich_table", "outputId": "orders", "span": 12 }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Save, open the app, pick *North*, set the minimum to *1000*, submit — the table shows orders 1 and 3.
+
+![The finished app: form submitted, matching orders in the table](/images/apps/forms-app-done.png)
+
+## Beyond scalar fields
+
+Two things you'll reach for as forms grow:
+
+- **Standalone inputs.** A field doesn't have to live in a form. A page-level input (type `select`, `text`, …) placed with an `input_ref` widget publishes its value continuously — useful with `auto`-triggered run groups, as shown in [the next tutorial](/platform/apps/selects-triggers-and-drill-downs).
+- **Record groups (facts).** A form field of type `record_group` lets the user enter *rows*, not a single value. The rows are serialized as ground facts and fed to an **input predicate** — an empty concept that only declares its columns via `@model` — through the run group's `facts` binding: `"facts": { "price_adjustment": "{{scenarioForm.adjustments}}" }`. Use this for what-if inputs. See the [reference](/platform/apps/schema-reference#form-fields) for the full field list.
+
+Available field types: `text`, `number`, `select`, `combobox`, `date`, `multi_select`, `checkbox`, `password`, `textarea` — plus `record_group` inside forms. Fields support `required`, `min`/`max`, `pattern`, `default`, `placeholder`, and conditional visibility via `visibleWhen`.
+
+Next: [Selects, triggers and drill-downs](/platform/apps/selects-triggers-and-drill-downs).

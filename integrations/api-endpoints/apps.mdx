@@ -1,0 +1,180 @@
+---
+title: "Apps"
+description: "Create, update, retrieve, and delete apps within a project."
+---
+
+An **app** is a named, project-scoped interactive application built on top of concept output predicates — see [Apps](/platform/apps/overview) for the feature itself and the [definition reference](/platform/apps/schema-reference) for the payload format. The Apps API lets you list, load, save, and delete apps, and manage their version checkpoints.
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+
+<Note>
+This API was previously exposed under `/dashboards`. Those paths still work as a
+deprecated alias — new integrations should use `/apps`.
+</Note>
+
+## List all apps
+
+Return metadata for every app across all projects the caller can access. No definition payloads are included.
+
+```
+GET /apps/list
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the lookup. |
+
+```bash
+curl "$BASE_URL/apps/list?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "All apps listed successfully",
+  "data": [
+    {
+      "id": "a1b2c3d4-...",
+      "project_id": "proj_123",
+      "name": "Sales Overview"
+    }
+  ]
+}
+```
+
+## List apps in a project
+
+Return metadata for all apps in a single project. No definition payloads are included.
+
+```
+GET /apps/{project_id}/list
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+
+```bash
+curl "$BASE_URL/apps/$PROJECT_ID/list?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+`data` is an array of app metadata objects (id, project\_id, name).
+
+## Get an app
+
+Return a single app with its full definition.
+
+```
+GET /apps/{project_id}/{app_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `app_id` | path | yes | — | The app ID. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+
+```bash
+curl "$BASE_URL/apps/$PROJECT_ID/a1b2c3d4-...?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "App loaded successfully",
+  "data": {
+    "id": "a1b2c3d4-...",
+    "project_id": "proj_123",
+    "name": "Sales Overview",
+    "definition": { /* app definition */ }
+  }
+}
+```
+
+Returns `404` if no app with that ID exists in the project.
+
+## Save an app
+
+Create or update an app. When `app.id` is absent, a new UUID is generated server-side. The assigned ID is always returned in the response. The definition is [validated](/platform/apps/schema-reference#what-save-time-validation-checks) against the referenced projects' concepts; validation failures return `400` with the full list of errors and nothing is saved.
+
+```
+POST /apps/{project_id}/save
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+| `app` | body | yes | — | The app definition object. Include `id` to update an existing app; omit it to create a new one. (`dashboard` is accepted as a legacy alias for this key.) |
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/apps/$PROJECT_ID/save" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scope": "user",
+    "app": {
+      "schemaVersion": 2,
+      "name": "Sales Overview",
+      "header": { "title": "Sales Overview" },
+      "pages": [ /* … */ ]
+    }
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "App 'a1b2c3d4-...' saved successfully",
+  "data": { "id": "a1b2c3d4-..." }
+}
+```
+
+Every successful save also appends a version checkpoint (see below).
+
+## Delete an app
+
+Permanently delete an app, including its version history. This action is irreversible.
+
+```
+DELETE /apps/{project_id}/{app_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `app_id` | path | yes | — | The app ID. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+
+```bash
+curl -X DELETE "$BASE_URL/apps/$PROJECT_ID/a1b2c3d4-...?scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "App 'a1b2c3d4-...' deleted successfully",
+  "data": null
+}
+```
+
+## Versions
+
+Every save appends a version checkpoint. Checkpoints can be listed, restored (non-destructively) and bookmarked — bookmarked versions are never pruned.
+
+```
+GET   /apps/{project_id}/{app_id}/versions
+POST  /apps/{project_id}/{app_id}/versions/{version_id}/restore
+PATCH /apps/{project_id}/{app_id}/versions/{version_id}/bookmark
+```
+
+All three take the usual `project_id` / `app_id` path parameters and optional `scope`. `bookmark` requires a JSON body `{ "bookmarked": true|false }` with an optional `"label"`. See [How apps run](/platform/apps/how-apps-run#where-apps-live) for the retention rules.
