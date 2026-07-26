@@ -1,0 +1,200 @@
+---
+title: "App definition reference"
+description: "The complete vocabulary of the app definition JSON (schema version 2), including every validation rule."
+---
+
+The complete vocabulary of the app definition JSON (schema version 2). Every field here is enforced at save time; anything outside this vocabulary is rejected.
+
+Conventions used below: **required** fields are marked ✱; all concept and column references are validated against the page's project, with column names matched **case-insensitively**.
+
+## Top level
+
+```json
+{
+  "schemaVersion": 2,
+  "id": "…",
+  "name": "…",
+  "header": { … },
+  "pages": [ … ]
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `schemaVersion` ✱ | number | `2` for everything described here. |
+| `id` ✱ | string | Generated on first save. |
+| `name` ✱ | string | Non-empty. Shown on the catalog card. |
+| `header` ✱ | object | See below. |
+| `pages` ✱ | array | Non-empty list of pages. |
+
+### `header`
+
+| Field | Type | Notes |
+|---|---|---|
+| `title` ✱ | string | The app's display title. |
+| `subtitle` | string | Shown under the title. |
+| `logoUrl` | string | Card / header logo. |
+
+The rendered app header also links to the app's home project automatically.
+
+## Pages
+
+A page is one screen of the app, rendered as a tab.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` ✱ | string | Unique across pages. |
+| `label` ✱ | string | Page label, shown on its tab. |
+| `project.id` ✱ | string | The single project this page binds to. Every concept the page references must exist there. |
+| `inputs` ✱ | array | Scalar inputs and forms (may be empty). |
+| `runGroups` ✱ | array | Execution bindings (may be empty). |
+| `sections` ✱ | array | Layout containers holding widgets. |
+
+## Inputs
+
+An input is either a **scalar input** or a **form**.
+
+### Scalar input types
+
+`text`, `number`, `select`, `combobox`, `date`, `multi_select`, `checkbox`, `radio`, `password`, `textarea`
+
+- `checkbox` is a single boolean; its `placeholder` renders as the inline label.
+- `radio` is one choice from an always-visible set — a dropdown alternative for a few options.
+- `password` is masked; `textarea` is multi-line.
+- `select` / `combobox` / `multi_select` / `radio` take options from `options` (static) or `optionsSource` (from a concept).
+
+### Scalar input fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` ✱ | string | Unique within the page. Referenced as `{{id}}`. |
+| `type` ✱ | string | One of the scalar types, or `form`. |
+| `label` | string | |
+| `required` | boolean | |
+| `default` | any | Also seeds the variable when the page opens. |
+| `placeholder` | string | |
+| `options` | string[] | Static choices. |
+| `optionsSource` | object | `{ "concept", "valueCol", "labelCol" }` — choices from a concept's output. The concept must exist; the columns must be columns of that concept. |
+
+A standalone scalar input publishes its value as a page variable continuously — pair it with an `auto` run group for buttonless filtering. Place it on the page with an `input_ref` widget.
+
+### Forms
+
+An input with `type: "form"` groups fields behind a single submit.
+
+| Field | Type | Notes |
+|---|---|---|
+| `sections` ✱ | array | `{ "title", "fields": [ … ] }` groups. |
+| `submitLabel` | string | Submit button text. |
+| `layout` | string | `flow` (default) or `grid` — `grid` places fields on a 12-column grid using each field's `span`. |
+| `labelPosition` | string | `top` (default) or `left`. |
+
+Submitted values become page variables referenced as `{{formId.fieldId}}`. A form is placed on the page with a `form_ref` widget and usually paired with a `trigger: "form"` run group.
+
+## Form fields
+
+Each entry in a form section's `fields`:
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` ✱ | string | Referenced as `{{formId.id}}`. |
+| `type` ✱ | string | Any scalar input type, or `record_group`. |
+| `span` | number | Grid width, integer 1–12 (with form `layout: "grid"`). |
+| `label`, `required`, `placeholder`, `default` | | As for inputs. |
+| `min`, `max` | number | Bounds for `number` fields. |
+| `pattern` | string | Regex the value must match. |
+| `options` / `optionsSource` | | As for inputs. |
+| `visibleWhen` | object | `{ "field", "equals" }` — show this field only when another field has a given value. |
+
+### `record_group` (row input)
+
+A repeating group of sub-fields — the user enters rows, and the rows feed an input predicate through a run group's `facts` binding.
+
+| Field | Type | Notes |
+|---|---|---|
+| `fields` ✱ | array | The columns of each row (scalar field types only — record groups cannot be nested). |
+| `minRows`, `maxRows` | number | Row count bounds. |
+| `seedFrom` | object | `{ "concept", "columnToField" }` — pre-fill rows from a concept's output; `columnToField` maps column names to field ids when they differ. |
+
+## Run groups
+
+The unit of execution: *when the trigger fires, run these concepts with these bindings and expose these taps*.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` ✱ | string | Unique within the page. |
+| `label` | string | Shown on the bound run button. |
+| `trigger` ✱ | string | `button`, `form`, `auto`, or `load`. |
+| `formId` | string | Required when `trigger` is `form`; must reference a form input. |
+| `params` | object | `"paramName": "{{ref}}"` — each key must be declared as `@param` by a concept in the project; each `{{ref}}` must be published by an input, form field or row-select (dotted paths like `{{selectedRow.column}}` read a column of a selected row). Literal values are also allowed. |
+| `facts` | object | `"input_predicate": "{{formId.recordGroupId}}"` — rows become preamble facts. The predicate must be an **input predicate**: an empty concept declaring its columns via `@model`. A concept with rules of its own cannot be fed facts. |
+| `execute` ✱ | string[] | Non-empty. The concept(s) to run — typically the deepest concept(s) of the lineage region you need; upstream concepts are computed (and tappable) automatically. |
+| `outputs` ✱ | array | `{ "id", "concept" }` output taps. Widgets bind to tap ids. A tap on a concept that isn't computed by `execute` produces a save-time warning. |
+
+Triggers:
+
+| Trigger | Fires |
+|---|---|
+| `button` | on click of a `run_button` (or a `button` widget with a `run_group` action). |
+| `form` | on submit of the form named by `formId`. |
+| `load` | once when the page first opens; multiple `load` groups run sequentially. |
+| `auto` | when a bound variable changes — only after all references have values. |
+
+## Sections
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` ✱ | string | |
+| `title` | string | Optional heading. |
+| `layout` | string | `grid` (default), `columns`, `single`, `two_col`, `four_col`. |
+| `weights` | number[] | `columns` layout only: relative stack widths, e.g. `[8, 4]`. |
+| `widgets` ✱ | array | |
+
+- **`grid`** — widgets flow onto a 12-column grid; each widget's `span` (1–12) sets its width.
+- **`columns`** — side-by-side stacks; each widget's `column` (1-based) picks its stack, `weights` sets the widths. The layout for master–detail screens.
+
+## Widgets
+
+Common fields: `id` ✱, `type` ✱, `label`, `span` (grid layouts, 1–12), `column` (columns layouts).
+
+| Type | Binds via | Purpose |
+|---|---|---|
+| `input_ref` | `inputId` | Renders one standalone scalar input. |
+| `form_ref` | `inputId` | Renders a whole form. |
+| `run_button` | `groupId` | Fires a run group. |
+| `button` | `action` | Generic action button (below). |
+| `rich_table` | `outputId` | Results table with the presentation pack (below). |
+| `text` | `outputId` *or* `content` | Markdown — from a tap, or static text via `content`. |
+| `stat_card` | `outputId` | Single KPI: `valueCol`, `labelCol`, `statSub`. |
+| `line_chart`, `area_chart`, `bar_chart`, `pie_chart` | `outputId` | Charts: `x` (x-axis column), `y` (series columns), optional `seriesCol` to pivot long-format data into one series per distinct value (then `y` names the single value column). |
+| `heatmap` | `outputId` | `rowCol`, `colCol`, `valueCol`. |
+
+### `button` actions
+
+| `action.type` | Fields | Effect |
+|---|---|---|
+| `open_url` | `url` ✱ | Opens a link. |
+| `set_context` | `key` ✱, `value` | Sets a page variable (can drive `auto` groups). |
+| `run_group` | `groupId` ✱ | Fires a run group — e.g. a refresh button for a `load` group. |
+
+`buttonStyle`: `primary`, `outline`, or `ghost`.
+
+### `rich_table` presentation
+
+| Field | Type | Notes |
+|---|---|---|
+| `variant` | string | `full` (search + sort + export + pagination), `compact` (no search bar), `plain` (bare rows, for key–value panels). |
+| `columns` | string[] | Subset and order of the tap's columns to display. |
+| `formatRules` | array | `{ "column", "operator", "value", "color", "display" }` — operators: `less_than`, `greater_than`, `equals`, `not_equals`; colors: `red`, `green`, `amber`, `blue`, `neutral`; display: `text` (default) or `badge`. |
+| `columnFormats` | object | `"column": format` — formats: `number`, `percent`, `signed_percent`. |
+| `onRowSelect` | object | `{ "set": "variableName" }` — makes rows selectable: the clicked row is saved as a page variable (and highlighted) for drill-downs. |
+
+## What save-time validation checks
+
+Saving an app runs the full definition against the referenced projects. Errors block the save; each names the offending element and, for unknown names, suggests the closest match.
+
+- Structure: non-empty `name` and `pages`; unique page, input and run-group ids; every page has a resolvable `project.id`.
+- Vocabulary: every `type`, `trigger`, `layout`, `variant`, operator, color and format must be one of the values listed on this page; `span` must be an integer 1–12.
+- References: widget `inputId` / `groupId` / `outputId` must point at existing inputs, groups and taps; `formId` must name a form; `optionsSource` and `seedFrom` concepts must exist, and their columns must exist on those concepts.
+- Bindings: `params` keys must be declared `@param`s; `{{…}}` roots must be published by something on the page; `facts` must bind a record group to an input predicate.
+- Warnings (non-blocking): an output tap on a concept not computed by its group's `execute`; `weights` on a non-`columns` layout.

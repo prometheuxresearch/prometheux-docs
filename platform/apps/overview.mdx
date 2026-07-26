@@ -1,0 +1,62 @@
+---
+title: "Apps"
+description: "Turn your concepts into interactive applications — forms, buttons, tables and charts wired to your project's lineage — without writing frontend code."
+---
+
+Apps turn your Vadalog concepts into small, interactive applications — forms, buttons, tables and charts wired directly to your project's lineage — without writing any frontend code.
+
+An app is a single JSON document (the **app definition**) that describes:
+
+- **what the user sees** — pages, sections, tables, charts, forms, buttons
+- **what runs when they interact** — which concepts execute, with which parameters
+- **where the results go** — which widgets display which concept outputs
+
+You author apps in the visual [App Editor](/platform/apps/the-app-editor), and everyone with access finds them in the **Apps** catalog in the product navigation. Every app is validated against your project's actual concepts at save time, so an app cannot silently reference a concept, parameter or column that doesn't exist.
+
+<Tip>
+If you have never built an app before, go straight to [Your first app](/platform/apps/your-first-app) — a button and a table, nothing else. It takes about ten minutes.
+</Tip>
+
+## The building blocks
+
+Every app is made of the same five pieces:
+
+| Block | What it is |
+|---|---|
+| **Page** | One screen of the app, shown as a tab. Each page is bound to exactly **one project** — all concepts the page uses come from that project's lineage. |
+| **Input** | A value the user provides: a text field, a select, a date… or a whole **form** with multiple fields. |
+| **Run group** | The unit of execution: *when this trigger fires, run these concepts with these bindings*. Triggers can be a button, a form submit, opening the page, or a value change. |
+| **Output tap** | A named handle on a concept's results, created by a run group. Widgets read taps — never concepts directly. |
+| **Widget** | Something rendered on the page: a table, chart, stat card, text block, form, or button. Display widgets bind to output taps. |
+
+The flow is always the same:
+
+```
+inputs ──▶ run group ──▶ concepts execute ──▶ output taps ──▶ widgets
+```
+
+A user fills in inputs, a trigger fires a run group, the group executes concepts in your project (passing the inputs along as parameters or facts), and the widgets bound to the group's output taps refresh with the results.
+
+## What inputs can feed a concept
+
+There are two ways user input reaches your Vadalog:
+
+1. **Parameters** — a scalar input (text, number, select…) binds to a concept's `@param`. This is the common case: a search form that filters results.
+2. **Facts** — a repeating *record group* in a form serializes its rows as ground facts and feeds an **input predicate** (an empty concept that declares its columns via `@model`). Use this for what-if scenarios where the user supplies a small table of data.
+
+Both are covered step by step in the tutorials.
+
+## Versioning
+
+Every save of an app creates a **version checkpoint**. From the editor you can browse past versions, bookmark the important ones, and restore any of them — restoring is non-destructive and never deletes history.
+
+## Where to go next
+
+- [Your first app](/platform/apps/your-first-app) — a button that runs a concept and a table that shows the result.
+- [Forms and parameters](/platform/apps/forms-and-parameters) — collect user input and pass it to `@param`s.
+- [Selects, triggers and drill-downs](/platform/apps/selects-triggers-and-drill-downs) — auto-loading data, master–detail layouts, and table presentation.
+- [The App Editor](/platform/apps/the-app-editor) — a tour of the authoring environment.
+- [How apps run](/platform/apps/how-apps-run) — the runtime model and architecture.
+- [App definition reference](/platform/apps/schema-reference) — every field, type and validation rule.
+
+Apps can also be managed programmatically — see the [Apps API](/integrations/api-endpoints/apps).
