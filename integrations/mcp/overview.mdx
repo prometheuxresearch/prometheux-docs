@@ -174,15 +174,15 @@ Both MCP servers dynamically expose the following tools to AI agents. The tool c
 | `save_ontology_schema` | Save a complete schema graph for an ontology | `project_id`, `ontology_schema_data`, `scope` |
 | `set_concept_ontology_role` | Assign or update a single concept's role in the schema graph | `project_id`, `concept_name`, `ontology_schema_type`, `edge_source`, `edge_target`, `scope` |
 
-### Dashboards
+### Apps
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `list_apps` | List all apps across every project in the workspace | `scope` |
-| `get_app` | Load a single app with its full definition | `project_id`, `dashboard_id`, `scope` |
+| `list_apps` | List all apps across every ontology in the workspace | `scope` |
+| `get_app` | Load a single app with its full definition | `project_id`, `app_id`, `scope` |
 | `get_app_schema` | Return the JSON Schema for an app definition | — |
-| `save_app` | Create or update an app for a project | `project_id`, `dashboard`, `scope` |
-| `delete_app` | Permanently delete an app | `project_id`, `dashboard_id`, `scope` |
+| `save_app` | Create or update an app for an ontology | `project_id`, `app`, `scope` |
+| `delete_app` | Permanently delete an app | `project_id`, `app_id`, `scope` |
 
 ### Company Knowledge
 
