@@ -1,19 +1,19 @@
 ---
 title: "Quickstart"
-description: "A hands-on, click-by-click tour of the Prometheux app — from a fresh account to a running project and your first dashboard."
+description: "A hands-on, click-by-click tour of the Prometheux app — from a fresh account to a running ontology and your first app."
 ---
 
 You've created your account. **Now what?**
 
 This guide walks you through the platform end to end, entirely in the web app —
 no code editor, API, or SDK required. By the end you'll have connected data,
-created a project, run your first concept, explored the results, and built a
-dashboard on top of them.
+created an ontology, run your first concept, explored the results, and built a
+app on top of them.
 
 <Note>
 This is the **app walkthrough**. Once you're comfortable clicking around and want
 to learn the Vadalog language itself, continue with
-[Your First Project](/get-started/your-first-project) and the
+[Your First Ontology](/get-started/your-first-ontology) and the
 [Vadalog Reference](/vadalog/overview).
 </Note>
 
@@ -28,14 +28,14 @@ left sidebar is how you move around:
 | **Home** | `/` | The AI Assistant — ask questions or have it build things for you. |
 | **Ontologies** | `/ontologies` | Create and open ontologies (where your work lives). |
 | **Data** | `/datasources` | Connect data sources and upload files. |
-| **Dashboards** | `/dashboards` | Build visualizations over your ontology output. |
-| **Apps** | `/apps` | Published apps built on your dashboards. |
+| **Apps** | `/apps` | Build visualizations over your ontology output. |
+| **Apps** | `/apps` | Published apps built on your apps. |
 | **Settings** | `/settings` | Profile, API keys, models, and preferences. |
 
 <Tip>
 A **Getting Started** checklist lives at the bottom of the sidebar and tracks
-your progress through the first few tasks (connect data, create a project,
-create a dashboard, and more). It's a handy companion to this guide.
+your progress through the first few tasks (connect data, create an ontology,
+create an app, and more). It's a handy companion to this guide.
 </Tip>
 
 <Frame caption="The workspace on first login — AI Assistant in the center, navigation sidebar on the left, and the Getting Started checklist at the bottom of the sidebar.">
@@ -77,49 +77,49 @@ Open **Data** (`/datasources`) from the sidebar. This page has two tabs:
 
 Once connected, your source appears in the **Sources** list with its record and
 column (feature) counts. Use **Preview** to inspect the data in a paginated,
-searchable table, and **Run** to use it inside a project.
+searchable table, and **Run** to use it inside an ontology.
 
 <Frame caption="The 'Add your data source' dialog — categorized connectors with a search box, and the 'Available px-datasources' demo section expanded.">
   <img src="/images/quickstart/step_02.png" alt="Add data source dialog" />
 </Frame>
 
-## Step 3 — Create a project
+## Step 3 — Create an ontology
 
-A **project** is your workspace for turning data into answers — it holds your
-concepts, ontology, and dashboards.
+An **ontology** is your workspace for turning data into answers — it holds your
+concepts, schema, and apps.
 
 Open **Ontologies** (`/ontologies`). On a new account you'll see
 *"It looks like you don't have any ontologies yet."*
 
 <Steps>
-  <Step title="Start a new project">
-    Click **New Project** (top-right). In the dialog, stay on the **Create** tab
+  <Step title="Start a new ontology">
+    Click **New Ontology** (top-right). In the dialog, stay on the **Create** tab
     and fill in:
     - **Name** — e.g. *Company Ownership*
     - **Description** *(optional)*
-    - **Context** *(optional)* — a few notes about the project's goal; the AI
+    - **Context** *(optional)* — a few notes about the ontology's goal; the AI
       Assistant reads this on every turn.
     - **Scope** — leave as **User Scope**.
   </Step>
   <Step title="Create it">
-    Click **Create**. You're taken straight into the **project editor**, opened
+    Click **Create**. You're taken straight into the **ontology editor**, opened
     on the **Lineage** view.
   </Step>
 </Steps>
 
 <Tip>
 **In a hurry?** If a **Templates** tab is available, hover a template and click
-**Use →** to spin up a ready-made project (ontology, concepts, and sample data
+**Use →** to spin up a ready-made ontology (schema, concepts, and sample data
 included) that you can explore and adapt.
 </Tip>
 
-<Frame caption="The Projects page empty state with the New Project button (top-right), and the New Project dialog showing the Name, Description, Context, and Scope fields.">
-  <img src="/images/quickstart/step_03.png" alt="Create a new project" />
+<Frame caption="The Ontologies page empty state with the New Ontology button (top-right), and the New Ontology dialog showing the Name, Description, Context, and Scope fields.">
+  <img src="/images/quickstart/step_03.png" alt="Create a new ontology" />
 </Frame>
 
 ## Step 4 — Define your first concept
 
-Inside the project editor, the **Explorer** panel on the left lists your
+Inside the ontology editor, the **Explorer** panel on the left lists your
 **concepts** — the logic that transforms data into results.
 
 <Steps>
@@ -142,12 +142,12 @@ Inside the project editor, the **Explorer** panel on the left lists your
 </Steps>
 
 <Note>
-New to Vadalog? The [Your First Project](/get-started/your-first-project)
+New to Vadalog? The [Your First Ontology](/get-started/your-first-ontology)
 tutorial teaches the language step by step, and the
 [Vadalog Reference](/vadalog/overview) is the full guide.
 </Note>
 
-<Frame caption="The project editor — the Explorer panel with a concept cell open, the concept-type selector (Logic/SQL/Cypher/Python), the CodeMirror editor, and the ✨ natural-language button.">
+<Frame caption="The ontology editor — the Explorer panel with a concept cell open, the concept-type selector (Logic/SQL/Cypher/Python), the CodeMirror editor, and the ✨ natural-language button.">
   <img src="/images/quickstart/step_04.png" alt="Defining a concept" />
 </Frame>
 
@@ -174,16 +174,16 @@ as a dependency graph — click any node to jump into its editor.
   <img src="/images/quickstart/step_05.png" alt="Exploring concept results and lineage" />
 </Frame>
 
-## Step 6 — Build a dashboard
+## Step 6 — Build an app
 
 Now turn your results into something shareable.
 
 <Steps>
-  <Step title="Create a dashboard">
-    Open **Dashboards** (`/dashboards`) and click **New Dashboard**.
+  <Step title="Create an app">
+    Open **Apps** (`/apps`) and click **New App**.
   </Step>
-  <Step title="Point it at your project">
-    In the config panel, choose your **Project** and an **Input concept (drives
+  <Step title="Point it at your ontology">
+    In the config panel, choose your **Ontology** and an **Input concept (drives
     run)** — the concept whose run produces the data your widgets display. Set a
     **Title** and any header details.
   </Step>
@@ -195,22 +195,22 @@ Now turn your results into something shareable.
     axis** (or label / value) columns.
   </Step>
   <Step title="Save and run">
-    Click **Save**, then open the dashboard and click **RUN**. Prometheux executes
+    Click **Save**, then open the app and click **RUN**. Prometheux executes
     the input concept and populates every widget with live data.
   </Step>
 </Steps>
 
-<Frame caption="The dashboard editor — the config panel (Project, Input concept, pages/sections) on one side and the widget canvas with a chart and table on the other.">
-  <img src="/images/quickstart/step_06.png" alt="Building a dashboard" />
+<Frame caption="The app editor — the config panel (Ontology, Input concept, pages/sections) on one side and the widget canvas with a chart and table on the other.">
+  <img src="/images/quickstart/step_06.png" alt="Building an app" />
 </Frame>
 
 ## What's next
 
-You've gone from an empty account to a running project and a live dashboard.
+You've gone from an empty account to a running ontology and a live app.
 From here:
 
 <CardGroup cols={2}>
-  <Card title="Learn Vadalog" icon="code" href="/get-started/your-first-project">
+  <Card title="Learn Vadalog" icon="code" href="/get-started/your-first-ontology">
     Write your own reasoning rules with the step-by-step language tutorial.
   </Card>
   <Card title="Connect more data" icon="database" href="/platform/data-connections">

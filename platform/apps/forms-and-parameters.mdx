@@ -49,7 +49,7 @@ The values in the `@param` declarations are just defaults for running the concep
 
 ## 2. Add a form
 
-Create a new app in the same project, then in the **Data** panel add an input of type **form** with id `searchForm`. Give it two fields:
+Create a new app in the same ontology, then in the **Data** panel add an input of type **form** with id `searchForm`. Give it two fields:
 
 | Field id | Type | Notes |
 |---|---|---|
@@ -75,7 +75,7 @@ Add a run group with:
 - **execute**: `matching_orders`
 - **outputs**: a tap `orders` on `matching_orders`
 
-The keys on the left of `params` must be `@param` names declared by concepts in the project; the `{{…}}` references on the right must point at inputs or form fields that exist. Both are checked at save time — a typo gives you an error like *"param 'regon' is not declared as @param by any concept in this project; did you mean 'region'?"*.
+The keys on the left of `params` must be `@param` names declared by concepts in the ontology; the `{{…}}` references on the right must point at inputs or form fields that exist. Both are checked at save time — a typo gives you an error like *"param 'regon' is not declared as @param by any concept in this ontology; did you mean 'region'?"*.
 
 In the Data panel the group reads as a wiring table — form trigger, both param bindings, execute and tap — and the inspector edits each piece:
 

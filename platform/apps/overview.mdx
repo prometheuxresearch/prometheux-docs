@@ -1,9 +1,9 @@
 ---
 title: "Apps"
-description: "Turn your concepts into interactive applications — forms, buttons, tables and charts wired to your project's lineage — without writing frontend code."
+description: "Turn your concepts into interactive applications — forms, buttons, tables and charts wired to your ontology's lineage — without writing frontend code."
 ---
 
-Apps turn your Vadalog concepts into small, interactive applications — forms, buttons, tables and charts wired directly to your project's lineage — without writing any frontend code.
+Apps turn your Vadalog concepts into small, interactive applications — forms, buttons, tables and charts wired directly to your ontology's lineage — without writing any frontend code.
 
 An app is a single JSON document (the **app definition**) that describes:
 
@@ -11,7 +11,7 @@ An app is a single JSON document (the **app definition**) that describes:
 - **what runs when they interact** — which concepts execute, with which parameters
 - **where the results go** — which widgets display which concept outputs
 
-You author apps in the visual [App Editor](/platform/apps/the-app-editor), and everyone with access finds them in the **Apps** catalog in the product navigation. Every app is validated against your project's actual concepts at save time, so an app cannot silently reference a concept, parameter or column that doesn't exist.
+You author apps in the visual [App Editor](/platform/apps/the-app-editor), and everyone with access finds them in the **Apps** catalog in the product navigation. Every app is validated against your ontology's actual concepts at save time, so an app cannot silently reference a concept, parameter or column that doesn't exist.
 
 <Tip>
 If you have never built an app before, go straight to [Your first app](/platform/apps/your-first-app) — a button and a table, nothing else. It takes about ten minutes.
@@ -23,7 +23,7 @@ Every app is made of the same five pieces:
 
 | Block | What it is |
 |---|---|
-| **Page** | One screen of the app, shown as a tab. Each page is bound to exactly **one project** — all concepts the page uses come from that project's lineage. |
+| **Page** | One screen of the app, shown as a tab. Each page is bound to exactly **one ontology** — all concepts the page uses come from that ontology's lineage. |
 | **Input** | A value the user provides: a text field, a select, a date… or a whole **form** with multiple fields. |
 | **Run group** | The unit of execution: *when this trigger fires, run these concepts with these bindings*. Triggers can be a button, a form submit, opening the page, or a value change. |
 | **Output tap** | A named handle on a concept's results, created by a run group. Widgets read taps — never concepts directly. |
@@ -35,7 +35,7 @@ The flow is always the same:
 inputs ──▶ run group ──▶ concepts execute ──▶ output taps ──▶ widgets
 ```
 
-A user fills in inputs, a trigger fires a run group, the group executes concepts in your project (passing the inputs along as parameters or facts), and the widgets bound to the group's output taps refresh with the results.
+A user fills in inputs, a trigger fires a run group, the group executes concepts in your ontology (passing the inputs along as parameters or facts), and the widgets bound to the group's output taps refresh with the results.
 
 ## What inputs can feed a concept
 

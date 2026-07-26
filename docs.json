@@ -59,7 +59,7 @@
         "pages": [
           "get-started/platform-overview",
           "get-started/quickstart",
-          "get-started/your-first-project",
+          "get-started/your-first-ontology",
           {
             "group": "Installation",
             "pages": [
@@ -90,10 +90,10 @@
         "group": "Platform",
         "pages": [
           "platform/data-connections",
-          "platform/projects",
+          "platform/ontologies",
           "platform/ontology-graph",
           "platform/concepts-and-lineage",
-          "platform/project-workspace",
+          "platform/ontology-workspace",
           "platform/concept-editor",
           {
             "group": "Apps",
