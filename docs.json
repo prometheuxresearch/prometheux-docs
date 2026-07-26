@@ -95,7 +95,18 @@
           "platform/concepts-and-lineage",
           "platform/project-workspace",
           "platform/concept-editor",
-          "platform/dashboards",
+          {
+            "group": "Apps",
+            "pages": [
+              "platform/apps/overview",
+              "platform/apps/your-first-app",
+              "platform/apps/forms-and-parameters",
+              "platform/apps/selects-triggers-and-drill-downs",
+              "platform/apps/the-app-editor",
+              "platform/apps/how-apps-run",
+              "platform/apps/schema-reference"
+            ]
+          },
           "platform/ai-assistant",
           "platform/compute",
           "platform/settings"
@@ -136,7 +147,7 @@
               "integrations/api-endpoints/knowledge-graph",
               "integrations/api-endpoints/vadalog",
               "integrations/api-endpoints/vadalingo",
-              "integrations/api-endpoints/dashboards",
+              "integrations/api-endpoints/apps",
               "integrations/api-endpoints/schedules",
               "integrations/api-endpoints/context-layer",
               "integrations/api-endpoints/agent",
