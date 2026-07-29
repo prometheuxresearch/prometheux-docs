@@ -1,6 +1,6 @@
 ---
 title: "Data Sources"
-description: "Connecting Vadalog to CSV, Parquet, Iceberg, Excel, JSON, COBOL, PostgreSQL, Neo4j, DynamoDB, Qdrant, S3, HDFS, REST APIs, and many more data sources."
+description: "Connecting Vadalog to CSV, Parquet, Iceberg, Excel, JSON, COBOL, PostgreSQL, Neo4j, DynamoDB, Qdrant, RDF triple stores, S3, HDFS, REST APIs, and many more data sources."
 ---
 
 With connectors available for databases and support for data sources, Prometheux can be used to seamlessly integrate and migrate data across various platforms. Moreover, it supports cloud and distributed file systems like **S3** and **HDFS**, providing the flexibility needed for modern data lake and data migration scenarios.
@@ -66,6 +66,7 @@ Supported `datasource_type` values:
 | `databricks` | Databricks |
 | `dynamodb` | Amazon DynamoDB |
 | `qdrant` | Qdrant vector database |
+| `rdf` | RDF serializations (N-Triples / N-Quads / Turtle) for RDF triple stores |
 | `api` | Consuming data via API |
 | `text` | Plain text files |
 | `binary` | Binary files (PDF, images, etc.) |
@@ -3059,6 +3060,137 @@ The optimization pipeline handles Qdrant SQL rules in two ways:
 5. **Filter Performance**: Payload filters are applied server-side by Qdrant before results are returned. Use filters to reduce result sets rather than filtering in Vadalog rules for better performance.
 
 6. **Pre-Computed Embeddings**: Use `embeddingField` (column name) when you have an `@model` that names the vector column, or `embeddingFieldPos` (0-based positional index) when no schema annotation is present.
+
+## RDF Output (triple stores)
+
+Prometheux can serialize a reasoning result to **RDF** files on disk or object storage, ready for bulk import into any RDF triple store. The connector is powered by [Apache Jena](https://jena.apache.org/), so IRI and literal escaping follow the RDF 1.1 grammar rather than a hand-rolled encoder.
+
+The `rdf` connector is **write-only** (an export target): you bind it on an `@output` concept exactly like the Parquet writer, using the same `<schema>/<table>` path convention. The output is a **directory** of RDF files plus a `_SUCCESS` marker — one file per Spark partition — so large results are written in parallel across the cluster.
+
+### Serialization formats
+
+Choose the serialization with the `format` option:
+
+| `format` | Description | Parallelism |
+|----------|-------------|-------------|
+| `ntriples` (default) | Line-oriented N-Triples — one triple per line. Aliases: `nt`, `n-triples`. | Fully distributed (one triple line per row, written independently). |
+| `nquads` | Line-oriented N-Quads — adds a named-graph term (see `graphIri`). Aliases: `nq`, `n-quads`. | Fully distributed. |
+| `turtle` | Human-readable Turtle — one self-contained document per partition. Aliases: `ttl`. | Distributed per partition; each partition builds an in-memory graph. |
+
+<Info>
+For bulk loading into a triple store, prefer the line-oriented **N-Triples** (or **N-Quads**) format: it is written fully in parallel and is the fastest to ingest. Use **Turtle** when you want human-readable output; because each partition materializes an in-memory graph, increase the number of partitions for very large results.
+</Info>
+
+### Row-to-RDF modes
+
+How each row becomes triples is driven by the [`@model`](/vadalog/annotations#model) annotation and the `mode` option:
+
+- **`entity`** (default) — each row is one subject. The subject IRI is minted from the primary-key column; the writer emits an `rdf:type` triple to the concept's class plus one triple per non-null column (`<base><predicate>`), typed with the appropriate `xsd:` datatype. Declared superclasses become `rdfs:subClassOf` and the `@model` description becomes an `rdfs:comment`.
+- **`triple`** — each row is one relationship triple `<from> <predicate> <to>`. The subject and object classes and the source/target id columns come from a **triple `@model`** (see below). This mode is selected **automatically** when the `@model` declares a triple; set `mode='triple'` explicitly only to override.
+
+### @bind options for RDF
+
+In addition to the shared writer options (`saveMode`, `compression`, `repartition`), the RDF connector supports:
+
+- `format`: `ntriples` (default), `nquads`, or `turtle` (aliases accepted, see table above).
+- `baseIri`: the base IRI used to build subject, class and property IRIs. A trailing `/` or `#` is added if missing (default: `http://prometheux.co.uk/`).
+- `mode`: `entity` (default) or `triple`. Auto-derived from the `@model` when omitted.
+- `subjectColumn`: the column whose value identifies the subject entity in `entity` mode. Falls back to the `@model` primary key, then the first column.
+- `graphIri`: the named-graph IRI added as the fourth term of every data line in `nquads` (default: the default graph).
+- `emitOntology`: whether to also emit schema-level (TBox) triples derived from the `@model` — `rdfs:Class`/`rdfs:subClassOf`/`rdfs:comment` for entities, or `rdf:Property` with `rdfs:domain`/`rdfs:range` for triples (default: `true`).
+
+Each option can also be set in `pmtx.properties` with the `rdf.` prefix (e.g. `rdf.baseIri=...`).
+
+### Example 1: entity mode → N-Triples
+
+Read people from a CSV and export them as N-Triples, one subject per person:
+
+```prolog
+% Read the source people
+@bind("person_csv", "csv useHeaders=true", "disk/data/input", "people.csv").
+
+% Describe the output concept: 'id' is the subject key
+@model("person", "['id(ID):string', 'name:string', 'age:int']").
+
+person(Id, Name, Age) <- person_csv(Id, Name, Age).
+
+@output("person").
+
+% Write N-Triples under <baseIri> to the directory 'rdf_out/person'
+@bind("person",
+      "rdf format='ntriples', baseIri='http://acme.example/', mode='entity'",
+      "rdf_out", "person").
+```
+
+Produces (one file per partition, plus a class header):
+
+```turtle
+<http://acme.example/person> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/01/rdf-schema#Class> .
+<http://acme.example/person/p1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://acme.example/person> .
+<http://acme.example/person/p1> <http://acme.example/name> "Alice" .
+<http://acme.example/person/p1> <http://acme.example/age> "30"^^<http://www.w3.org/2001/XMLSchema#integer> .
+```
+
+### Example 2: triple mode (relationships)
+
+A **triple `@model`** has the shape `(fromClass)predicate(toClass)`, and marks the source/target id columns with `(sID)`/`(tID)`. Both endpoint classes must themselves be modeled. The `rdf` writer then auto-selects `triple` mode:
+
+```prolog
+@bind("knows_csv", "csv useHeaders=true", "disk/data/input", "knows.csv").
+
+% The endpoint class ...
+@model("person", "['id(ID):string']").
+% ... and the relationship: person --knows--> person
+@model("(person)knows(person)", "['src(sID):string', 'dst(tID):string', 'since:string']").
+
+knows(Src, Dst, Since) <- knows_csv(Src, Dst, Since).
+
+@output("knows").
+
+@bind("knows",
+      "rdf format='ntriples', baseIri='http://acme.example/'",
+      "rdf_out", "knows").
+```
+
+Produces one relationship triple per row (plus the `rdf:Property` / `rdfs:domain` / `rdfs:range` header):
+
+```turtle
+<http://acme.example/knows> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> .
+<http://acme.example/knows> <http://www.w3.org/2000/01/rdf-schema#domain> <http://acme.example/person> .
+<http://acme.example/knows> <http://www.w3.org/2000/01/rdf-schema#range> <http://acme.example/person> .
+<http://acme.example/person/alice> <http://acme.example/knows> <http://acme.example/person/bob> .
+```
+
+### Example 3: Turtle and N-Quads
+
+Turtle produces human-readable documents (one per partition); N-Quads places every data triple in a named graph via `graphIri`:
+
+```prolog
+% Turtle
+@bind("person",
+      "rdf format='turtle', baseIri='http://acme.example/'",
+      "rdf_out", "person_ttl").
+
+% N-Quads into a named graph
+@bind("person",
+      "rdf format='nquads', baseIri='http://acme.example/', graphIri='http://acme.example/graph/people'",
+      "rdf_out", "person_nq").
+```
+
+### Loading into a triple store
+
+The output directory contains standard RDF files, so any triple store can ingest them with its native bulk-load facility or over the [SPARQL 1.1 Graph Store HTTP Protocol](https://www.w3.org/TR/sparql11-http-rdf-update/). For example, uploading a part file into a named graph:
+
+```bash
+curl -X POST \
+     -H "Content-Type: application/n-triples" \
+     --data-binary @rdf_out/person/part-00000.txt \
+     "http://localhost:5820/myDb?graph=http://acme.example/graph/people"
+```
+
+<Info>
+By default the connector also emits lightweight **ontology (TBox)** triples derived from your `@model` (class/subclass/comment, or property/domain/range). Set `emitOntology='false'` if you want to load only the instance data (ABox) and manage the schema separately in your triple store.
+</Info>
 
 ## S3 Storage
 
