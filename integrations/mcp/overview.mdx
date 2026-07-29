@@ -139,19 +139,19 @@ Don't see your client? For stdio-capable clients (IDEs, terminal agents), use th
 
 Both MCP servers dynamically expose the following tools to AI agents. The tool catalog is served by the Prometheux backend, so new capabilities are available automatically as they are added to the platform.
 
-### Projects & Data Sources
+### Ontologies & Data Sources
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `list_projects` | List all projects the user has access to | `scope` |
-| `create_project` | Create a new empty project | `name`, `description`, `scope` |
+| `list_ontologies` | List all ontologies the user has access to | `scope` |
+| `create_ontology` | Create a new empty ontology | `name`, `description`, `scope` |
 | `list_data_sources` | List all data sources with their predicate names, bind annotations, field schemas, and row counts | `scope` |
 
 ### Concepts
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `list_concepts` | List all concepts available in a project | `project_id`, `scope` |
+| `list_concepts` | List all concepts available in an ontology | `project_id`, `scope` |
 | `get_concept` | Get full detail for a single concept including its Vadalog code | `project_id`, `concept_name`, `scope` |
 | `create_concept` | Save a Vadalog program as a new named concept | `project_id`, `vadalog_code`, `description`, `scope` |
 | `update_concept` | Overwrite the Vadalog code of an existing concept | `project_id`, `concept_name`, `vadalog_code`, `description`, `scope` |
@@ -166,23 +166,23 @@ Both MCP servers dynamically expose the following tools to AI agents. The tool c
 | `fix_vadalog` | Fix a Vadalog program that failed to compile or execute | `vadalog_code`, `error_message`, `original_request` |
 | `generate_sample_facts` | Generate realistic sample input or output facts for a set of predicates | `predicates_and_schemas`, `domain_context`, `vadalog_rules`, `fact_type` |
 
-### Ontology
+### Schema
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `get_ontology` | Load the current ontology graph for a project | `project_id`, `scope` |
-| `save_ontology` | Save a complete ontology graph for a project | `project_id`, `ontology_data`, `scope` |
-| `set_concept_ontology_role` | Assign or update a single concept's role in the ontology graph | `project_id`, `concept_name`, `ontology_type`, `edge_source`, `edge_target`, `scope` |
+| `get_ontology_schema` | Load the current schema graph for an ontology | `project_id`, `scope` |
+| `save_ontology_schema` | Save a complete schema graph for an ontology | `project_id`, `ontology_schema_data`, `scope` |
+| `set_concept_ontology_role` | Assign or update a single concept's role in the schema graph | `project_id`, `concept_name`, `ontology_schema_type`, `edge_source`, `edge_target`, `scope` |
 
-### Dashboards
+### Apps
 
 | Tool | Description | Key Parameters |
 |------|-------------|----------------|
-| `list_apps` | List all apps across every project in the workspace | `scope` |
-| `get_app` | Load a single app with its full definition | `project_id`, `dashboard_id`, `scope` |
+| `list_apps` | List all apps across every ontology in the workspace | `scope` |
+| `get_app` | Load a single app with its full definition | `project_id`, `app_id`, `scope` |
 | `get_app_schema` | Return the JSON Schema for an app definition | — |
-| `save_app` | Create or update an app for a project | `project_id`, `dashboard`, `scope` |
-| `delete_app` | Permanently delete an app | `project_id`, `dashboard_id`, `scope` |
+| `save_app` | Create or update an app for an ontology | `project_id`, `app`, `scope` |
+| `delete_app` | Permanently delete an app | `project_id`, `app_id`, `scope` |
 
 ### Company Knowledge
 

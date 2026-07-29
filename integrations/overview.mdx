@@ -41,7 +41,7 @@ px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/{organization}
 
 ```python
 # Create a new project
-project_id = px.save_project(project_name="my_first_project")
+ontology_id = px.save_ontology(ontology_name="my_first_ontology")
 print(f"Created project: {project_id}")
 ```
 
@@ -213,7 +213,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ### First API Call
 
 ```bash
-curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/projects/save" \
+curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/ontologies/save" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -248,7 +248,7 @@ The API is organized into the following categories:
 |----------|-------------|
 | [**REST API conventions**](/integrations/rest-api) | Base URL, response envelope, scoping, pagination, errors |
 | [**Authentication**](/integrations/api-endpoints/authentication) | Obtain, list, and revoke API tokens |
-| [**Projects**](/integrations/api-endpoints/projects) | Project management, export/import, snapshots |
+| [**Ontologies**](/integrations/api-endpoints/ontologies) | Ontology management, export/import, snapshots |
 | [**Concepts**](/integrations/api-endpoints/concepts) | Define, run, and read results from concepts |
 | [**Data Sources**](/integrations/api-endpoints/data) | Connect data sources, infer schema, upload and preview data |
 | [**Knowledge Graph**](/integrations/api-endpoints/knowledge-graph) | Build graphs and run graph analytics |

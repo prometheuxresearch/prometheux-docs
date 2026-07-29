@@ -199,6 +199,37 @@ POST /concepts/{project_id}/rename
 | `new_name` | body | yes | — | New concept name. |
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
+## Reorder concepts
+
+Set the display order of concepts in a project. Pass the concept names in the
+desired order; optionally restrict the reordering to a single group.
+
+```
+POST /concepts/{project_id}/reorder
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | path | yes | — | The project ID. |
+| `concept_names` | body | yes | — | Array of concept names in the desired order. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
+| `group` | body | no | — | Restrict reordering to concepts in this group. |
+
+```bash
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/reorder" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "concept_names": ["raw_data", "cleaned", "final_report"], "scope": "user" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Concepts reordered successfully",
+  "data": null
+}
+```
+
 ## Execution status
 
 When a concept runs, the platform persists a snapshot of the run (one per run,

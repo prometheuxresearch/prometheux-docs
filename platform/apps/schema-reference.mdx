@@ -5,7 +5,7 @@ description: "The complete vocabulary of the app definition JSON (schema version
 
 The complete vocabulary of the app definition JSON (schema version 2). Every field here is enforced at save time; anything outside this vocabulary is rejected.
 
-Conventions used below: **required** fields are marked ✱; all concept and column references are validated against the page's project, with column names matched **case-insensitively**.
+Conventions used below: **required** fields are marked ✱; all concept and column references are validated against the page's ontology, with column names matched **case-insensitively**.
 
 ## Top level
 
@@ -35,7 +35,7 @@ Conventions used below: **required** fields are marked ✱; all concept and colu
 | `subtitle` | string | Shown under the title. |
 | `logoUrl` | string | Card / header logo. |
 
-The rendered app header also links to the app's home project automatically.
+The rendered app header also links to the app's home ontology automatically.
 
 ## Pages
 
@@ -45,7 +45,7 @@ A page is one screen of the app, rendered as a tab.
 |---|---|---|
 | `id` ✱ | string | Unique across pages. |
 | `label` ✱ | string | Page label, shown on its tab. |
-| `project.id` ✱ | string | The single project this page binds to. Every concept the page references must exist there. |
+| `project.id` ✱ | string | The single ontology this page binds to. Every concept the page references must exist there. |
 | `inputs` ✱ | array | Scalar inputs and forms (may be empty). |
 | `runGroups` ✱ | array | Execution bindings (may be empty). |
 | `sections` ✱ | array | Layout containers holding widgets. |
@@ -126,7 +126,7 @@ The unit of execution: *when the trigger fires, run these concepts with these bi
 | `label` | string | Shown on the bound run button. |
 | `trigger` ✱ | string | `button`, `form`, `auto`, or `load`. |
 | `formId` | string | Required when `trigger` is `form`; must reference a form input. |
-| `params` | object | `"paramName": "{{ref}}"` — each key must be declared as `@param` by a concept in the project; each `{{ref}}` must be published by an input, form field or row-select (dotted paths like `{{selectedRow.column}}` read a column of a selected row). Literal values are also allowed. |
+| `params` | object | `"paramName": "{{ref}}"` — each key must be declared as `@param` by a concept in the ontology; each `{{ref}}` must be published by an input, form field or row-select (dotted paths like `{{selectedRow.column}}` read a column of a selected row). Literal values are also allowed. |
 | `facts` | object | `"input_predicate": "{{formId.recordGroupId}}"` — rows become preamble facts. The predicate must be an **input predicate**: an empty concept declaring its columns via `@model`. A concept with rules of its own cannot be fed facts. |
 | `execute` ✱ | string[] | Non-empty. The concept(s) to run — typically the deepest concept(s) of the lineage region you need; upstream concepts are computed (and tappable) automatically. |
 | `outputs` ✱ | array | `{ "id", "concept" }` output taps. Widgets bind to tap ids. A tap on a concept that isn't computed by `execute` produces a save-time warning. |
@@ -191,7 +191,7 @@ Common fields: `id` ✱, `type` ✱, `label`, `span` (grid layouts, 1–12), `co
 
 ## What save-time validation checks
 
-Saving an app runs the full definition against the referenced projects. Errors block the save; each names the offending element and, for unknown names, suggests the closest match.
+Saving an app runs the full definition against the referenced ontologies. Errors block the save; each names the offending element and, for unknown names, suggests the closest match.
 
 - Structure: non-empty `name` and `pages`; unique page, input and run-group ids; every page has a resolvable `project.id`.
 - Vocabulary: every `type`, `trigger`, `layout`, `variant`, operator, color and format must be one of the values listed on this page; `span` must be an integer 1–12.

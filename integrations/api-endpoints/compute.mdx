@@ -1,0 +1,108 @@
+---
+title: "Compute"
+description: "Check whether a compute backend — a managed machine or a Databricks cluster — is available and reachable before running concepts against it."
+---
+
+The Compute API verifies that a [compute](/integrations/rest-api#compute) target
+is available before you run concepts against it. It supports two backend types:
+a managed **machine** and a **Databricks** cluster. Most integrations can rely on
+the workspace default and never call this endpoint — use it when you manage
+multiple compute backends and want to pre-flight one.
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+
+## Check availability
+
+Check a single compute target. Provide exactly one of `machine_configs` or
+`databricks_configs` inside the `compute` object — supplying neither returns a
+`400`.
+
+```
+POST /compute/availability
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `compute.machine_configs` | body | conditional | — | Managed-machine target. Provide `id` (machine ID) and/or `is_default`. |
+| `compute.databricks_configs` | body | conditional | — | Databricks target (see fields below). |
+
+**`databricks_configs` fields**
+
+| Field | Required | Description |
+|---|---|---|
+| `cluster_id` | yes | The Databricks cluster ID to check. |
+| `host` | yes | Databricks workspace hostname. |
+| `auth_mode` | yes | `"token"` or `"oauth2"`. |
+| `token` | conditional | Personal access token — required for `token` auth. |
+| `client_id`, `client_secret` | conditional | Required for `oauth2` auth. |
+| `catalog`, `schema`, `volume` | no | Unity Catalog location used to check the Prometheux installation. |
+
+### Example — managed machine
+
+```bash
+curl -X POST "$BASE_URL/compute/availability" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "compute": { "machine_configs": { "id": "machine-uuid-123" } } }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Machine compute resource is available",
+  "data": {
+    "compute": {
+      "machine": { "machine_id": "machine-uuid-123", "is_available": true },
+      "databricks": null
+    }
+  }
+}
+```
+
+### Example — Databricks
+
+```bash
+curl -X POST "$BASE_URL/compute/availability" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "compute": {
+      "databricks_configs": {
+        "cluster_id": "0712-...-abcd",
+        "host": "dbc-12345678.cloud.databricks.com",
+        "auth_mode": "token",
+        "token": "dapi...",
+        "catalog": "main",
+        "schema": "default",
+        "volume": "prometheux"
+      }
+    }
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Databricks cluster is running with Prometheux installed",
+  "data": {
+    "compute": {
+      "machine": null,
+      "databricks": {
+        "cluster": { "cluster_id": "0712-...-abcd", "state": "RUNNING", "is_running": true },
+        "prometheux": { "is_installed": true, "status": "installed" },
+        "is_available": true
+      }
+    }
+  }
+}
+```
+
+<Note>
+A Databricks target is only reported available when the cluster is `RUNNING`
+**and** Prometheux is installed on it. When it is not, `status` is `"error"` and
+the message names the unmet condition (cluster not running, or Prometheux not
+installed). An unavailable machine target returns `400`; an unreachable
+Databricks target returns `503`.
+</Note>

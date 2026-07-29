@@ -7,13 +7,13 @@ This page explains what actually happens between a click and a filled table — 
 
 ## The catalog
 
-**Apps** in the product navigation lists every app you can see, as cards showing the app's name, home project, author and creation date. Users with app-editing permission also get the authoring actions there: New App, Import, and per-card Export / Edit / Delete. Opening a card runs the app.
+**Apps** in the product navigation lists every app you can see, as cards showing the app's name, home ontology, author and creation date. Users with app-editing permission also get the authoring actions there: New App, Import, and per-card Export / Edit / Delete. Opening a card runs the app.
 
 ## Pages and variables
 
 An app with several pages renders them as tabs. Three rules define the runtime model:
 
-1. **One project per page.** Each page is bound to exactly one project, and everything on that page — concepts, parameters, columns — resolves against that project's lineage. Different pages may use different projects.
+1. **One ontology per page.** Each page is bound to exactly one ontology, and everything on that page — concepts, parameters, columns — resolves against that ontology's lineage. Different pages may use different ontologies.
 2. **Pages keep their state.** Switching pages never discards another page's inputs or results; every page stays alive in the background.
 3. **Each page has its own variables.** *Page variables* are named values: inputs publish their value (`statusPick`), forms publish their fields (`searchForm.region`), and selectable tables publish the clicked row (`selectedLead`). Run-group bindings (`{{…}}` references) read them. Variables never leak across pages.
 
@@ -41,7 +41,7 @@ A `rich_table`'s pagination, sorting and search are **server-side**: the table f
 
 ## Where apps live
 
-An app is stored in its **home project** — the project you picked when creating it (its pages may reference other projects). Along with the definition, the platform keeps the version history: every save appends a checkpoint, bookmarked and published checkpoints are kept forever, and unbookmarked history is pruned oldest-first beyond the 50 most recent.
+An app is stored in its **home ontology** — the ontology you picked when creating it (its pages may reference other ontologies). Along with the definition, the platform keeps the version history: every save appends a checkpoint, bookmarked and published checkpoints are kept forever, and unbookmarked history is pruned oldest-first beyond the 50 most recent.
 
 ## The API surface
 
@@ -50,7 +50,7 @@ Everything the catalog and editor do goes through the Apps API — apps are full
 | Operation | Endpoint |
 |---|---|
 | List all apps | `GET /apps/list` |
-| List a project's apps | `GET /apps/{project_id}/list` |
+| List an ontology's apps | `GET /apps/{project_id}/list` |
 | Get a definition | `GET /apps/{project_id}/{app_id}` |
 | Create / update (validates) | `POST /apps/{project_id}/save` |
 | Delete (incl. history) | `DELETE /apps/{project_id}/{app_id}` |
@@ -63,14 +63,14 @@ See the [Apps API reference](/integrations/api-endpoints/apps) for request and r
 ## The pieces, end to end
 
 ```
-Apps catalog ──▶ App (definition JSON, stored in its home project)
+Apps catalog ──▶ App (definition JSON, stored in its home ontology)
                    │
                    ▼ per page
               Page variables  ◀── inputs, form submits, row selections
                    │
                    ▼ trigger fires
               Run group ── params (@param) + facts (preamble) ──▶ concept execution
-                   │                                              (project lineage)
+                   │                                              (ontology lineage)
                    ▼
               Output taps ──▶ widgets (tables, charts, stat cards, text)
 ```

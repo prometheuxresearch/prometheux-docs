@@ -17,7 +17,7 @@ The editor is a live preview of your app flanked by two rails — Structure / Da
 
 - **Structure** — the outline tree: pages → sections → widgets (form fields appear as children of their form). Use it to add, select, reorder and remove elements.
 - **Data** — the wiring view: the page's inputs, forms, run groups, output taps, and the `params`/`facts` bindings between them. This is where the execution side of the app lives.
-- **Concepts** — the concept library of the page's project: browse concepts, their parameters and output columns while you wire things up.
+- **Concepts** — the concept library of the page's ontology: browse concepts, their parameters and output columns while you wire things up.
 
 ### Center: preview, Select vs. Interact
 
@@ -39,9 +39,9 @@ The toolbar's **Visual / JSON** toggle swaps the canvas for the raw definition. 
 
 ## Saving and validation
 
-**Save app** validates the entire definition against the referenced projects' concepts before anything is stored:
+**Save app** validates the entire definition against the referenced ontologies' concepts before anything is stored:
 
-- every concept in `execute`, `outputs`, `optionsSource` and `seedFrom` must exist in the page's project,
+- every concept in `execute`, `outputs`, `optionsSource` and `seedFrom` must exist in the page's ontology,
 - every `params` key must be a declared `@param`, and every `{{…}}` reference must point at a real input, form field or row-select key,
 - every column named in `columns`, `formatRules`, `columnFormats` and `optionsSource` must be a column of the relevant concept (matched case-insensitively),
 - `facts` may only feed input predicates (empty concepts declaring their columns via `@model`).
@@ -66,16 +66,16 @@ Every successful save appends a **version checkpoint**. Open the Versions panel 
 
 Apps round-trip as JSON files:
 
-- **Export** — the download action on an app's catalog card saves `<AppName>.json`, self-contained including its project reference.
-- **Import** — the import action in the catalog header takes such a file, assigns the app a fresh identity, and saves it (running the same validation as any save — so importing into a project that lacks the referenced concepts fails with the usual errors).
+- **Export** — the download action on an app's catalog card saves `<AppName>.json`, self-contained including its ontology reference.
+- **Import** — the import action in the catalog header takes such a file, assigns the app a fresh identity, and saves it (running the same validation as any save — so importing into an ontology that lacks the referenced concepts fails with the usual errors).
 
 Hovering an app's card in the catalog reveals its actions — export, edit, and delete:
 
 ![A catalog card's hover actions: export, edit, delete](/images/apps/catalog-card-actions.png)
 
-Use export/import to move an app between environments or keep a copy alongside your project assets.
+Use export/import to move an app between environments or keep a copy alongside your ontology assets.
 
 ## Creating and deleting
 
-- **New App** asks for the home project and a name, then opens the editor with an empty one-page scaffold. Nothing is persisted until your first save.
+- **New App** asks for the home ontology and a name, then opens the editor with an empty one-page scaffold. Nothing is persisted until your first save.
 - **Delete** (on the catalog card) removes the app *and its version history* after a confirmation. This cannot be undone — export a copy first if in doubt.

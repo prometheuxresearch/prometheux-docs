@@ -1,0 +1,576 @@
+---
+title: "Ontologies"
+description: "Create, load, copy, import/export, and snapshot Prometheux ontologies — the top-level containers for concepts, data sources, and schemas."
+---
+
+An **ontology** is the top-level container in Prometheux — it groups concepts, data
+sources, a schema, and compute configuration into a single workspace. The
+Ontologies API lets you create and load ontologies, copy or template them, move them
+between workspaces via export/import, and capture point-in-time snapshots.
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+Where [scope](/integrations/rest-api#scope) is accepted, valid values are `user`
+(default) and `organization`.
+
+<Note>
+On the wire the request/response payloads still use `project`-prefixed keys
+(`project`, `project_id`, `project_scope`) for backward compatibility. These name
+the ontology container.
+</Note>
+
+## Save an ontology
+
+Create or update an ontology. Sending an existing `id` updates the ontology in
+place; a new `id` (or a client-generated one) creates a new ontology.
+
+```
+POST /ontologies/save
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project` | body | yes | — | Ontology object (see fields below). |
+| `project.id` | body | yes | — | Ontology identifier. |
+| `project.name` | body | yes | — | Human-readable ontology name. |
+| `project.scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the ontology. |
+| `project.description` | body | no | — | Optional ontology description. |
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/ontologies/save" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project": {
+      "id": "my-ontology-001",
+      "name": "Supply Chain Analysis",
+      "scope": "user",
+      "description": "Vadalog models for supplier risk."
+    }
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology Supply Chain Analysis saved successfully",
+  "data": { "project_id": "my-ontology-001" }
+}
+```
+
+## List ontologies
+
+Return all ontologies visible to the authenticated user across one or more
+[scopes](/integrations/rest-api#scope). Results from multiple scopes are merged
+and deduplicated by ontology ID.
+
+```
+GET /ontologies/list
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scopes` | query | no | `"user"` | Comma-separated [scopes](/integrations/rest-api#scope), e.g. `user,organization`. |
+
+<Note>
+The `organization` scope is temporarily disabled — passing it is silently
+ignored and only `user`-scoped ontologies are returned.
+</Note>
+
+```bash
+curl "$BASE_URL/ontologies/list?scopes=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+`data` is an array of ontology objects (id, name, scope, description, and
+associated metadata).
+
+## Load an ontology
+
+Fetch full details for a single ontology by ID.
+
+```
+GET /ontologies/load
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | query | yes | — | The ontology ID to load. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+
+```bash
+curl "$BASE_URL/ontologies/load?project_id=$PROJECT_ID&scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology loaded successfully",
+  "data": {
+    "id": "my-ontology-001",
+    "name": "Supply Chain Analysis",
+    "scope": "user",
+    "description": "Vadalog models for supplier risk."
+  }
+}
+```
+
+## Copy an ontology
+
+Duplicate an existing ontology into the same or a different scope. All concepts,
+data source binds, and the schema are copied; a new ontology ID is assigned.
+
+```
+POST /ontologies/copy
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | body | yes | — | ID of the source ontology to copy. |
+| `new_project_name` | body | no | — | Name for the copy. Defaults to the source name with a suffix. |
+| `target_scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new ontology. |
+| `compute` | body | no | `{}` | Compute configuration overrides for the copy (Databricks / Snowflake). |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/copy" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_id": "'$PROJECT_ID'",
+    "new_project_name": "Supply Chain Analysis (Copy)",
+    "target_scope": "user"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology copied successfully! New ontology ID: new-ontology-abc.",
+  "data": { "new_project_id": "new-ontology-abc" }
+}
+```
+
+## Templates
+
+Templates are pre-built ontologies available to all users from a shared
+marketplace. Use `list-templates` to browse them, then `import-template` to
+instantiate one as a new ontology in your workspace.
+
+### List templates
+
+Return all available templates from the marketplace. No parameters required.
+
+```
+GET /ontologies/list-templates
+```
+
+```bash
+curl "$BASE_URL/ontologies/list-templates" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+`data` is an array of template objects (id, name, description, and metadata).
+
+### Import a template
+
+Create a new ontology from a marketplace template. Data source connections are
+validated after import; any that cannot be resolved are reported in
+`failed_datasources`.
+
+```
+POST /ontologies/import-template
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `template_id` | body | yes | — | ID of the template to import. |
+| `new_project_name` | body | no | — | Name for the resulting ontology. Defaults to the template name. |
+| `project_scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new ontology. |
+| `compute` | body | no | `{}` | Compute configuration overrides (Databricks / Snowflake). |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/import-template" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "template_id": "tmpl_supply_chain_01",
+    "new_project_name": "My Supply Chain Ontology",
+    "project_scope": "user"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Template imported successfully as ontology 'My Supply Chain Ontology'",
+  "data": {
+    "id": "onto_abc123",
+    "name": "My Supply Chain Ontology",
+    "scope": "user"
+  }
+}
+```
+
+<Tip>
+If any data sources declared in the template cannot be resolved in your
+workspace, the response includes a `failed_datasources` array listing which
+connectors need to be reconfigured before running concepts.
+</Tip>
+
+## Export an ontology
+
+Serialize a single ontology — its concepts (structure only, not cached output
+rows), data source binds, schema, and metadata — into a portable JSON payload.
+Use `import-project` to restore it.
+
+```
+POST /ontologies/export-project
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | body | yes | — | ID of the ontology to export. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/export-project" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "project_id": "'$PROJECT_ID'", "scope": "user" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology 'my-ontology-001' exported successfully. Found 12 tables with 340 total rows. (Concept data and embedding tables excluded, concepts set to not populated)",
+  "data": {
+    "project_id": "my-ontology-001",
+    "tables": { "concepts": ["..."], "datasources": ["..."] },
+    "summary": {
+      "total_tables": 12,
+      "total_rows": 340
+    }
+  }
+}
+```
+
+<Note>
+Concept execution output (cached predicate rows) and embedding tables are
+excluded from the export. All concepts are marked as not-populated so they
+must be re-run after import.
+</Note>
+
+## Import an ontology
+
+Restore an ontology from a payload previously produced by `export-project`. A new
+ontology ID is assigned; data source connections are validated after import and
+any that fail are reported in `failed_datasources`.
+
+```
+POST /ontologies/import-project
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `export_data` | body | yes | — | The `data` object from an `export-project` response. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the imported ontology. |
+| `force_new_id` | body | no | `false` | Assign a fresh ID even if the original ontology ID is available. |
+| `compute` | body | no | `{}` | Compute configuration overrides. |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/import-project" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "export_data": { "project_id": "my-ontology-001", "tables": { "..." } },
+    "scope": "user",
+    "force_new_id": false
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology imported successfully! New ontology ID: onto_xyz789. Created 12 tables, inserted 340 rows.",
+  "data": {
+    "new_project_id": "onto_xyz789",
+    "summary": {
+      "tables_created": 12,
+      "rows_inserted": 340
+    }
+  }
+}
+```
+
+## Export workspace
+
+Export every ontology in the workspace — and all workspace-level tables — in a
+single payload. Equivalent to calling `export-project` for each ontology plus the
+workspace-level tables in one request.
+
+```
+POST /ontologies/export-workspace
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) to export. |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/export-workspace" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "scope": "user" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Workspace tables exported successfully. Found 45 tables with 1200 total rows across 5 ontologies (5 successful, 0 failed). (Concept data, embedding, and user_configs tables excluded, concepts set to not populated)",
+  "data": {
+    "projects": { "...": "..." },
+    "workspace_tables": { "...": "..." },
+    "summary": {
+      "total_tables": 45,
+      "total_rows": 1200,
+      "projects_found": 5,
+      "projects_exported_successfully": 5,
+      "projects_failed": 0
+    }
+  }
+}
+```
+
+## Import workspace
+
+Restore a full workspace from a payload produced by `export-workspace`. Each
+ontology is imported in turn; partial failures are tracked per-ontology in the
+summary.
+
+```
+POST /ontologies/import-workspace
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `export_data` | body | yes | — | The `data` object from an `export-workspace` response. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the imported workspace. |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/import-workspace" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "export_data": { "..." },
+    "scope": "user"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Workspace tables imported successfully. Imported 5 ontologies (0 failed), created 45 tables, inserted 1200 rows.",
+  "data": {
+    "summary": {
+      "projects_imported": 5,
+      "projects_failed": 0,
+      "tables_created": 45,
+      "rows_inserted": 1200
+    }
+  }
+}
+```
+
+## Create from context
+
+Create a brand-new ontology from free-text context and/or file attachments. The
+platform analyzes the input with the LLM to extract entities and relationships,
+generates an ontology name and description, and uses
+[Vadalingo](/integrations/api-endpoints/vadalingo) to translate the domain
+knowledge into Vadalog concepts.
+
+This endpoint is sent as `multipart/form-data` (form fields, not JSON) because it
+accepts file uploads.
+
+```
+POST /ontologies/create-from-context
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `context` | form | conditional | `""` | Text describing the domain or task. Required if no files are attached. |
+| `scope` | form | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new ontology. |
+| `concept_names` | form | no | `"[]"` | JSON array (as a string) of existing concept names whose schemas should inform generation. |
+| `files` | form | no | — | One or more file attachments. Supported: PDF, CSV, TXT/MD, and images (JPG, PNG, GIF, BMP, TIFF, WEBP — OCR'd via computer vision). |
+
+Provide at least one of `context` or `files`; supplying neither returns a `400`.
+
+```bash
+curl -X POST "$BASE_URL/ontologies/create-from-context" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "context=Model suppliers, the parts they make, and which factories consume them." \
+  -F "scope=user" \
+  -F "files=@/local/path/supply_chain.pdf"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology 'Supply Chain Model' created successfully from context, 0 table(s), and 1 file(s)",
+  "data": {
+    "id": "onto_new123",
+    "name": "Supply Chain Model",
+    "description": "...",
+    "nodes": [ /* extracted entities */ ],
+    "edges": [ /* extracted relationships */ ]
+  }
+}
+```
+
+## Snapshots
+
+Snapshots are point-in-time captures of an ontology's full state — concepts, data
+source binds, and schema. They enable lightweight versioning without a full
+export/import cycle.
+
+<Warning>
+Restoring a snapshot overwrites the current ontology state. By default, a safety
+snapshot of the current state is automatically created before the restore
+proceeds. Set `create_safety_snapshot: false` to skip this.
+</Warning>
+
+### Create a snapshot
+
+```
+POST /ontologies/snapshots/create
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | body | yes | — | ID of the ontology to snapshot. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+| `description` | body | no | — | Optional human-readable label for the snapshot. |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/snapshots/create" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_id": "'$PROJECT_ID'",
+    "scope": "user",
+    "description": "Before schema refactor"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Snapshot created successfully for ontology 'my-ontology-001'",
+  "data": {
+    "snapshot_id": "snap_a1b2c3",
+    "project_id": "my-ontology-001",
+    "description": "Before schema refactor",
+    "created_at": "2026-06-25T09:00:00+00:00"
+  }
+}
+```
+
+### List snapshots
+
+Return snapshot metadata for an ontology. The heavy snapshot payload is omitted —
+use `restore` with a `snapshot_id` to apply one.
+
+```
+GET /ontologies/snapshots/list
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | query | yes | — | The ontology whose snapshots to list. |
+| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+
+```bash
+curl "$BASE_URL/ontologies/snapshots/list?project_id=$PROJECT_ID&scope=user" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+`data` is an array of snapshot metadata objects (snapshot\_id, description,
+created\_at).
+
+### Restore a snapshot
+
+```
+POST /ontologies/snapshots/restore
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `snapshot_id` | body | yes | — | ID of the snapshot to restore. |
+| `project_id` | body | yes | — | ID of the ontology to overwrite. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+| `create_safety_snapshot` | body | no | `true` | Capture the current state before restoring. |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/snapshots/restore" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "snapshot_id": "snap_a1b2c3",
+    "project_id": "'$PROJECT_ID'",
+    "scope": "user",
+    "create_safety_snapshot": true
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Ontology 'my-ontology-001' restored from snapshot 'snap_a1b2c3'",
+  "data": {
+    "project_id": "my-ontology-001",
+    "restored_from": "snap_a1b2c3",
+    "safety_snapshot_id": "snap_safety_d4e5f6"
+  }
+}
+```
+
+### Delete a snapshot
+
+```
+POST /ontologies/snapshots/delete
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `snapshot_id` | body | yes | — | ID of the snapshot to delete. |
+| `project_id` | body | yes | — | ID of the owning ontology. |
+| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/snapshots/delete" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "snapshot_id": "snap_a1b2c3",
+    "project_id": "'$PROJECT_ID'",
+    "scope": "user"
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Snapshot 'snap_a1b2c3' deleted successfully",
+  "data": null
+}
+```
+
+## Other operations
+
+| Operation | Endpoint | Notes |
+|---|---|---|
+| Delete an ontology or all ontologies | `POST /ontologies/cleanup` | Body: `project` object with `id` (omit to delete all user ontologies) and `scope`. Shared/scoped users cannot delete ontologies. |

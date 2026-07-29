@@ -1,0 +1,141 @@
+---
+title: "Chat History"
+description: "Browse, load, rename, and delete persisted AI agent chat sessions."
+---
+
+The Chat History API manages the persistent conversation sessions created by the
+[AI Agent](/integrations/api-endpoints/agent). Each session groups the messages
+exchanged in one conversation. Use these endpoints to list past sessions, load a
+full transcript, rename a session, or delete one.
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+
+## List sessions
+
+Return recent chat sessions, newest first. Optionally filter to a single
+project.
+
+```
+GET /chat-history/sessions
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `project_id` | query | no | — | Filter sessions to a single project. |
+| `limit` | query | no | `50` | Maximum sessions to return (1–200). |
+
+```bash
+curl "$BASE_URL/chat-history/sessions?limit=20" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Found 2 session(s)",
+  "data": [
+    {
+      "id": "sess_a1b2...",
+      "project_id": "proj_123",
+      "title": "Modeling supplier risk",
+      "created_at": "2026-06-24T08:30:00+00:00",
+      "updated_at": "2026-06-24T09:10:00+00:00"
+    }
+  ]
+}
+```
+
+## Get a session
+
+Load a single session along with all of its messages.
+
+```
+GET /chat-history/sessions/{session_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `session_id` | path | yes | — | The session ID. |
+
+```bash
+curl "$BASE_URL/chat-history/sessions/sess_a1b2..." \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Session loaded",
+  "data": {
+    "id": "sess_a1b2...",
+    "project_id": "proj_123",
+    "title": "Modeling supplier risk",
+    "created_at": "2026-06-24T08:30:00+00:00",
+    "messages": [
+      { "role": "user", "content": "Find all transitive suppliers" },
+      { "role": "assistant", "content": "I created the transitive_suppliers concept..." }
+    ]
+  }
+}
+```
+
+Returns `404` if no session with that ID exists.
+
+## Rename a session
+
+Set a new title for a session. The title must be non-empty.
+
+```
+PATCH /chat-history/sessions/{session_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `session_id` | path | yes | — | The session ID. |
+| `title` | body | yes | — | The new session title (non-empty). |
+
+```bash
+curl -X PATCH "$BASE_URL/chat-history/sessions/sess_a1b2..." \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "title": "Supplier risk model v2" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Session renamed",
+  "data": null
+}
+```
+
+Returns `404` if the session does not exist, or `400` if `title` is missing or empty.
+
+## Delete a session
+
+Permanently delete a session and all of its messages.
+
+```
+DELETE /chat-history/sessions/{session_id}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `session_id` | path | yes | — | The session ID. |
+
+```bash
+curl -X DELETE "$BASE_URL/chat-history/sessions/sess_a1b2..." \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Session deleted",
+  "data": null
+}
+```
+
+Returns `404` if the session does not exist.

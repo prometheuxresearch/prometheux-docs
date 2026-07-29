@@ -59,7 +59,7 @@
         "pages": [
           "get-started/platform-overview",
           "get-started/quickstart",
-          "get-started/your-first-project",
+          "get-started/your-first-ontology",
           {
             "group": "Installation",
             "pages": [
@@ -90,10 +90,10 @@
         "group": "Platform",
         "pages": [
           "platform/data-connections",
-          "platform/projects",
+          "platform/ontologies",
           "platform/ontology-graph",
           "platform/concepts-and-lineage",
-          "platform/project-workspace",
+          "platform/ontology-workspace",
           "platform/concept-editor",
           {
             "group": "Apps",
@@ -117,6 +117,7 @@
         "pages": [
           "integrations/overview",
           "integrations/python-sdk",
+          "integrations/sdk-reference",
           "integrations/rest-api",
           "integrations/config",
           "integrations/chat-api",
@@ -138,16 +139,21 @@
             "group": "API Reference",
             "pages": [
               "integrations/api-endpoints/authentication",
-              "integrations/api-endpoints/projects",
+              "integrations/api-endpoints/ontologies",
+              "integrations/api-endpoints/sharing",
               "integrations/api-endpoints/concepts",
               "integrations/api-endpoints/data",
+              "integrations/api-endpoints/schema",
               "integrations/api-endpoints/knowledge-graph",
               "integrations/api-endpoints/vadalog",
               "integrations/api-endpoints/vadalingo",
               "integrations/api-endpoints/apps",
               "integrations/api-endpoints/schedules",
               "integrations/api-endpoints/context-layer",
-              "integrations/api-endpoints/agent"
+              "integrations/api-endpoints/agent",
+              "integrations/api-endpoints/chat-history",
+              "integrations/api-endpoints/alerts",
+              "integrations/api-endpoints/compute"
             ]
           }
         ]
