@@ -3087,6 +3087,7 @@ How each row becomes triples is driven by the [`@model`](/vadalog/annotations#mo
 
 - **`entity`** (default) — each row is one subject. The subject IRI is minted from the primary-key column; the writer emits an `rdf:type` triple to the concept's class plus one triple per non-null column (`<base><predicate>`), typed with the appropriate `xsd:` datatype. Declared superclasses become `rdfs:subClassOf` and the `@model` description becomes an `rdfs:comment`.
 - **`triple`** — each row is one relationship triple `<from> <predicate> <to>`. The subject and object classes and the source/target id columns come from a **triple `@model`** (see below). This mode is selected **automatically** when the `@model` declares a triple; set `mode='triple'` explicitly only to override.
+- **column-driven (generic) triple** — each row is a full triple whose subject, predicate and object (and their types) are read from **named columns**, ideal for a generic `(subject, subjectType, predicate, object, objectType)` table where the predicate and types vary per row. Activated by setting `predicateColumn` (see [Example 4](#example-4-generic-triple-table-column-driven)).
 
 ### @bind options for RDF
 
@@ -3098,6 +3099,16 @@ In addition to the shared writer options (`saveMode`, `compression`, `repartitio
 - `subjectColumn`: the column whose value identifies the subject entity in `entity` mode. Falls back to the `@model` primary key, then the first column.
 - `graphIri`: the named-graph IRI added as the fourth term of every data line in `nquads` (default: the default graph).
 - `emitOntology`: whether to also emit schema-level (TBox) triples derived from the `@model` — `rdfs:Class`/`rdfs:subClassOf`/`rdfs:comment` for entities, or `rdf:Property` with `rdfs:domain`/`rdfs:range` for triples (default: `true`).
+
+Options for the **column-driven (generic) triple** mode (each accepts a column **name** or a 0-based **index**):
+
+- `predicateColumn`: the column holding the predicate of each triple. **Setting this activates the mode.**
+- `objectColumn`: the column holding the object of each triple.
+- `subjectTypeColumn`: the column holding the subject's type/class. Used to mint the subject IRI (`<base><type>/<id>`) and, when `emitOntology` is on, an `rdf:type` triple. Optional.
+- `objectTypeColumn`: the column holding the object's type. When the value is a **datatype** (`string`, `int`, `long`, `double`, `float`, `decimal`, `boolean`, `date`, `dateTime`; `xsd:`-prefixed forms accepted) the object becomes a **typed literal**; otherwise it is treated as a **class** and the object becomes an **entity IRI** (plus an `rdf:type` triple). Optional; a blank value defaults to a string literal.
+- `literalTypes`: an optional comma-separated list of extra type names to treat as (string) literals, for domain-specific datatype spellings.
+
+In this mode the subject column reuses the shared `subjectColumn` option, and `emitOntology` controls whether the inline `rdf:type` triples are emitted.
 
 Each option can also be set in `pmtx.properties` with the `rdf.` prefix (e.g. `rdf.baseIri=...`).
 
@@ -3176,6 +3187,107 @@ Turtle produces human-readable documents (one per partition); N-Quads places eve
       "rdf format='nquads', baseIri='http://acme.example/', graphIri='http://acme.example/graph/people'",
       "rdf_out", "person_nq").
 ```
+
+### Example 4: generic triple table (column-driven)
+
+If your data is already a **generic triple table** — one relation whose columns are `(subject, subjectType, predicate, object, objectType)` and where the predicate and types vary from row to row — you don't need a triple `@model` per predicate. Point the writer at the columns instead, and it emits one triple per row.
+
+Take this simple table:
+
+| subject | subject_type | predicate | object | object_type |
+|---------|--------------|-----------|--------|-------------|
+| alice   | Person       | knows     | bob    | Person      |
+| alice   | Person       | name      | Alice  | string      |
+| alice   | Person       | age       | 30     | int         |
+| alice   | Person       | livesIn   | rome   | City        |
+| rome    | City         | name      | Rome   | string      |
+
+```prolog
+@bind("facts_csv", "csv useHeaders=true", "disk/data/input", "facts.csv").
+
+facts(S, ST, P, O, OT) <- facts_csv(S, ST, P, O, OT).
+
+@output("facts").
+% The @model only names the five columns so the *Column options can reference them
+@model("facts", "['subject:string', 'subject_type:string', 'predicate:string', 'object:string', 'object_type:string']").
+
+@bind("facts",
+      "rdf format='ntriples', baseIri='http://acme.example/',
+           subjectColumn='subject', subjectTypeColumn='subject_type',
+           predicateColumn='predicate',
+           objectColumn='object', objectTypeColumn='object_type'",
+      "rdf_out", "facts").
+```
+
+The writer decides per row how to render the object from `object_type`: a **class** (`Person`, `City`) becomes an entity IRI (with an `rdf:type` triple); a **datatype** (`string`, `int`, …) becomes a typed literal:
+
+```turtle
+<http://acme.example/Person/alice> a                       <http://acme.example/Person> .
+<http://acme.example/Person/alice> <http://acme.example/knows>   <http://acme.example/Person/bob> .
+<http://acme.example/Person/bob>   a                       <http://acme.example/Person> .
+<http://acme.example/Person/alice> <http://acme.example/name>    "Alice" .
+<http://acme.example/Person/alice> <http://acme.example/age>     "30"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://acme.example/Person/alice> <http://acme.example/livesIn> <http://acme.example/City/rome> .
+<http://acme.example/City/rome>    a                       <http://acme.example/City> .
+<http://acme.example/City/rome>    <http://acme.example/name>    "Rome" .
+```
+
+<Info>
+The `rdf:type` lines can repeat (once per row that mentions an entity), because the writer stays fully parallel and never shuffles to deduplicate. RDF is a **set** of triples, so the triple store collapses the duplicates on load. Set `emitOntology='false'` to skip the `rdf:type` lines entirely.
+</Info>
+
+### From a flat table to a richer graph
+
+New to RDF? The key idea is that **everything is a triple** `subject → predicate → object`, and an entity gets "properties" simply by being the **subject of more triples**. There are no separate files or records per entity — the triple store connects everything by matching IRIs. Here is how to grow a plain edge list into a graph with entity *and* relationship properties, using a tiny "who knows whom" example.
+
+**Step 1 — a flat edge list.** You start with just the relationships:
+
+| subject | subject_type | predicate | object | object_type |
+|---------|--------------|-----------|--------|-------------|
+| alice   | Person       | knows     | bob    | Person      |
+| bob     | Person       | knows     | carol  | Person      |
+
+This already produces a valid graph — two `Person` entities linked by `knows`:
+
+```turtle
+<http://acme.example/Person/alice> <http://acme.example/knows> <http://acme.example/Person/bob> .
+<http://acme.example/Person/bob>   <http://acme.example/knows> <http://acme.example/Person/carol> .
+```
+
+**Step 2 — add properties to the entities.** To describe `alice` herself, add more rows with `alice` as the **subject** and a **datatype** `object_type` (so the object becomes a literal value, not a link):
+
+| subject | subject_type | predicate | object      | object_type |
+|---------|--------------|-----------|-------------|-------------|
+| alice   | Person       | name      | Alice       | string      |
+| alice   | Person       | age       | 30          | int         |
+
+```turtle
+<http://acme.example/Person/alice> <http://acme.example/name> "Alice" .
+<http://acme.example/Person/alice> <http://acme.example/age>  "30"^^<http://www.w3.org/2001/XMLSchema#integer> .
+```
+
+Notice `alice` is the object of a `knows` triple *and* the subject of her own `name`/`age` triples — that is what ties the graph together.
+
+**Step 3 — add properties to a *relationship*.** A single triple can't carry extra fields (it's only subject–predicate–object). So when the *link* itself needs properties — say you want to record **since when** alice knows bob — you promote the relationship to its own entity (a "linking node"). Instead of one `knows` edge, emit a `Friendship` node that points at both people and carries the extra data:
+
+| subject | subject_type | predicate | object | object_type |
+|---------|-------------|-----------|--------|-------------|
+| f1      | Friendship  | from      | alice  | Person      |
+| f1      | Friendship  | to        | bob    | Person      |
+| f1      | Friendship  | since     | 2019   | int         |
+
+```turtle
+<http://acme.example/Friendship/f1> a                        <http://acme.example/Friendship> .
+<http://acme.example/Friendship/f1> <http://acme.example/from>  <http://acme.example/Person/alice> .
+<http://acme.example/Friendship/f1> <http://acme.example/to>    <http://acme.example/Person/bob> .
+<http://acme.example/Friendship/f1> <http://acme.example/since> "2019"^^<http://www.w3.org/2001/XMLSchema#integer> .
+```
+
+All three steps use the **same** generic table and the **same** `@bind` — you only add rows. The rule of thumb:
+
+- **Object is another thing** → give the row an entity `object_type` (a class like `Person`, `City`, `Batch`) → you get a **link**.
+- **Object is a value** → give the row a datatype `object_type` (`string`, `int`, `date`, …) → you get a **literal property**.
+- **The relationship needs its own fields** → make it a subject (a linking node like `Friendship`) and attach `from`, `to`, and its properties as ordinary rows.
 
 ### Loading into a triple store
 
