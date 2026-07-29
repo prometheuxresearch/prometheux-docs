@@ -1,0 +1,79 @@
+---
+title: "Ontologies"
+description: "Organize your work in Prometheux with ontologies: create, share, template, and move them across workspaces."
+---
+
+An **ontology** is the unit of work in Prometheux. It groups everything you build
+around a problem — concepts, schemas, data source connections, and results —
+so you can manage, share, and move that work as a whole.
+
+{/* NEEDS_REVIEW: This page is derived from the Ontologies API reference. Confirm exact UI
+labels, buttons, and navigation in the product before publishing. */}
+
+## Ontology scopes
+
+Every ontology belongs to a **scope** that controls who can see and use it:
+
+- `user` — private to your own workspace (the default scope).
+- `organization` — shared across your organization.
+
+When listing ontologies you can filter by one or more scopes, and when copying or
+importing an ontology you choose the scope it lands in.
+
+## Working with ontologies
+
+The platform supports the full lifecycle of an ontology. Each of these operations
+is also available through the SDK and REST API (see the
+[Ontologies API reference](/integrations/api-endpoints/ontologies)):
+
+- **Create or update** — save a new ontology with a name and optional description, or update an existing one.
+- **List** — browse the ontologies available in your selected scopes.
+- **Load** — open a specific ontology by its ID.
+- **Copy** — duplicate an ontology within or between scopes/workspaces.
+- **Export / Import** — export an ontology (including its data and metadata) to a portable file, and import it back into a workspace later.
+- **Cleanup** — delete a single ontology or remove all of your ontology resources.
+
+## Templates
+
+Prometheux ships with a marketplace of **ontology templates** — pre-built
+starting points for common use cases (for example, financial analysis or
+customer analytics). You can browse the available templates and import one as a
+new ontology to get going quickly without building from scratch.
+
+## Workspaces
+
+A **workspace** holds all the ontologies for a given scope. You can export an
+entire workspace — every ontology and its associated data — and import it back
+elsewhere, which is useful for backups or moving work between environments.
+
+## Quick example (SDK)
+
+The snippet below shows the core ontology lifecycle using the Python SDK:
+
+```python
+import prometheux_chain as px
+import os
+
+# Set up authentication and configuration
+os.environ['PMTX_TOKEN'] = 'my_pmtx_token'
+px.config.set('JARVISPY_URL', "https://api.prometheux.ai/jarvispy/my-org/my-user")
+
+# Create a new ontology
+ontology_id = px.save_ontology(ontology_name="test_ontology")
+
+# List all ontologies
+ontologies = px.list_ontologies()
+print(f"Available ontologies: {ontologies}")
+
+# Load the created ontology
+ontology_data = px.load_ontology(ontology_id)
+
+# Clean up when done
+px.cleanup_ontologies(ontology_id=ontology_id)
+```
+
+## Next steps
+
+- [Ontologies API reference](/integrations/api-endpoints/ontologies) — full SDK and REST details for every ontology operation.
+- [Concepts and lineage](/platform/concepts-and-lineage) — the building blocks you author inside an ontology.
+- [Platform overview](/get-started/platform-overview) — how ontologies fit into the wider platform.

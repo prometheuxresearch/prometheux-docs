@@ -1,12 +1,12 @@
 ---
-title: "Project Workspace"
-description: "A tour of the project workspace (the Lineage view) — the Explorer tree, the Concepts and Data tabs, and the lineage canvas."
+title: "Ontology Workspace"
+description: "A tour of the ontology workspace (the Lineage view) — the Explorer tree, the Concepts and Data tabs, and the lineage canvas."
 ---
 
-Opening a project takes you into the **project workspace** — the Lineage view.
+Opening an ontology takes you into the **ontology workspace** — the Lineage view.
 It has three regions:
 
-- The **Explorer** on the left — the navigation tree of every concept in the project.
+- The **Explorer** on the left — the navigation tree of every concept in the ontology.
 - The **lineage canvas** in the center — a visual graph of how your concepts and data sources depend on one another.
 - The **Concepts** and **Data** tabs on the right — for browsing the concepts and data sources you can build with.
 
@@ -15,7 +15,7 @@ Clicking a concept opens it in the **editor** — documented in detail on
 
 ## The Explorer
 
-The Explorer is your project's table of contents. Toggle it with the **Explorer**
+The Explorer is your ontology's table of contents. Toggle it with the **Explorer**
 tab on the far-left edge. Each row is one concept; the icon shows its type:
 
 | Icon | Concept type |
@@ -27,15 +27,15 @@ tab on the far-left edge. Each row is one concept; the icon shows its type:
 
 A small **green dot** next to a concept means it has **unsaved changes**.
 
-<Frame caption="The Explorer tree — every concept in the project, with the header actions (refresh, save all, search, collapse/expand, new cell, new group) along the top.">
-  <img src="/images/project-workspace/explorer.png" alt="The Explorer tree" />
+<Frame caption="The Explorer tree — every concept in the ontology, with the header actions (refresh, save all, search, collapse/expand, new cell, new group) along the top.">
+  <img src="/images/ontology-workspace/explorer.png" alt="The Explorer tree" />
 </Frame>
 
 ### Explorer header actions
 
 | Button | Tooltip | What it does |
 |---|---|---|
-| Refresh | **Refresh concepts** | Reloads the project's concepts and lineage. |
+| Refresh | **Refresh concepts** | Reloads the ontology's concepts and lineage. |
 | Save | **Save all** | Saves every concept with unsaved changes. Highlights when changes are pending. |
 | Search | **Search cells** | Opens a filter box that matches on code, description, and output predicate. |
 | Collapse / Expand | **Collapse all groups** / **Expand all groups** | Folds or unfolds every group at once. |
@@ -54,8 +54,8 @@ A small **green dot** next to a concept means it has **unsaved changes**.
 
 ## Concepts
 
-The **Concepts** tab on the right edge lists every concept in the project
-(including those defined as ontology nodes) as a browsable reference. Click the tab
+The **Concepts** tab on the right edge lists every concept in the ontology
+(including those defined as schema nodes) as a browsable reference. Click the tab
 to open or close it; it has its own **Search**, **Collapse all / Expand all**, and
 **Refresh** controls. Each entry is expandable and shows the concept's **fields and
 types**.
@@ -64,8 +64,8 @@ types**.
 - **Copy concept** copies the concept's signature — `name(field1, field2, …)` —
   to your clipboard, ready to paste into a rule.
 
-<Frame caption="The Concepts tab — every concept in the project with its fields and types, each one expandable and ready to copy or jump to in the editor.">
-  <img src="/images/project-workspace/concepts_panel.png" alt="The Concepts tab" />
+<Frame caption="The Concepts tab — every concept in the ontology with its fields and types, each one expandable and ready to copy or jump to in the editor.">
+  <img src="/images/ontology-workspace/concepts_panel.png" alt="The Concepts tab" />
 </Frame>
 
 ## Data
@@ -83,12 +83,12 @@ and path.
 | Add a source | Connect new sources from the [Data Sources](/platform/data-connections) page; they appear here automatically. |
 
 <Frame caption="The Data tab — sources grouped by location (Local Files, S3), each showing its column count and expandable schema.">
-  <img src="/images/project-workspace/data_panel.png" alt="The Data tab" />
+  <img src="/images/ontology-workspace/data_panel.png" alt="The Data tab" />
 </Frame>
 
 ## The lineage canvas
 
-The center canvas draws your project as a **dependency graph**: each concept is a
+The center canvas draws your ontology as a **dependency graph**: each concept is a
 card, each data source is a node, and the edges show what feeds what — this is
 your data lineage at a glance.
 
@@ -104,7 +104,7 @@ your data lineage at a glance.
   and the standard zoom / fit controls to navigate large graphs.
 
 <Frame caption="The lineage canvas — concept cards connected by dependency edges, each with a status dot, with a data source node feeding the chain.">
-  <img src="/images/project-workspace/lineage_canvas.png" alt="The lineage canvas" />
+  <img src="/images/ontology-workspace/lineage_canvas.png" alt="The lineage canvas" />
 </Frame>
 
 ## Where to go next

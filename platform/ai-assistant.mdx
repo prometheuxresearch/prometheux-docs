@@ -1,13 +1,13 @@
 ---
 title: "AI Assistant"
-description: "The conversational AI agent that works across your whole Prometheux workspace — it can create projects, connect and generate data, write and run concepts, build ontologies and apps, ingest documents, and remember context."
+description: "The conversational AI agent that works across your whole Prometheux workspace — it can create ontologies, connect and generate data, write and run concepts, build schemas and apps, ingest documents, and remember context."
 ---
 
 The **AI Assistant** is a conversational agent built into the platform. Unlike a
 plain chatbot, it doesn't just answer questions — it can **do the work for you**.
-Ask it in plain language and it will create projects, connect or generate data,
-write and run Vadalog concepts, read back results, model ontologies, build
-dashboards, and pull knowledge out of documents you upload.
+Ask it in plain language and it will create ontologies, connect or generate data,
+write and run Vadalog concepts, read back results, model schemas, build
+apps, and pull knowledge out of documents you upload.
 
 It plans and chains multiple steps in a single turn, streams its progress as it
 goes, asks before doing anything destructive, and asks clarifying questions when
@@ -22,7 +22,7 @@ your request is ambiguous rather than guessing.
 | Entry point | How to open it |
 |---|---|
 | **Workspace home** | The chat is front and center on the Home screen — the default place to start. |
-| **Anywhere in a project** | Click the floating **Open AI Assistant** button (bottom-right) to open the docked side panel. |
+| **Anywhere in an ontology** | Click the floating **Open AI Assistant** button (bottom-right) to open the docked side panel. |
 | **A specific concept** | In a saved concept's toolbar, click **✨ Ask AI** to open the assistant focused on that concept. |
 
 The panel header has a **New chat** button, a **Chat history** button, and a small
@@ -36,21 +36,21 @@ includes example prompts — phrase your own requests the same conversational wa
 ### Explore your workspace
 
 Ask about anything you already have and the assistant will look it up: your
-projects, connected data sources (with their columns and row counts), concepts
-and their code, ontologies, and apps. It can also preview the first rows of
+ontologies, connected data sources (with their columns and row counts), concepts
+and their code, schemas, and apps. It can also preview the first rows of
 any data source.
 
 > *"What data sources do I have connected?"*
 > *"Preview the transactions table."*
-> *"List the concepts in this project and show me what `final_report` does."*
+> *"List the concepts in this ontology and show me what `final_report` does."*
 
-### Create and manage projects
+### Create and manage ontologies
 
-The assistant can spin up a new project for you, and take a **snapshot**
+The assistant can spin up a new ontology for you, and take a **snapshot**
 (point-in-time version) before you make big changes so you can roll back.
 
-> *"Create a project called Company Ownership for analysing shareholder data."*
-> *"Snapshot this project before we restructure the ontology."*
+> *"Create an ontology called Company Ownership for analysing shareholder data."*
+> *"Snapshot this ontology before we restructure the schema."*
 
 ### Bring in data — connect, upload, or generate
 
@@ -86,15 +86,15 @@ and run it"* typically becomes: inspect your data sources → generate the Vadal
 save the concept → run it → show you the output, all in one turn.
 </Tip>
 
-### Model your domain (ontology)
+### Model your domain (schema)
 
-The assistant can read your project's **ontology** and build or update it —
+The assistant can read your ontology's **schema** and build or update it —
 adding entity types (nodes) and relationship types (edges). Because schema
 changes are harder to undo, it shows you the change and **asks for confirmation
 first**.
 
 > *"Add a Company node and a CONTROLS edge between companies."*
-> *"What does my current ontology look like?"*
+> *"What does my current schema look like?"*
 
 ### Build apps
 
@@ -149,7 +149,7 @@ one concept or building a whole workflow.
 **It confirms before risky changes — but not for things you asked for.** If you
 explicitly tell it to create or change something, it just does it. If it's
 *proactively suggesting* something you didn't ask for, or the action is hard to
-undo (changing the ontology, deleting an app, creating mock data), it shows
+undo (changing the schema, deleting an app, creating mock data), it shows
 you what it intends to do and waits for your go-ahead.
 
 **It asks instead of guessing.** When a request can't be pinned down — e.g. you
@@ -159,12 +159,12 @@ assuming what you meant.
 
 **It remembers.** Each conversation keeps full context, so follow-ups just work.
 Durable facts and preferences are saved to the Context Layer and recalled in later
-sessions. You can switch projects mid-conversation and it reloads context for the
-new project.
+sessions. You can switch ontologies mid-conversation and it reloads context for the
+new ontology.
 
 **It stays on topic.** The assistant is scoped to your data, Vadalog, and the
 Prometheux platform; it politely declines unrelated requests. If your account
-isn't allowed to perform an action (for example, editing projects), it tells you
+isn't allowed to perform an action (for example, editing ontologies), it tells you
 that action is outside what it can do for you.
 
 ## Attaching files
