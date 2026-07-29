@@ -3067,6 +3067,8 @@ Prometheux can serialize a reasoning result to **RDF** files on disk or object s
 
 The `rdf` connector is **write-only** (an export target): you bind it on an `@output` concept exactly like the Parquet writer, using the same `<schema>/<table>` path convention. The output is a **directory** of RDF files plus a `_SUCCESS` marker — one file per Spark partition — so large results are written in parallel across the cluster.
 
+The same row-to-triple mapping can also target a **relational or warehouse connector** (PostgreSQL, Databricks, Snowflake, …) instead of files, by adding `outputFormat=rdf` to that connector's `@bind` — see [Writing RDF triples to a database](#writing-rdf-triples-to-a-database).
+
 ### Serialization formats
 
 Choose the serialization with the `format` option:
@@ -3288,6 +3290,60 @@ All three steps use the **same** generic table and the **same** `@bind` — you 
 - **Object is another thing** → give the row an entity `object_type` (a class like `Person`, `City`, `Batch`) → you get a **link**.
 - **Object is a value** → give the row a datatype `object_type` (`string`, `int`, `date`, …) → you get a **literal property**.
 - **The relationship needs its own fields** → make it a subject (a linking node like `Friendship`) and attach `from`, `to`, and its properties as ordinary rows.
+
+### Writing RDF triples to a database
+
+The RDF row-to-triple mapping is not tied to files. Adding `outputFormat=rdf` to **any** relational or warehouse `@bind` — PostgreSQL, MariaDB, SQL Server, SQLite, Teradata, ClickHouse, Databricks, Snowflake, MongoDB, and even the file connectors Parquet / CSV — reuses the *exact same* mapping (entity, triple and column-driven modes, plus the `@model` TBox), but instead of serializing files it persists a plain **triple table** `(subject, predicate, object)` in the target.
+
+This is the right choice when a downstream system consumes triples through **SQL** rather than by importing RDF files: you get a normalized `subject`/`predicate`/`object` table that any query engine or BI tool can read directly.
+
+- The target receives three string columns `subject`, `predicate`, `object` (a fourth `graph` column is added when `format=nquads`).
+- Every RDF mapping option (`format`, `baseIri`, `mode`, `subjectColumn`, `predicateColumn`, `objectColumn`, `subjectTypeColumn`, `objectTypeColumn`, `graphIri`, `emitOntology`, `literalTypes`) behaves exactly as for the file writer. These options are consumed by the RDF mapper and are **never forwarded** to the database driver.
+- Every other option on the bind (connection `host`/`port`, credentials, `saveMode`, `compression`, `repartition`, …) is handled by the target connector as usual.
+- Dedicated graph stores — **Neo4j** and native RDF triple stores — are intentionally out of scope for `outputFormat=rdf`. Use their native connectors, or the file `rdf` writer plus a bulk load (see below).
+
+Example — write the generic triple table from [Example 4](#example-4-generic-triple-table-column-driven) into a PostgreSQL table instead of files. Only the connector and the `outputFormat=rdf` flag change; the RDF options are identical:
+
+```prolog
+@bind("facts_csv", "csv useHeaders=true", "disk/data/input", "facts.csv").
+
+facts(S, ST, P, O, OT) <- facts_csv(S, ST, P, O, OT).
+
+@output("facts").
+@model("facts", "['subject:string', 'subject_type:string', 'predicate:string', 'object:string', 'object_type:string']").
+
+% Target is a PostgreSQL table 'facts_triples'; the RDF options are the same as the file writer
+@bind("facts",
+      "postgresql outputFormat=rdf, format=ntriples, baseIri='http://acme.example/',
+           subjectColumn='subject', subjectTypeColumn='subject_type',
+           predicateColumn='predicate',
+           objectColumn='object', objectTypeColumn='object_type'",
+      "my_database", "facts_triples").
+```
+
+The resulting `facts_triples` table holds one row per triple (IRIs are stored as their full string, literals as their bare lexical value):
+
+| subject | predicate | object |
+|---------|-----------|--------|
+| http://acme.example/Person/alice | http://www.w3.org/1999/02/22-rdf-syntax-ns#type | http://acme.example/Person |
+| http://acme.example/Person/alice | http://acme.example/knows | http://acme.example/Person/bob |
+| http://acme.example/Person/alice | http://acme.example/name | Alice |
+| http://acme.example/Person/alice | http://acme.example/age | 30 |
+| … | … | … |
+
+Because it is an ordinary table, you can read it back with the plain connector and continue reasoning over the triples:
+
+```prolog
+@bind("facts_triples", "postgresql", "my_database", "facts_triples").
+
+triple(S, P, O) <- facts_triples(S, P, O).
+
+@output("triple").
+```
+
+<Info>
+Literals are persisted as their bare lexical value (e.g. `Alice`, `30`) so the table stays easy to query with SQL. The datatype / language tag carried in a file serialization is dropped in this relational view — it is a "triples as a table" projection, not a lossless RDF store.
+</Info>
 
 ### Loading into a triple store
 
