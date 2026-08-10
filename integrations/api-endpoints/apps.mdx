@@ -50,12 +50,12 @@ curl "$BASE_URL/apps/list?scope=user" \
 Return metadata for all apps in a single project. No definition payloads are included.
 
 ```
-GET /apps/{project_id}/list
+GET /apps/{ontology_id}/list
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
@@ -70,12 +70,12 @@ curl "$BASE_URL/apps/$PROJECT_ID/list?scope=user" \
 Return a single app with its full definition.
 
 ```
-GET /apps/{project_id}/{app_id}
+GET /apps/{ontology_id}/{app_id}
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `app_id` | path | yes | — | The app ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
@@ -104,12 +104,12 @@ Returns `404` if no app with that ID exists in the project.
 Create or update an app. When `app.id` is absent, a new UUID is generated server-side. The assigned ID is always returned in the response. The definition is [validated](/platform/apps/schema-reference#what-save-time-validation-checks) against the referenced projects' concepts; validation failures return `400` with the full list of errors and nothing is saved.
 
 ```
-POST /apps/{project_id}/save
+POST /apps/{ontology_id}/save
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `app` | body | yes | — | The app definition object. Include `id` to update an existing app; omit it to create a new one. (`dashboard` is accepted as a legacy alias for this key.) |
 
@@ -145,12 +145,12 @@ Every successful save also appends a version checkpoint (see below).
 Permanently delete an app, including its version history. This action is irreversible.
 
 ```
-DELETE /apps/{project_id}/{app_id}
+DELETE /apps/{ontology_id}/{app_id}
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `app_id` | path | yes | — | The app ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
@@ -172,9 +172,9 @@ curl -X DELETE "$BASE_URL/apps/$PROJECT_ID/a1b2c3d4-...?scope=user" \
 Every save appends a version checkpoint. Checkpoints can be listed, restored (non-destructively) and bookmarked — bookmarked versions are never pruned.
 
 ```
-GET   /apps/{project_id}/{app_id}/versions
-POST  /apps/{project_id}/{app_id}/versions/{version_id}/restore
-PATCH /apps/{project_id}/{app_id}/versions/{version_id}/bookmark
+GET   /apps/{ontology_id}/{app_id}/versions
+POST  /apps/{ontology_id}/{app_id}/versions/{version_id}/restore
+PATCH /apps/{ontology_id}/{app_id}/versions/{version_id}/bookmark
 ```
 
-All three take the usual `project_id` / `app_id` path parameters and optional `scope`. `bookmark` requires a JSON body `{ "bookmarked": true|false }` with an optional `"label"`. See [How apps run](/platform/apps/how-apps-run#where-apps-live) for the retention rules.
+All three take the usual `ontology_id` / `app_id` path parameters and optional `scope`. `bookmark` requires a JSON body `{ "bookmarked": true|false }` with an optional `"label"`. See [How apps run](/platform/apps/how-apps-run#where-apps-live) for the retention rules.

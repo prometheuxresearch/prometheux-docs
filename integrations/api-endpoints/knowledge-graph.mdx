@@ -32,12 +32,12 @@ Two pagination modes are available:
   from the cached result. Path results are capped at 50,000 paths.
 
 ```
-POST /kgs/{project_id}/build-graph/{output_predicate}
+POST /kgs/{ontology_id}/build-graph/{output_predicate}
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `output_predicate` | path | yes | — | Name of the edge predicate to graph. |
 | `column_roles` | body | yes | — | Object mapping `"source"` and `"target"` to column positions (integers ≥ 0). Optional `"edge_value"` sets the edge label column. |
 | `compute` | body | no | — | [Compute](/integrations/rest-api#compute) target. |
@@ -102,12 +102,12 @@ result merged back onto the node list — each node gains an `analytics` field
 with the computed value (e.g. a PageRank score or a connected-component ID).
 
 ```
-POST /kgs/{project_id}/graph-analytics/{output_predicate}
+POST /kgs/{ontology_id}/graph-analytics/{output_predicate}
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `output_predicate` | path | yes | — | Name of the edge predicate to analyse. |
 | `column_roles` | body | yes | — | Object with `"source"` and `"target"` column positions (integers ≥ 0). |
 | `function` | body | yes | — | Analytics function to run. Must be a key returned by [List graph functions](#list-graph-functions). |
@@ -216,12 +216,12 @@ a transitive dependency between two concepts. Use this to understand how
 concepts relate to one another before building or exploring a knowledge graph.
 
 ```
-POST /kgs/{project_id}/visualize-concept-lineage
+POST /kgs/{ontology_id}/visualize-concept-lineage
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `project.scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. Passed as `{ "project": { "scope": "user" } }`. |
 
 ### Example
