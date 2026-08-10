@@ -1,0 +1,127 @@
+---
+title: "Context as code"
+description: "Keep the context layer — the knowledge notes your AI assistant reads — as files in your repo, and sync them idempotently with px context apply."
+---
+
+The [context layer](/platform/ai-assistant) is the knowledge your lineage, the in-app
+assistant, and any connected LLM read. `px` lets you keep it as files in your repo and
+sync it with `px context apply` — without migrating your existing docs.
+
+## The model: manifests point at pristine bodies
+
+The only Prometheux-aware artifact is a **context-set manifest** — a `*.context.md` file
+that carries the config and *references* plain body files. The bodies stay untouched, so
+you can point at docs you already have (a wiki, a `docs/` tree, playbooks).
+
+```
+context/
+  market.context.md          # a context set: config + references
+  playbooks.context.md
+facts/                       # pristine bodies — no frontmatter, reusable, could be your existing docs
+  market-segments.md
+  market-trends.md
+```
+
+A manifest:
+
+```yaml
+# context/market.context.md
+---
+scope: global               # global | project  (declared here, not inferred from the folder)
+activation: always          # retrieved | always | on_demand
+kind: fact
+notes:
+  - facts/market-segments.md
+  - facts/market-trends.md
+  - path: facts/market-forecast.md
+    activation: on_demand     # per-entry override of the set default
+links:
+  - from: facts/market-segments.md
+    to: concept:credit_risk_score
+    relation: relates_to
+---
+Optional prose for the human reader; ignored by import.
+```
+
+## Fields
+
+| Field | Values | Meaning |
+|---|---|---|
+| `scope` | `global` \| `project` | `global` is exposed to every project; `project` belongs to this project. Declared in the manifest, **not** inferred from the folder. |
+| `activation` | `retrieved` \| `always` \| `on_demand` | How the note is served (below). |
+| `kind` | e.g. `fact`, `rule` | Default kind for the set. `type: rule` is sugar for `activation: always`. |
+| `notes` | list of body paths | The body files this set publishes (one note each). Per-entry overrides allowed. |
+| `links` | list | Authored edges (below). |
+
+### Activation behaviours
+
+- **`retrieved`** (default) — the note lives in the semantic pool and is looked up only
+  when a request is relevant. Costs nothing when unused.
+- **`always`** — a **rule**: injected verbatim into the assistant's instructions on every
+  request. Strongest guarantee, but costs tokens every message.
+- **`on_demand`** — only the title is listed each request; the assistant fetches the body
+  when it decides it needs it. Good for long playbooks.
+
+### Links
+
+Declared in the manifest, so bodies stay pristine. Relations: `relates_to`, `defines`,
+`example_of`, `contradicts`. Link a note to a lineage concept with
+`to: concept:<predicate>`.
+
+<Note>
+`derived_from` provenance edges are platform-owned (emitted by context-concept runs) —
+never author them.
+</Note>
+
+## Applying context
+
+```bash
+px context apply             # create/update notes + links from every *.context.md
+px context apply --prune     # also delete notes dropped from the manifests
+```
+
+`context apply` is **idempotent**: a small CLI-owned state file
+(`.px/context-state.json`) maps each note's identity `(manifest, referenced path)` to its
+server note id + a content hash, so re-applying updates changed notes, skips unchanged
+ones, and (with `--prune`) removes notes you dropped.
+
+<Tip>
+Commit `.px/context-state.json` so re-apply stays idempotent across machines and CI. If
+it's lost, `context apply` reconciles against the server's existing notes by content so
+notes aren't duplicated.
+</Tip>
+
+## Duplicates are allowed
+
+Identity is the manifest reference, not the body path — so the **same body listed in two
+sets becomes two notes**, each with its own scope/activation. `px` never merges or
+dedupes; the plan *surfaces* duplicates so they're visible, but leaves them to you.
+
+## Sync model — one-way, files win
+
+The manifests + bodies in your repo are the source of truth; the platform holds a
+retrieval/embedding replica. A set under git sync is git-owned (in-app edits to its notes
+are locked/flagged, like ArgoCD owning a namespace). Context not under git stays in-app
+editable. There is no merge logic.
+
+## Sync from CI
+
+```yaml
+# .github/workflows/prometheux-context.yml
+name: Sync context to Prometheux
+on:
+  push:
+    branches: [main]
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install prometheux
+      - run: px context apply --prune -y
+        env:
+          JARVISPY_URL: ${{ secrets.JARVISPY_URL }}
+          PMTX_TOKEN: ${{ secrets.PMTX_TOKEN }}
+```
+
+See [CI/CD](/integrations/cli/ci-cd) for applying lineage the same way.

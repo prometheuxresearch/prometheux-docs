@@ -1,0 +1,102 @@
+---
+title: "Overview"
+description: "px — author a Prometheux workspace (lineage + context) as files, then plan and apply it to the platform over REST."
+---
+
+`px` is the Prometheux command-line tool. It lets you keep an entire Prometheux
+environment — the **lineage** (concepts, datasources, ontology, apps) *and* the
+**context layer** (knowledge notes) — as a directory of files that you author locally,
+review in a pull request, and **apply** to a Prometheux platform over REST.
+
+It is a thin, files-first layer over the [`prometheux_chain` Python SDK](/integrations/python-sdk):
+`px` owns the file format, the offline validator, and the `plan`/diff engine; every
+platform call underneath goes through the SDK.
+
+<CardGroup cols={2}>
+  <Card title="Install px" icon="download" href="/integrations/cli/installation">
+    uv, pipx, or pip — plus one-liners for macOS/Linux and Windows.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/integrations/cli/quickstart">
+    Scaffold → author → validate → plan → apply in five commands.
+  </Card>
+  <Card title="Author a workspace" icon="folder-tree" href="/integrations/cli/authoring">
+    The file model: manifests, concept kinds, datasources.
+  </Card>
+  <Card title="Add the agent skill" icon="robot" href="/integrations/cli/agent-skill">
+    Give Claude Code / Cursor full knowledge of `px` — no repo to clone.
+  </Card>
+</CardGroup>
+
+## Why lineage as code
+
+Everything a Prometheux project is — concepts, their bindings, the ontology, apps, and
+the notes your AI assistant reads — becomes plain files in one git repo. That gives you:
+
+- **Version control & review** — diff a change, review it in a PR, roll back with git.
+- **Reproducibility** — recreate a project on another account or environment from the files.
+- **Automation** — apply from CI on every merge (see [CI/CD](/integrations/cli/ci-cd)).
+- **Agent authoring** — a coding agent writes the files and runs `px` for you
+  (see [the agent skill](/integrations/cli/agent-skill)).
+
+## Mental model
+
+<Steps>
+  <Step title="Write logic, derive the graph">
+    You never hand-write lineage edges. A concept's Vadalog head/body predicates *are*
+    the edges — if concept `risk` references predicate `customer` in its body, that
+    reference is the edge. `px plan` reconstructs the whole graph from your rules.
+  </Step>
+  <Step title="A concept is a struct; its body is a projection">
+    Each concept is a body file (the logic) plus, for most kinds, a sibling
+    `.meta.yaml` envelope (binds, output predicate, fields). See [concept kinds](/integrations/cli/authoring#concept-kinds).
+  </Step>
+  <Step title="The database is the state">
+    There is no external state file to lock or corrupt. `px plan` pulls current server
+    state and diffs your local files against it, Terraform-style — then `px apply`
+    reconciles them.
+  </Step>
+  <Step title="Safe by default">
+    A concept is never deleted just because its file vanished. Pruning is explicit
+    (`px apply --prune`). Secrets are referenced as `${ENV_VAR}` and never written to files.
+  </Step>
+</Steps>
+
+## The workflow
+
+```bash
+px init my-workspace     # scaffold a workspace
+# ...author files...
+px validate              # offline schema + structural checks
+px login                 # authenticate to the platform
+px plan                  # preview create / update / delete + the re-run cascade
+px apply                 # reconcile local files to the platform
+```
+
+`init` and `validate` are **fully offline** — no platform connection, no SDK. Only
+`login`, `pull`, `plan`, `apply`, `run`, `status`, `delete`, and `context apply` reach
+the platform.
+
+## How it fits with the rest of Prometheux
+
+| Surface | Use it for |
+|---|---|
+| **px CLI** (this section) | Author & deploy a whole project as files; GitOps; agent-driven authoring. |
+| [Python SDK](/integrations/python-sdk) | Programmatic access to individual platform operations from Python. |
+| [REST API](/integrations/rest-api) | Direct HTTP integration. |
+| [MCP](/integrations/mcp/overview) | Connect an AI client to the platform for interactive, in-chat operations. |
+
+`px` and the SDK share one brand and one binding layer: the CLI orchestrates the same
+`px.*` SDK calls the MCP tools use, so behaviour is identical across the CLI, CI, and
+interactive use.
+
+## Requirements
+
+- Python ≥ 3.9 (the `px` console script ships in the `prometheux` package).
+- A Prometheux platform URL + API token for the online commands
+  (see [Installation → Authenticate](/integrations/cli/installation#authenticate)).
+
+<Note>
+The CLI is open-source (Apache-2.0) — the repository is
+[`prometheuxresearch/prometheux-cli`](https://github.com/prometheuxresearch/prometheux-cli).
+All platform IP stays server-side; the client only speaks the REST surface any client already uses.
+</Note>
