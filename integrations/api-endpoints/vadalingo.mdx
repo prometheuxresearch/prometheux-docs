@@ -10,12 +10,12 @@ Vadalingo is the translation layer that converts natural language descriptions, 
 Translate a free-text description into a Vadalog program. The endpoint automatically loads every concept schema in the project to guide translation. Tag specific concepts with `@concept_name` in `domain_knowledge` to restrict context to only those schemas.
 
 ```
-POST /vadalingo/{project_id}/translate/nl-to-vadalog
+POST /vadalingo/{ontology_id}/translate/nl-to-vadalog
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `domain_knowledge` | body | yes | — | Natural language description to translate. Reference a specific concept's schema with `@concept_name` (e.g. `"find all @owner records"`). |
 
 ### Example
@@ -52,12 +52,12 @@ If no `@` tags are present, all concept schemas in the project are passed as con
 Translate a SQL query into an equivalent Vadalog program.
 
 ```
-POST /vadalingo/{project_id}/translate/sql-to-vadalog
+POST /vadalingo/{ontology_id}/translate/sql-to-vadalog
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `sql_data` | body | yes | — | SQL query string to translate. |
 
 ### Example
@@ -88,12 +88,12 @@ curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/sql-to-vadalog" \
 Translate RDF triples into Vadalog rules.
 
 ```
-POST /vadalingo/{project_id}/translate/rdf-to-vadalog
+POST /vadalingo/{ontology_id}/translate/rdf-to-vadalog
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `rdf_data` | body | yes | — | RDF data as a string (Turtle, N-Triples, or other RDF serializations). |
 
 ### Example
@@ -124,12 +124,12 @@ curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/rdf-to-vadalog" \
 Translate an OWL ontology into Vadalog rules. Accepts RDF/XML, Turtle, N3, and N-Triples serializations. When `data_base_path` is provided, Parquet datasets are written under `disk/` and `@bind` annotations are injected into the output program. When `add_concepts` is `true`, the resulting program is saved as a new concept named `owl_to_vadalog` in the project (overwriting any existing concept with that name).
 
 ```
-POST /vadalingo/{project_id}/translate/owl-to-vadalog
+POST /vadalingo/{ontology_id}/translate/owl-to-vadalog
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `owl_content` | body | yes | — | OWL ontology as a string (RDF/XML, Turtle, N3, or N-Triples). |
 | `base_namespace` | body | yes | — | Base namespace URI for resolving local classes and properties (e.g. `"http://example.org/"`). |
 | `data_base_path` | body | no | — | Relative path under `disk/` for Parquet output (e.g. `"owl"`). When set alongside `options.include_imports: true`, Parquet data is written and `@bind` annotations are injected into the program. |

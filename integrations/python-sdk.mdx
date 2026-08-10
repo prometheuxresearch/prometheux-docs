@@ -114,7 +114,7 @@ waiting for the whole response.
 import prometheux_chain as px
 
 # Agent chat — each event is a dict with a "type" and "data"
-for event in px.agent_chat(project_id="proj_123", message="Find all transitive suppliers and run it"):
+for event in px.agent_chat(ontology_id="ont_123", message="Find all transitive suppliers and run it"):
     if event["type"] == "content":
         print(event["data"]["chunk"], end="")
     elif event["type"] == "done":
@@ -162,7 +162,7 @@ The SDK raises exceptions for errors:
 import prometheux_chain as px
 
 try:
-    result = px.run_concept(project_id="invalid_id", concept_name="test")
+    result = px.run_concept(ontology_id="invalid_id", concept_name="test")
 except Exception as e:
     print(f"Error: {e}")
 ```

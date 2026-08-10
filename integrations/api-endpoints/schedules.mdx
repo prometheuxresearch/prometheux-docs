@@ -18,12 +18,12 @@ immediately registers the trigger; the concept will run at the next scheduled
 moment or when the data-change condition is met.
 
 ```
-POST /schedules/{project_id}/policies
+POST /schedules/{ontology_id}/policies
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `concept_name` | body | yes | — | Name of the concept this policy targets. |
 | `trigger_type` | body | no | `"cron"` | `"cron"` to fire on a calendar schedule; `"data_change"` to fire when upstream data changes. |
 | `trigger_config` | body | yes | — | Configuration object for the chosen trigger type (see below). |
@@ -79,12 +79,12 @@ curl -X POST "$BASE_URL/schedules/$PROJECT_ID/policies" \
 Return all evaluation policies for a project, optionally filtered to a single concept.
 
 ```
-GET /schedules/{project_id}/policies
+GET /schedules/{ontology_id}/policies
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `concept_name` | query | no | — | Filter results to policies targeting this concept. |
 
@@ -100,12 +100,12 @@ curl "$BASE_URL/schedules/$PROJECT_ID/policies?scope=user" \
 Retrieve a single evaluation policy by ID.
 
 ```
-GET /schedules/{project_id}/policies/{policy_id}
+GET /schedules/{ontology_id}/policies/{policy_id}
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
@@ -139,12 +139,12 @@ Change a policy's trigger configuration or enable/disable it. Only the fields
 supplied in the request body are modified; omitted fields are left unchanged.
 
 ```
-PATCH /schedules/{project_id}/policies/{policy_id}
+PATCH /schedules/{ontology_id}/policies/{policy_id}
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `trigger_config` | body | no | — | Replacement trigger configuration object. Must be a valid config for the policy's existing `trigger_type`. |
@@ -178,12 +178,12 @@ Remove a policy and cancel its scheduled job. This does not affect run history
 already recorded.
 
 ```
-DELETE /schedules/{project_id}/policies/{policy_id}
+DELETE /schedules/{ontology_id}/policies/{policy_id}
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
@@ -209,12 +209,12 @@ testing a new policy or backfilling a missed run. The policy must exist and the
 `trigger_now` call enqueues an execution synchronously.
 
 ```
-POST /schedules/{project_id}/policies/{policy_id}/trigger
+POST /schedules/{ontology_id}/policies/{policy_id}/trigger
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
@@ -247,12 +247,12 @@ Return the execution log for a policy, ordered by most recent first. Use `limit`
 and `offset` for [pagination](/integrations/rest-api#pagination).
 
 ```
-GET /schedules/{project_id}/policies/{policy_id}/runs
+GET /schedules/{ontology_id}/policies/{policy_id}/runs
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `limit` | query | no | `50` | Number of runs to return (1–500). |
