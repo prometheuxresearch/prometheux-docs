@@ -49,7 +49,7 @@ The response is a stream of newline-delimited JSON objects. Each line has a `typ
 |------|-------------|
 | `metadata` | Session metadata (project, model, context loaded) |
 | `tool_start` | Agent is invoking a tool (tool name and input) |
-| `proposal` | Agent proposes a Vadalog concept (code, name, description) |
+| `proposal` | Agent proposes a concept (definition, name, description) |
 | `tool_result` | Result from a tool invocation |
 | `content` | Text chunk from the agent's response |
 | `done` | Stream complete |
@@ -59,8 +59,8 @@ The response is a stream of newline-delimited JSON objects. Each line has a `typ
 
 ```json
 {"type": "metadata", "data": {"project_id": "my-project-id", "model": "gpt-4o", "context_loaded": true}}
-{"type": "tool_start", "data": {"tool": "create_concept", "input": {"vadalog_code": "..."}}}
-{"type": "proposal", "data": {"tool": "create_concept", "concept_name": "transitive_suppliers", "vadalog_code": "...", "description": "..."}}
+{"type": "tool_start", "data": {"tool": "create_concept", "input": {"definition": "..."}}}
+{"type": "proposal", "data": {"tool": "create_concept", "concept_name": "transitive_suppliers", "definition": "...", "description": "..."}}
 {"type": "tool_result", "data": {"tool": "create_concept", "result": {"id": "concept-uuid"}}}
 {"type": "tool_start", "data": {"tool": "run_concept", "input": {"concept_name": "transitive_suppliers"}}}
 {"type": "tool_result", "data": {"tool": "run_concept", "result": {"total_records": 42}}}
