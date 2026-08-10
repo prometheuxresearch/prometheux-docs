@@ -1,0 +1,218 @@
+---
+title: "Command reference"
+description: "Every px command and flag: init, validate, login, pull, plan, apply, run, status, delete, context apply, skill install."
+---
+
+`px --help` lists all commands; `px <command> --help` shows a command's options.
+**Offline:** `init`, `validate`. **Online** (reach the platform): `login`, `pull`,
+`plan`, `apply`, `run`, `status`, `delete`, `context apply`.
+
+## `px init [DIRECTORY]`
+
+Scaffold a workspace skeleton — the JSON Schemas in `.px/schemas/`, an `AGENTS.md`
+guide, a `CLAUDE.md` pointer, and a worked example of each concept kind. Offline.
+
+| Option | Meaning |
+|---|---|
+| `--name TEXT` | Workspace name (default: directory name). |
+| `--force` | Write into a non-empty directory. |
+
+```bash
+px init .                    # scaffold in the current dir
+px init /tmp/ws --name demo  # into a new dir with an explicit name
+```
+
+## `px validate [PATH]`
+
+Schema + structural checks against the bundled JSON Schemas — **fully offline**, with a
+`PASS`/`FAIL` exit code. Checks that manifests match their schema, concept bodies have
+envelopes, output predicates aren't duplicated, datasource references resolve, and context
+bodies exist. Also **warns** when a project ships an ontology but has no concepts (that
+renders empty on the platform).
+
+| Option | Meaning |
+|---|---|
+| `--strict` | Treat warnings as failures. |
+
+`PATH` defaults to searching up from the current directory for `prometheux.workspace.yaml`.
+
+```bash
+px validate            # find workspace from CWD
+px validate /tmp/ws    # explicit
+```
+
+## `px login`
+
+Authenticate and store URL + token in `~/.prometheux/config.json`. See
+[Installation → Authenticate](/integrations/cli/installation#authenticate).
+
+| Option | Meaning |
+|---|---|
+| `--url TEXT` | Platform URL (default `http://localhost:8000`). |
+| `--token TEXT` | API token; omit to be prompted (hidden input). |
+| `--no-verify` | Skip the live auth check. |
+
+## `px pull [PROJECT]`
+
+Export a live project into `projects/<slug>/` (concepts → body + `.meta.yaml`,
+datasources, ontology, apps). With **no** `PROJECT`, lists the projects visible to you and exits.
+
+| Option | Meaning |
+|---|---|
+| `--scope [user\|organization]` | Scope to pull from. |
+| `--out PATH` | Workspace directory (default: `.`). |
+| `--slug TEXT` | Directory name under `projects/` (default: from project name). |
+| `--with-files` | Download uploaded **file-datasource content** into `files/` and write portable `file:` specs, so the project (with its files) can be re-applied elsewhere. |
+
+```bash
+px pull                                  # list projects
+px pull 1d22942b9a0                      # write to ./projects/<slug>
+px pull 1d22942b9a0 --with-files --out /tmp/copy
+```
+
+## `px plan [PATH]`
+
+Diff local files against live server state (read-only). Classifies each concept as
+create / update / delete and renders the **downstream re-run cascade** for definition
+changes; also diffs datasources, ontology schema, and apps.
+
+| Option | Meaning |
+|---|---|
+| `-p, --project TEXT` | Only plan the named project(s), by name / slug / id. Repeatable. |
+
+```bash
+px plan
+px plan -p "Credit Risk" -p fraud-detection
+```
+
+## `px apply [PATH]`
+
+Apply the plan: connect datasources, then create/update concepts, ontology schema, and
+apps. Creates the project if new; snapshots each project first (best-effort).
+
+| Option | Meaning |
+|---|---|
+| `-p, --project TEXT` | Only apply the named project(s). Repeatable. |
+| `-y, --yes` | Skip the confirmation prompt. |
+| `--prune` | Also delete concepts present on the server but absent from files. |
+| `--no-snapshot` | Do not snapshot each project before applying. |
+| `--with-files` | Re-upload file datasources even when an identical one already exists (refresh content). New files always upload. |
+
+**Behaviour:**
+
+- **Deletions are safe by default** — a concept isn't deleted just because its file
+  vanished; use `--prune`. Datasources are user-scoped and never deleted.
+- **A datasource already on the account is reused** (matched by type/host/port/table), not
+  re-connected — so repeated applies don't pile up duplicate rows.
+- **Best-effort concepts:** a concept whose body references something unresolvable (a
+  source defect, or a dep not in this apply) is **skipped** with a warning; the rest of the
+  project still applies, and the run exits non-zero with a skip summary. A genuine error
+  (parse, conflict) aborts fast.
+- **Cross-account port:** a recreated project's new id is written back to `prometheux.yaml`,
+  and app `project.id` references + sibling-output paths are retargeted automatically.
+
+```bash
+px apply -y
+px apply -p "Credit Risk" --prune
+PG_PASSWORD=... px apply --with-files    # (re)upload local file datasources
+```
+
+## `px run CONCEPT [PATH]`
+
+Run a concept (an output predicate) and emit OpenLineage `START`/`COMPLETE`/`FAIL` events.
+
+| Option | Meaning |
+|---|---|
+| `-p, --project TEXT` | Limit the lookup to the named project(s). Repeatable. |
+| `--param KEY=VALUE` | Run parameter (repeatable). |
+| `--persist` | Materialize the concept's outputs. |
+| `--openlineage-file PATH` | Append events here (default `<workspace>/.px/openlineage.jsonl`). |
+| `--openlineage-url TEXT` | Also POST each event to this URL (e.g. a Marquez `/api/v1/lineage`). |
+| `--no-openlineage` | Do not emit events. |
+
+```bash
+px run risk_score
+px run risk_score --persist --param year=2025 -p "Credit Risk"
+```
+
+## `px status`
+
+Monitor run status **account-wide** — no workspace needed. One row per ontology (running /
+success / error / cancelled / interrupted / idle), plus the concept executing and its
+progress. The engine is globally serialized, so at most one ontology is ever `running`.
+
+| Option | Meaning |
+|---|---|
+| `-w, --watch` | Refresh continuously until Ctrl-C. |
+| `-i, --interval FLOAT` | Seconds between refreshes with `--watch` (default `3.0`). |
+| `--scope TEXT` | Comma-separated scopes, e.g. `user,organization` (default `user`). |
+
+```bash
+px status                       # one-shot table
+px status --watch               # live; announces when a run starts
+px status -w -i 5 --scope user,organization
+```
+
+## `px delete PROJECT`
+
+Permanently delete a whole project (a server project id or exact name) and everything in
+it — concepts, datasource binds, ontology, apps, notes. The server auto-snapshots first
+when versioning is available. **Local workspace files are not touched.** Resolves by id
+first, then by exact name (ambiguous names must be deleted by id).
+
+| Option | Meaning |
+|---|---|
+| `--scope [user\|organization]` | Scope to delete from (default `user`). |
+| `-y, --yes` | Skip the confirmation prompt. |
+
+```bash
+px delete 245ba23a329           # prompts, then hard-deletes
+px delete "Credit Risk" -y      # by name, no prompt
+```
+
+## `px context apply [PATH]`
+
+Apply the context layer from every `*.context.md` manifest in the workspace. **Idempotent**
+via `.px/context-state.json`. See [Context as code](/integrations/cli/context-as-code) for the full model.
+
+| Option | Meaning |
+|---|---|
+| `-y, --yes` | Skip the confirmation prompt. |
+| `--prune` | Delete notes previously applied but no longer in any manifest. |
+
+```bash
+px context apply -y
+px context apply --prune
+```
+
+## `px skill install`
+
+Install the Prometheux authoring skill into a coding agent, generated from this `px`'s
+bundled schemas + guide. See [Agent skill](/integrations/cli/agent-skill).
+
+| Option | Meaning |
+|---|---|
+| `-t, --target [claude\|claude-project\|cursor]` | Where to install (repeatable). Default: `claude`. |
+| `--dir PATH` | Base directory for project targets. Default: current dir. |
+| `--force` | Overwrite an existing install. |
+
+```bash
+px skill install                       # global Claude Code skill
+px skill install -t cursor --dir .     # Cursor rule in this repo
+```
+
+## Exit codes
+
+| Command | Exit code |
+|---|---|
+| `validate` | `0` PASS, non-zero FAIL |
+| `apply` | `0` on success; non-zero if any concept was skipped (with a summary) or on a hard error |
+| `plan`, `status` | `0` |
+
+## State & idempotency
+
+- **Project id** is written into `projects/<slug>/prometheux.yaml` on create — commit it so
+  re-apply targets the same project. If lost, `apply` reconciles by name.
+- **Context state** (`.px/context-state.json`) drives idempotent `context apply` — commit
+  it; if lost, `context apply` reconciles against server notes by content.
+- A clean `pull` then `plan`/`apply` reports **no changes**; re-applying is a no-op.

@@ -1,0 +1,131 @@
+---
+title: "Quickstart"
+description: "Scaffold a workspace, author a concept, and apply it to the platform — end to end with px."
+---
+
+This guide takes you from nothing to a running concept on the platform. It assumes `px`
+is [installed](/integrations/cli/installation).
+
+<Note>
+`init` and `validate` are fully offline — you can author and validate a whole workspace
+before you have an account. Only `login`, `plan`, `apply`, and `run` reach the platform.
+</Note>
+
+## Author from scratch → apply
+
+<Steps>
+  <Step title="Scaffold a workspace">
+    ```bash
+    px init my-workspace --name demo
+    cd my-workspace
+    ```
+    This writes a starter workspace: the JSON Schemas under `.px/schemas/`, an `AGENTS.md`
+    authoring guide, and a worked example of each concept kind under `projects/example/`.
+  </Step>
+
+  <Step title="Author your files">
+    Edit the example, or add your own. A concept is a **body file** plus a
+    **`.meta.yaml`** envelope. For example, `projects/example/concepts/customers.vadalog`:
+    ```prolog
+    customer(Id, Name, Country) :- source_customers(Id, Name, Country).
+    ```
+    and its `customers.meta.yaml`:
+    ```yaml
+    conceptType: logic
+    outputPredicate: customer
+    binds:
+      input:
+        - predicate: source_customers
+          datasource: snowflake_prod
+    ```
+    See [Authoring a workspace](/integrations/cli/authoring) for the full file model.
+  </Step>
+
+  <Step title="Validate (offline)">
+    ```bash
+    px validate
+    ```
+    Runs schema + structural checks and prints `PASS` or `FAIL`. Loop on this until it's
+    green — it needs no platform connection.
+  </Step>
+
+  <Step title="Authenticate">
+    ```bash
+    px login --url https://api.prometheux.ai/jarvispy/<org>/<user> --token <JWT>
+    ```
+  </Step>
+
+  <Step title="Preview with plan">
+    ```bash
+    px plan
+    ```
+    `plan` pulls current server state and shows exactly what `apply` would do — create /
+    update / delete per concept, plus the **downstream re-run cascade** for any definition
+    change. Nothing is written.
+    ```text
+    Plan against project "Demo" (scope: user)  (new project — everything is create)
+      + concept customer   create
+      Plan: 1 to create, 0 to update, 0 downstream re-run(s), 0 to destroy (withheld).
+    ```
+  </Step>
+
+  <Step title="Apply">
+    ```bash
+    px apply
+    ```
+    Connects datasources, then creates/updates concepts, ontology, and apps. A brand-new
+    project is created and its server `id` is written back into `prometheux.yaml` — commit
+    that so the next apply targets the same project.
+  </Step>
+
+  <Step title="Run a concept">
+    ```bash
+    px run customer --persist
+    ```
+    Runs the concept, materializes its output, and emits OpenLineage events. Watch progress
+    across your account any time with `px status --watch`.
+  </Step>
+</Steps>
+
+## Pull an existing project → edit → apply
+
+Already have a project on the platform? Bring it down to files:
+
+```bash
+px pull                     # list the projects visible to you
+px pull <project-id>        # write it to ./projects/<slug>
+px validate && px plan      # a fresh pull plans clean — no changes
+# ...edit files...
+px apply
+```
+
+A clean pull always plans as "no changes" — the file format round-trips faithfully.
+
+## Set up an agent to do this for you
+
+Install the skill and let Claude Code or Cursor drive the same loop:
+
+```bash
+px skill install
+```
+
+Then ask your agent: *"Add a concept that flags customers in high-risk countries,
+downstream of `risk_score`, and apply it."* It writes the files, runs `px validate` until
+green, reads `px plan`, and runs `px apply`. See [Agent skill](/integrations/cli/agent-skill).
+
+## Where to next
+
+<CardGroup cols={2}>
+  <Card title="Authoring a workspace" icon="folder-tree" href="/integrations/cli/authoring">
+    Manifests, concept kinds, datasources, the derived graph.
+  </Card>
+  <Card title="Context as code" icon="book" href="/integrations/cli/context-as-code">
+    Keep your knowledge notes in the repo and sync them.
+  </Card>
+  <Card title="Command reference" icon="terminal" href="/integrations/cli/command-reference">
+    Every command and flag.
+  </Card>
+  <Card title="CI/CD" icon="arrows-rotate" href="/integrations/cli/ci-cd">
+    Apply from GitHub Actions on every merge.
+  </Card>
+</CardGroup>
