@@ -381,6 +381,10 @@ Claude might not realize the tools are relevant to your query.
 
 You can also use the Prometheux MCP package as a Python library:
 
+`PrometheuxClient` speaks JSON-RPC to the backend. Rather than exposing one
+method per tool, it has a single `rpc()` call — you name the tool and pass its
+arguments, exactly as an MCP client would.
+
 ```python
 import asyncio
 from prometheux_mcp.config import Settings
@@ -394,20 +398,32 @@ async def main():
         username="your_username",
         organization="your_org"
     )
-    
-    # Create client
-    async with PrometheuxClient(settings) as client:
+
+    client = PrometheuxClient(settings)
+    try:
+        # Discover what the backend currently exposes
+        catalog = await client.rpc("tools/list", {})
+        print(f"{len(catalog['tools'])} tools available")
+
         # List concepts
-        concepts = await client.list_concepts("project-123")
-        print(f"Found {concepts['count']} concepts")
-        
+        concepts = await client.rpc("tools/call", {
+            "name": "list_concepts",
+            "arguments": {"ontology_id": "ontology-123"},
+        })
+        print(concepts)
+
         # Run a concept
-        result = await client.run_concept(
-            project_id="project-123",
-            concept_name="my_concept",
-            force_rerun=True
-        )
-        print(f"Derived {result['total_records']} records")
+        result = await client.rpc("tools/call", {
+            "name": "run_concept",
+            "arguments": {
+                "ontology_id": "ontology-123",
+                "concept_name": "my_concept",
+                "force_rerun": True,
+            },
+        })
+        print(result)
+    finally:
+        await client.close()
 
 asyncio.run(main())
 ```
