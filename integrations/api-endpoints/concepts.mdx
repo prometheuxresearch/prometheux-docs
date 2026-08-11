@@ -1,10 +1,13 @@
 ---
 title: "Concepts"
-description: "Define, run, and read results from concepts — the Vadalog, SQL, and Python programs at the core of a Prometheux project."
+description: "Define, run, and read results from concepts — the units of logic and context at the core of a Prometheux project."
 ---
 
-A **concept** is a unit of logic in a project — a Vadalog, SQL, or Python
-program that produces an output predicate. The Concepts API lets you create
+A **concept** is a unit of logic in a project that produces an output
+predicate. Four kinds are executable programs — Vadalog, SQL, Cypher, and
+Python — and two are configured rather than written: `context` concepts, which
+expose unstructured notes as a queryable window, and `llm` concepts, which call
+a language model from a prompt template. The Concepts API lets you create
 concepts, run them (individually or as a dependency chain), read their results,
 and track execution progress.
 
@@ -18,15 +21,16 @@ Create or update a concept. Saving a concept with an `existing_name` updates it
 in place; otherwise a new concept is created.
 
 ```
-POST /concepts/{project_id}/save
+POST /concepts/{ontology_id}/save
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
-| `definition` | body | yes | — | The concept body: Vadalog rules, a SQL query, or Python logic (per `concept_type`). |
-| `concept_type` | body | no | `"logic"` | One of `logic` (Vadalog), `sql`, `cypher`, or `python`. |
-| `concept_name` | body | conditional | — | Required for `sql`, `cypher`, and `python` concepts. |
+| `ontology_id` | path | yes | — | The ontology ID. |
+| `definition` | body | conditional | — | The concept body: Vadalog rules, a SQL or Cypher query, Python logic, or an LLM prompt template (per `concept_type`). Omit it for `context` concepts, which have no executable body. |
+| `concept_type` | body | no | `"logic"` | One of `logic` (Vadalog), `sql`, `cypher`, `python`, `context`, or `llm`. See [Context and LLM concepts](/platform/context-and-llm-concepts). |
+| `concept_name` | body | conditional | — | Required for every type except `logic`, which takes its name from the output predicate. |
+| `concept_config` | body | conditional | — | Configuration for `context` and `llm` concepts, ignored for the other types. Required for `context`. See [Context and LLM concepts](/platform/context-and-llm-concepts). |
 | `output_predicate` | body | no | `""` | The predicate this concept outputs. |
 | `description` | body | no | — | Human-readable description. |
 | `binds` | body | no | — | Bind annotations linking input/output predicates to data sources. |
@@ -59,12 +63,12 @@ curl -X POST "$BASE_URL/concepts/$PROJECT_ID/save" \
 Return all concepts in a project, enriched with their parsed code and binds.
 
 ```
-GET /concepts/{project_id}/list
+GET /concepts/{ontology_id}/list
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
@@ -82,12 +86,12 @@ a time per workspace; see [Execution status](#execution-status) to track
 progress.
 
 ```
-POST /concepts/{project_id}/run/{concept_name}
+POST /concepts/{ontology_id}/run/{concept_name}
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `concept_name` | path | yes | — | The target concept to run. |
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `params` | body | no | `{}` | Runtime parameter values referenced by the program. |
@@ -118,7 +122,7 @@ On success, `data` contains the execution result. On a run error, `status` is
 <Tip>
 For long-running jobs, prefer firing the run and then polling
 [Execution status](#execution-status) rather than blocking on the response. A
-WebSocket variant, `/concepts/{project_id}/run-stream/{concept_name}`, streams
+WebSocket variant, `/concepts/{ontology_id}/run-stream/{concept_name}`, streams
 per-concept progress frames if you need live updates.
 </Tip>
 
@@ -127,12 +131,12 @@ per-concept progress frames if you need live updates.
 Read the persisted rows of an output predicate, with pagination.
 
 ```
-GET /concepts/{project_id}/fetch
+GET /concepts/{ontology_id}/fetch
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `output_predicate` | query | yes | — | The predicate to read. |
 | `params` | query | no | `{}` | JSON string of parameter values. |
 | `page` | query | no | `1` | [Page](/integrations/rest-api#pagination) number. |
@@ -164,12 +168,12 @@ Filter the rows of an output predicate by a search term and/or per-column
 filters. Same pagination as [`/fetch`](#fetch-concept-results).
 
 ```
-POST /concepts/{project_id}/search
+POST /concepts/{ontology_id}/search
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `output_predicate` | query | yes | — | The predicate to search. |
 | `search_term` | body | no | — | Free-text term matched across columns. |
 | `column_filters` | body | no | — | Array of `{ "position": <col index>, "value": <string> }`. |
@@ -189,12 +193,12 @@ The response shape matches [`/fetch`](#fetch-concept-results).
 Rename a concept and propagate the new name to every dependent concept.
 
 ```
-POST /concepts/{project_id}/rename
+POST /concepts/{ontology_id}/rename
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `old_name` | body | yes | — | Current concept name. |
 | `new_name` | body | yes | — | New concept name. |
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
@@ -205,12 +209,12 @@ Set the display order of concepts in a project. Pass the concept names in the
 desired order; optionally restrict the reordering to a single group.
 
 ```
-POST /concepts/{project_id}/reorder
+POST /concepts/{ontology_id}/reorder
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `concept_names` | body | yes | — | Array of concept names in the desired order. |
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `group` | body | no | — | Restrict reordering to concepts in this group. |
@@ -239,12 +243,12 @@ the latest run — they do not start one.
 ### Single project
 
 ```
-GET /concepts/{project_id}/execution-status
+GET /concepts/{ontology_id}/execution-status
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The project ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```jsonc
@@ -304,8 +308,8 @@ its last run succeeded).
 
 | Operation | Endpoint | Notes |
 |---|---|---|
-| Generate a description with the LLM | `POST /concepts/{project_id}/generate-description` | Body: `concept_name`, `scope`. Returns `{ "description": "..." }`. |
-| Read (or lazily generate) a description | `GET /concepts/{project_id}/description` | Query: `concept_name`, `scope`. |
-| Ask a question over predicate data | `POST /concepts/{project_id}/llm` | Body: `predicate_names`/`predicate_data`, `question`. Returns `{ "response": "..." }`. |
-| Export results to CSV / download a file | `GET /concepts/{project_id}/download` | Query: `path`, `export_csv`, `concept_name`. Returns the raw file, not the envelope. |
-| Delete concepts | `POST /concepts/{project_id}/cleanup` | Body: `concept_names` (omit to delete all), `scope`. |
+| Generate a description with the LLM | `POST /concepts/{ontology_id}/generate-description` | Body: `concept_name`, `scope`. Returns `{ "description": "..." }`. |
+| Read (or lazily generate) a description | `GET /concepts/{ontology_id}/description` | Query: `concept_name`, `scope`. |
+| Ask a question over predicate data | `POST /concepts/{ontology_id}/llm` | Body: `predicate_names`/`predicate_data`, `question`. Returns `{ "response": "..." }`. |
+| Export results to CSV / download a file | `GET /concepts/{ontology_id}/download` | Query: `path`, `export_csv`, `concept_name`. Returns the raw file, not the envelope. |
+| Delete concepts | `POST /concepts/{ontology_id}/cleanup` | Body: `concept_names` (omit to delete all), `scope`. |

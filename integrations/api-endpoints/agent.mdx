@@ -12,14 +12,14 @@ Send a message to the agent and receive a streaming NDJSON response. The agent m
 **HTTP Request:**
 
 ```
-POST /api/v1/agent/{project_id}/chat
+POST /api/v1/agent/{ontology_id}/chat
 ```
 
 **Path Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project to work within |
+| `ontology_id` | string | Yes | The ID of the ontology to work within |
 
 **Request Body:**
 
@@ -49,7 +49,7 @@ The response is a stream of newline-delimited JSON objects. Each line has a `typ
 |------|-------------|
 | `metadata` | Session metadata (project, model, context loaded) |
 | `tool_start` | Agent is invoking a tool (tool name and input) |
-| `proposal` | Agent proposes a Vadalog concept (code, name, description) |
+| `proposal` | Agent proposes a concept (definition, name, description) |
 | `tool_result` | Result from a tool invocation |
 | `content` | Text chunk from the agent's response |
 | `done` | Stream complete |
@@ -58,14 +58,14 @@ The response is a stream of newline-delimited JSON objects. Each line has a `typ
 **Example stream:**
 
 ```json
-{"type": "metadata", "data": {"project_id": "my-project-id", "model": "gpt-4o", "context_loaded": true}}
-{"type": "tool_start", "data": {"tool": "create_concept", "input": {"vadalog_code": "..."}}}
-{"type": "proposal", "data": {"tool": "create_concept", "concept_name": "transitive_suppliers", "vadalog_code": "...", "description": "..."}}
+{"type": "metadata", "data": {"ontology_id": "my-ontology-id", "model": "gpt-4o", "context_loaded": true}}
+{"type": "tool_start", "data": {"tool": "create_concept", "input": {"definition": "..."}}}
+{"type": "proposal", "data": {"tool": "create_concept", "concept_name": "transitive_suppliers", "definition": "...", "description": "..."}}
 {"type": "tool_result", "data": {"tool": "create_concept", "result": {"id": "concept-uuid"}}}
 {"type": "tool_start", "data": {"tool": "run_concept", "input": {"concept_name": "transitive_suppliers"}}}
 {"type": "tool_result", "data": {"tool": "run_concept", "result": {"total_records": 42}}}
 {"type": "content", "data": {"chunk": "I created and ran the transitive_suppliers concept. It derived 42 records..."}}
-{"type": "done", "data": {"project_id": "my-project-id"}}
+{"type": "done", "data": {"ontology_id": "my-ontology-id"}}
 ```
 
 ## Reset Session
@@ -75,14 +75,14 @@ Clear the conversation history for a session.
 **HTTP Request:**
 
 ```
-POST /api/v1/agent/{project_id}/reset
+POST /api/v1/agent/{ontology_id}/reset
 ```
 
 **Path Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `project_id` | string | Yes | The ID of the project |
+| `ontology_id` | string | Yes | The ID of the ontology |
 
 **Request Body:**
 
