@@ -15,23 +15,17 @@ to the [base URL](/integrations/rest-api#base-url) and require
 [authentication](/integrations/api-endpoints/authentication). All responses use
 the standard [envelope](/integrations/rest-api#response-envelope).
 
-<Note>
-On the wire the path slot and payload still use `project`-prefixed keys
-(`project_id`, `ontology_schema_data`, `ontology_schema_type`) for the ontology
-that owns the schema.
-</Note>
-
 ## Save the schema
 
 Persist an ontology's full schema document (nodes and edges) for later reload.
 
 ```
-POST /concepts/{project_id}/save-ontology-schema
+POST /concepts/{ontology_id}/save-ontology-schema
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The ontology ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `ontology_schema_data` | body | yes | — | The schema document — an object with `nodes` and `edges`, or a JSON string. |
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
@@ -62,12 +56,12 @@ Return the schema document for an ontology. `data` is `null` when the ontology
 has no saved schema yet.
 
 ```
-GET /concepts/{project_id}/load-ontology-schema
+GET /concepts/{ontology_id}/load-ontology-schema
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The ontology ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
@@ -93,12 +87,12 @@ Assign a schema role to a single concept: mark it as a graph `node`, as an
 default by omitting `ontology_schema_type`.
 
 ```
-PATCH /concepts/{project_id}/concepts/{concept_name}/ontology-schema-type
+PATCH /concepts/{ontology_id}/concepts/{concept_name}/ontology-schema-type
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The ontology ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `concept_name` | path | yes | — | The concept predicate name. |
 | `ontology_schema_type` | body | no | — | `"node"`, `"edge"`, or omit/`null` to reset to default. |
 | `edge_source` | body | conditional | — | Source node predicate. **Required** when `ontology_schema_type` is `"edge"`. |
@@ -131,12 +125,12 @@ Add a single schema element — a node or an edge — to the ontology lineage
 without rewriting the whole schema document.
 
 ```
-POST /concepts/{project_id}/add-to-lineage
+POST /concepts/{ontology_id}/add-to-lineage
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The ontology ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `element_type` | body | yes | — | `"node"` or `"edge"`. |
 | `element_data` | body | yes | — | The element definition object. |
 | `all_nodes` | body | no | `[]` | Current node list, used to resolve edge endpoints. |
@@ -170,12 +164,12 @@ the OWL `xml:base` or `ontologyIRI` — if neither is present a `400` is returne
 asking you to supply it explicitly.
 
 ```
-POST /concepts/{project_id}/import-owl
+POST /concepts/{ontology_id}/import-owl
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | path | yes | — | The ontology ID. |
+| `ontology_id` | path | yes | — | The ontology ID. |
 | `owl_content` | body | yes | — | The OWL ontology as a string (RDF/XML, Turtle, N3, or N-Triples). |
 | `base_namespace` | body | no | auto-detected | Base namespace URI (e.g. `"http://example.org/onto#"`). Required if it cannot be auto-detected. |
 

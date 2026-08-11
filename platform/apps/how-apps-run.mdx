@@ -50,13 +50,13 @@ Everything the catalog and editor do goes through the Apps API — apps are full
 | Operation | Endpoint |
 |---|---|
 | List all apps | `GET /apps/list` |
-| List an ontology's apps | `GET /apps/{project_id}/list` |
-| Get a definition | `GET /apps/{project_id}/{app_id}` |
-| Create / update (validates) | `POST /apps/{project_id}/save` |
-| Delete (incl. history) | `DELETE /apps/{project_id}/{app_id}` |
-| List versions | `GET /apps/{project_id}/{app_id}/versions` |
-| Restore a version | `POST /apps/{project_id}/{app_id}/versions/{version_id}/restore` |
-| Bookmark a version | `PATCH /apps/{project_id}/{app_id}/versions/{version_id}/bookmark` |
+| List an ontology's apps | `GET /apps/{ontology_id}/list` |
+| Get a definition | `GET /apps/{ontology_id}/{app_id}` |
+| Create / update (validates) | `POST /apps/{ontology_id}/save` |
+| Delete (incl. history) | `DELETE /apps/{ontology_id}/{app_id}` |
+| List versions | `GET /apps/{ontology_id}/{app_id}/versions` |
+| Restore a version | `POST /apps/{ontology_id}/{app_id}/versions/{version_id}/restore` |
+| Bookmark a version | `PATCH /apps/{ontology_id}/{app_id}/versions/{version_id}/bookmark` |
 
 See the [Apps API reference](/integrations/api-endpoints/apps) for request and response shapes. The AI assistant uses the same operations through its MCP tools, so apps it creates obey the same validation as apps you build in the editor.
 

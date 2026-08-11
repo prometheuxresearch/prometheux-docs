@@ -1,0 +1,191 @@
+---
+title: "Context & LLM Concepts"
+description: "Bring unstructured knowledge and language models into the lineage as first-class concepts, alongside your Vadalog, SQL, Cypher, and Python logic."
+---
+
+Most concepts are programs: you write Vadalog, SQL, Cypher, or Python, and
+Prometheux runs it. Two kinds are different — you configure them rather than
+write them, and they let unstructured knowledge and language models take part in
+the same lineage as everything else.
+
+| Kind | What it is | What it produces |
+|---|---|---|
+| `context` | A named window onto notes and documents in the [Context Layer](/platform/ai-assistant#work-with-documents-and-remembered-context) | A table of notes |
+| `llm` | A prompt template that calls a language model | A table shaped by the columns you declare |
+
+Because both are concepts, they appear in the ontology graph, other concepts can
+depend on them, and their results flow downstream exactly like any query result.
+A Vadalog rule can join against the output of a context concept; an LLM concept
+can read the output of a SQL concept.
+
+## Context concepts
+
+A context concept turns part of your unstructured knowledge into something the
+rest of the ontology can consume. It has no body — you configure which notes it
+exposes through `concept_config`, and running it materialises those notes as
+rows.
+
+Every context concept produces the same columns:
+
+```
+note_id, kind, title, text, source, created_at, folder_path
+```
+
+There are two modes.
+
+### Static mode
+
+Static mode pins an explicit list of notes. The concept always returns exactly
+those notes, which makes it the right choice for a stable reference — a policy
+document, a glossary, a set of agreed business definitions.
+
+```json
+{
+  "mode": "static",
+  "note_ids": ["note_9f2a...", "note_31c7..."]
+}
+```
+
+### Dynamic mode
+
+Dynamic mode stores a query instead of a list. Each run performs a semantic
+search over the Context Layer and returns whatever currently matches, so the
+concept keeps up as notes are added.
+
+```json
+{
+  "mode": "dynamic",
+  "query": "payment disputes, overdue invoices, and supply risk",
+  "top_k": 20,
+  "kinds": ["fact", "document_chunk"]
+}
+```
+
+### Configuration reference
+
+| Key | Mode | Required | Description |
+|---|---|---|---|
+| `mode` | both | no | `"static"` (default) or `"dynamic"`. |
+| `note_ids` | static | yes | Ids of the notes to pin. At least one. |
+| `query` | dynamic | yes | The search query run against the Context Layer. |
+| `top_k` | dynamic | no | Maximum number of notes to return. |
+| `kinds` | dynamic | no | Restrict results to some of `fact`, `document_chunk`, `preference`, `observation`. |
+
+<Tip>
+Note ids come from the Context Layer. Through the API or an AI agent, list or
+search them with the [Context Layer endpoints](/integrations/api-endpoints/context-layer);
+in the app, they are the notes you have already saved or ingested.
+</Tip>
+
+## LLM concepts
+
+An LLM concept holds a prompt template in its `definition`. When it runs,
+Prometheux fills the template with data from the concepts it references, sends
+the result to a language model, and turns the reply into rows.
+
+### Referring to other concepts
+
+Inside the prompt, `{{concept_name}}` refers to another concept in the same
+ontology. Each reference becomes a real dependency: it shows up in the lineage,
+and the referenced concept runs first so its output can be substituted in.
+
+```
+Read the supplier notes below and assess each supplier's risk.
+
+{{supplier_risk_notes}}
+
+Recent disputes, as JSON lines:
+
+{{open_disputes}}
+```
+
+A reference to a `context` concept is substituted as the text of its notes; a
+reference to a tabular concept is substituted as JSON lines, one per row.
+
+### Shaping the output
+
+By default an LLM concept returns a single `response` column containing one row
+of text. Declare `output_columns` instead and the model is instructed to return
+data matching that shape, which is then parsed into a proper table:
+
+```json
+{
+  "output_columns": [
+    { "name": "supplier", "type": "string" },
+    { "name": "risk_level", "type": "string" },
+    { "name": "reason", "type": "string" }
+  ]
+}
+```
+
+Downstream concepts can then join on `supplier` and filter on `risk_level` like
+any other table. If the model's reply cannot be parsed into the declared
+columns, the run fails with an explicit error rather than silently returning
+something malformed.
+
+### Choosing a model
+
+An LLM concept uses your default provider unless you override it. Overrides are
+per concept, so one ontology can mix models — a cheap fast model for
+classification, a stronger one for summarising.
+
+| Key | Description |
+|---|---|
+| `output_columns` | The output table's columns, each `{name, type}`. Omit for a single `response` column. |
+| `provider` | Overrides the default provider. |
+| `model` | Overrides the default model. |
+| `connection` | Name of a saved LLM connection from [Settings](/platform/settings). The run fails if it no longer exists. |
+| `temperature` | Sampling temperature. |
+| `max_tokens` | Maximum tokens in the reply. Defaults to 4096. |
+| `row_limit` | How many upstream rows to include in the prompt. Defaults to 100. |
+
+Credentials live in the connection, not in the concept, so sharing an ontology
+never shares an API key. If a concept names a connection the recipient does not
+have, the run fails with a message naming it rather than quietly falling back to
+someone else's key.
+
+## What actually reaches the model
+
+A prompt cannot grow without limit, so Prometheux caps what it sends — upstream
+tables are cut off at `row_limit`, and the prompt is trimmed if it would exceed
+the model's context window.
+
+Truncation is never silent. After each run, the concept reports how much of each
+input was included, whether the prompt was trimmed, and whether the reply itself
+was cut short by `max_tokens`. If you see a shorter answer than expected, that
+report tells you whether the model ran out of room to reply or never saw the
+whole input in the first place.
+
+## Instructions and data stay separate
+
+Everything substituted into a prompt is data, not instruction. Prometheux frames
+upstream content explicitly and tells the model that the author's instructions
+take precedence over anything appearing inside that data, so a note or a row
+containing "ignore your instructions" is treated as text to analyse rather than a
+command to follow. Markers that imitate the framing are neutralised before they
+reach the model.
+
+This makes prompt injection through your own pipeline substantially harder, but
+it is a mitigation rather than a guarantee. Treat an LLM concept's output as
+model-generated content, and keep consequential decisions behind rules you
+control.
+
+## Re-running
+
+Executable concepts are deterministic: given the same inputs they produce the
+same output, so a cached result can be reused. LLM concepts are not, and are
+marked accordingly — running one again may legitimately produce a different
+answer. Context concepts in dynamic mode are similar, since the underlying
+Context Layer changes over time.
+
+## Authoring them from the API or an agent
+
+Both kinds are created with the same calls as any other concept — set
+`concept_type` and pass `concept_config`. See
+[Save a concept](/integrations/api-endpoints/concepts#save-a-concept) for the
+REST endpoint, and the [MCP tool catalog](/integrations/mcp/overview) for
+`create_concept`, `update_concept`, and `validate_concept`.
+
+`validate_concept` is worth calling first: it checks the configuration and, for
+an LLM concept, that every `{{reference}}` in the prompt resolves to a concept
+that exists — without spending anything on a model call.

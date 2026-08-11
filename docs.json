@@ -95,6 +95,7 @@
           "platform/concepts-and-lineage",
           "platform/ontology-workspace",
           "platform/concept-editor",
+          "platform/context-and-llm-concepts",
           {
             "group": "Apps",
             "pages": [

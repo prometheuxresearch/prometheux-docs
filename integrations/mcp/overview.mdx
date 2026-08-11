@@ -139,75 +139,206 @@ Don't see your client? For stdio-capable clients (IDEs, terminal agents), use th
 
 Both MCP servers dynamically expose the following tools to AI agents. The tool catalog is served by the Prometheux backend, so new capabilities are available automatically as they are added to the platform.
 
-### Ontologies & Data Sources
+Required parameters are shown in **bold**; the rest are optional.
 
-| Tool | Description | Key Parameters |
-|------|-------------|----------------|
-| `list_ontologies` | List all ontologies the user has access to | `scope` |
-| `create_ontology` | Create a new empty ontology | `name`, `description`, `scope` |
-| `list_data_sources` | List all data sources with their predicate names, bind annotations, field schemas, and row counts | `scope` |
+<Note>
+Most clients fetch the tool catalog once, when the connection opens, and cache it
+for the rest of the session. If a tool starts rejecting a parameter that this
+page documents, your client is probably holding an older copy of the schema —
+reconnect to the server to pick up the current one.
+</Note>
 
-### Concepts
+### Ontologies
 
-| Tool | Description | Key Parameters |
-|------|-------------|----------------|
-| `list_concepts` | List all concepts available in an ontology | `project_id`, `scope` |
-| `get_concept` | Get full detail for a single concept including its Vadalog code | `project_id`, `concept_name`, `scope` |
-| `create_concept` | Save a Vadalog program as a new named concept | `project_id`, `vadalog_code`, `description`, `scope` |
-| `update_concept` | Overwrite the Vadalog code of an existing concept | `project_id`, `concept_name`, `vadalog_code`, `description`, `scope` |
-| `run_concept` | Execute a concept to derive new knowledge through reasoning (supports long-running executions with progress notifications) | `project_id`, `concept_name`, `params`, `scope`, `force_rerun`, `persist_outputs` |
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_ontologies` | List every ontology you can access, including ones shared with you | — |
+| `create_ontology` | Create a new empty ontology | **`name`**, `description` |
+| `delete_ontology` | Permanently delete an ontology and everything in it | **`ontology_id`**, `confirm`, `scope` |
+| `list_templates` | List the curated template ontologies in the Prometheux catalogue | — |
+| `get_template` | Read one template's concepts as read-only reference material | **`template_id`** |
 
-### Vadalog
+### Data sources
 
-| Tool | Description | Key Parameters |
-|------|-------------|----------------|
-| `search_vadalog_docs` | Search the Vadalog documentation and return ready-to-use code examples | `query` |
-| `generate_vadalog` | Generate a Vadalog program from a natural language description | `description`, `predicates_and_schemas` |
-| `fix_vadalog` | Fix a Vadalog program that failed to compile or execute | `vadalog_code`, `error_message`, `original_request` |
-| `generate_sample_facts` | Generate realistic sample input or output facts for a set of predicates | `predicates_and_schemas`, `domain_context`, `vadalog_rules`, `fact_type` |
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_data_sources` | List all data sources with their predicate names, bind annotations, field schemas, and row counts | — |
+| `preview_data_source` | Preview the first rows of a connected data source | **`bind_annotation`**, `limit` |
+| `create_csv_datasource` | Materialise inline rows as a CSV data source that Vadalog can bind to | **`ontology_id`**, **`predicate_name`**, **`columns`**, **`rows`**, `description` |
+| `connect_file_as_datasource` | Register a tabular file already on disk as a queryable data source | **`file_path`** |
+| `delete_data_source` | Permanently disconnect a data source from the workspace | **`bind_annotation`**, `scope` |
+
+### Concepts — read and run
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_concepts` | List all concepts in an ontology with their schema, population state, and folder | **`ontology_id`** |
+| `get_concept` | Return full detail for one concept, including its current definition | **`ontology_id`**, **`concept_name`** |
+| `search_similar_concepts` | Semantic search across all of your ontologies, to find reuse candidates | **`query`**, `exclude_ontology_id`, `top_k` |
+| `run_concept` | Execute a concept and its dependency chain through the reasoning engine | **`ontology_id`**, **`concept_name`**, `params`, `force_rerun`, `persist_outputs` |
+| `fetch_concept` | Page through the rows of an already-populated concept without recomputing | **`ontology_id`**, **`concept_name`**, `page`, `page_size`, `params`, `column_filters`, `order_by` |
+| `query_concept` | Run one read-only SQL `SELECT` over a populated concept, for aggregates and `GROUP BY` | **`ontology_id`**, **`concept_name`**, **`sql`** |
+
+### Concepts — authoring
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `validate_concept` | Check a concept body before saving it, at no LLM cost | **`definition`**, `concept_type`, `concept_name`, `ontology_id`, `concept_config` |
+| `create_concept` | Save a new concept of any of the six kinds | **`ontology_id`**, `definition`, `concept_type`, `concept_name`, `description`, `concept_config`, `group`, `confirm_new` |
+| `update_concept` | Overwrite an existing concept's definition | **`ontology_id`**, **`concept_name`**, `definition`, `concept_type`, `description`, `concept_config`, `group` |
+| `delete_concept` | Permanently delete a concept | **`ontology_id`**, **`concept_name`**, `scope` |
+
+<Note>
+**Writing a concept**
+
+`concept_type` is one of `logic` (Vadalog), `sql`, `cypher`, `python`, `context`,
+or `llm`, and defaults to `logic`. The body always goes in `definition` — a
+Vadalog program, a query, a Python body, or an LLM prompt template, depending on
+the type.
+
+`context` concepts are the exception: they have no body at all, and are
+configured entirely through `concept_config`. `llm` concepts use `definition`
+for the prompt and `concept_config` for the output columns and model settings.
+See [Context and LLM concepts](/platform/context-and-llm-concepts).
+
+`create_concept` also guards against duplication: if a similar concept already
+exists in another of your ontologies, the save is rejected with
+`similar_existing_concepts`, and you re-issue the call with `confirm_new: true`
+to proceed.
+</Note>
+
+### Snapshots
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `create_ontology_snapshot` | Take a point-in-time snapshot of an ontology | **`ontology_id`**, `description` |
+| `list_snapshots` | List an ontology's snapshots, newest first | **`ontology_id`**, `scope` |
+| `restore_snapshot` | Restore an ontology to a snapshot, overwriting its current state | **`ontology_id`**, **`snapshot_id`**, `scope` |
+| `delete_snapshot` | Permanently delete one snapshot | **`ontology_id`**, **`snapshot_id`**, `scope` |
+
+`restore_snapshot` takes an automatic safety snapshot before it overwrites anything.
 
 ### Schema
 
-| Tool | Description | Key Parameters |
-|------|-------------|----------------|
-| `get_ontology_schema` | Load the current schema graph for an ontology | `project_id`, `scope` |
-| `save_ontology_schema` | Save a complete schema graph for an ontology | `project_id`, `ontology_schema_data`, `scope` |
-| `set_concept_ontology_role` | Assign or update a single concept's role in the schema graph | `project_id`, `concept_name`, `ontology_schema_type`, `edge_source`, `edge_target`, `scope` |
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `get_ontology_schema` | Load the schema graph, where nodes are entity types and edges are relationships | **`ontology_id`** |
+| `save_ontology_schema` | Save or replace the complete schema graph | **`ontology_id`**, **`ontology_schema_data`** |
 
 ### Apps
 
-| Tool | Description | Key Parameters |
-|------|-------------|----------------|
-| `list_apps` | List all apps across every ontology in the workspace | `scope` |
-| `get_app` | Load a single app with its full definition | `project_id`, `app_id`, `scope` |
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_apps` | List every app across all ontologies | — |
+| `get_app` | Load a single app with its full definition | **`ontology_id`**, **`app_id`** |
 | `get_app_schema` | Return the JSON Schema for an app definition | — |
-| `save_app` | Create or update an app for an ontology | `project_id`, `app`, `scope` |
-| `delete_app` | Permanently delete an app | `project_id`, `app_id`, `scope` |
+| `save_app` | Create or update an app; omit the definition's top-level `id` to create | **`ontology_id`**, **`app`** |
+| `publish_app` | Publish an app, so viewers get a frozen snapshot of the current draft | **`ontology_id`**, **`app_id`** |
+| `unpublish_app` | Remove the published snapshot, returning the app to draft-only | **`ontology_id`**, **`app_id`** |
+| `delete_app` | Permanently delete an app and its version history | **`ontology_id`**, **`app_id`** |
 
-### Company Knowledge
+Call `get_app_schema` before `save_app` — it returns the authoritative JSON Schema
+for the app definition, along with the authoring guide.
 
-| Tool | Description | Key Parameters |
-|------|-------------|----------------|
-| `get_company_info` | Search the Prometheux company knowledge base | `query` |
+### Context Layer
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `save_context_note` | Persist a durable note the agent should remember in later turns | **`scope`**, **`kind`**, **`title`**, **`text`**, `ontology_id`, `supersedes` |
+| `list_context_notes` | Browse the Context Layer for the current user or ontology | **`scope`**, `ontology_id`, `kinds`, `activation` |
+| `search_context_notes` | Semantic search over all saved notes, global and per-ontology | **`query`**, `limit` |
+| `get_context_for_concept` | Return the notes attached to a concept, or every annotated concept | **`ontology_id`**, `concept_name` |
+| `promote_context_to_concept` | Hand a note's text and predicates to the agent so it can author a concept | **`note_id`**, **`ontology_id`** |
+| `delete_context_note` | Permanently delete a context note | **`note_id`** |
+| `ingest_document_as_context` | Chunk and embed a long document, saving each chunk as a note | **`file_path`**, `scope`, `ontology_id` |
+| `extract_concepts_from_document` | Run a concept-shaped extraction pass over an ingested document | **`document_id`**, `ontology_id` |
+| `get_user_rules` | Return your standing rules, the same ones the in-app assistant loads | `ontology_id` |
+
+Here `scope` is the note's own scope — `global` or `project` — rather than the
+workspace scope used elsewhere. `kind` is `preference` or `fact`.
+
+### Skills
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_skills` | List the available skills, step-by-step playbooks, with hints on when to use each | — |
+| `get_skill` | Fetch one skill's full playbook | **`skill_id`** |
+
+### Compute machines
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_machines` | List the catalogue plus your enabled and disabled machines | — |
+| `get_machine_status` | Real-time pod status for one of your machines | **`user_machine_id`** |
+| `start_machine` | Add a catalogue machine to your compute list — provisions it, not billable | **`machine_id`**, `machine_name` |
+| `activate_machine` | Power on a machine, starting a live billable session | **`user_machine_id`**, `autotermination_minutes` |
+| `stop_machine` | Stop a running machine and close its usage session | **`user_machine_id`** |
+| `delete_machine` | Remove a machine from your list, preserving its history | **`user_machine_id`** |
+
+Note the two different identifiers: `machine_id` is a catalogue id, used only by
+`start_machine`, while `user_machine_id` identifies a machine already on your
+list.
+
+### Scheduled runs
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_policies` | List the scheduled or triggered runs configured for an ontology | **`ontology_id`**, `concept_name`, `scope` |
+| `get_policy` | Return one policy with its trigger config and last-run status | **`ontology_id`**, **`policy_id`**, `scope` |
+| `get_policy_runs` | Execution history for a policy, most recent first | **`ontology_id`**, **`policy_id`**, `limit`, `offset`, `scope` |
+| `create_policy` | Re-run a concept on a cron schedule, or when its data changes | **`ontology_id`**, **`concept_name`**, **`trigger_type`**, **`trigger_config`**, `enabled`, `scope` |
+| `update_policy` | Change a policy's schedule, or enable and disable it | **`ontology_id`**, **`policy_id`**, `trigger_config`, `enabled`, `scope` |
+| `delete_policy` | Permanently delete a policy and unschedule its job | **`ontology_id`**, **`policy_id`**, `scope` |
+| `trigger_policy` | Run a policy's concept immediately | **`ontology_id`**, **`policy_id`**, `scope` |
+
+`trigger_type` is either `cron`, whose config looks like
+`{"cron_expression": "0 6 * * *"}`, or `data_change`, whose config looks like
+`{"check_interval_minutes": 30}`.
+
+### Vadalog and company knowledge
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `search_vadalog_docs` | Search the Vadalog documentation and return ready-to-use examples | **`query`** |
+| `get_company_info` | Search the Prometheux company knowledge base | **`query`** |
+| `request_clarification` | Pause and ask you a structured multiple-choice question rather than guess | **`question`**, **`options`**, `scope_picker`, `allow_custom`, `context` |
 
 <Tip>
-**Parameter Defaults**
+**Parameter defaults**
 
-Most tools accept a `scope` parameter (`"user"` or `"organization"`, default `"user"`). Boolean parameters like `force_rerun` and `persist_outputs` default to `true` and `false` respectively.
+Tools that expose a `scope` parameter accept `"user"` or `"organization"` and
+default to `"user"`; tools that omit it operate on your personal workspace. On
+`run_concept`, both `force_rerun` and `persist_outputs` default to `true`.
+
+On `update_concept`, omitting `description`, `concept_config`, or `group` leaves
+that field unchanged — which is different from passing an empty value, since an
+empty `concept_config` clears it and an empty `group` moves the concept back to
+the root.
 </Tip>
+
+<Note>
+**Long-running tools**
+
+`run_concept`, `ingest_document_as_context`, and `extract_concepts_from_document`
+advertise themselves as long-running through the `prometheux/long_running` hint
+in `tools/list`, so clients can keep the connection alive and surface progress
+instead of timing out.
+</Note>
 
 ## Example Usage
 
 Once configured, just chat naturally with your AI agent. The agent will automatically use the Prometheux MCP tools when relevant.
 
 **Example queries:**
-> "What projects do I have?"
+> "What ontologies do I have?"
 
-> "What concepts are available in my customer-analytics project?"
+> "What concepts are available in my customer-analytics ontology?"
 
-> "Run the churn_prediction concept in the customer-analytics project"
+> "Run the churn_prediction concept in the customer-analytics ontology"
 
-> "Generate a Vadalog program that finds all transitive suppliers for a company"
+> "Write a concept that finds all transitive suppliers for a company"
+
+> "Summarise each supplier's risk notes into a table of company, risk level, and reason"
 
 > "Create an app showing the results of churn_prediction"
 
