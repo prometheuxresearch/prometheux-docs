@@ -1,11 +1,16 @@
 ---
 title: "Command reference"
-description: "Every px command and flag: init, validate, login, pull, plan, apply, run, status, delete, context apply, skill install."
+description: "Every px command and flag: init, validate, login, pull, list, plan, apply, run, show, query, search, status, snapshot, policy, template, datasource, app, context, playbook, compute, delete, skill."
 ---
 
 `px --help` lists all commands; `px <command> --help` shows a command's options.
-**Offline:** `init`, `validate`. **Online** (reach the platform): `login`, `pull`,
-`plan`, `apply`, `run`, `status`, `delete`, `context apply`.
+**Offline:** `init`, `validate` (without `--online`). Everything else reaches the
+platform and needs `px login` first.
+
+The CLI is a full alternative to the [MCP connection](/integrations/mcp/overview):
+authoring is declarative (edit files, `plan`, `apply`), and every other platform
+capability — snapshots, policies, templates, apps, queries, search, compute — has a
+direct command.
 
 ## `px init [DIRECTORY]`
 
@@ -24,21 +29,22 @@ px init /tmp/ws --name demo  # into a new dir with an explicit name
 
 ## `px validate [PATH]`
 
-Schema + structural checks against the bundled JSON Schemas — **fully offline**, with a
+Schema + structural checks against the bundled JSON Schemas — offline by default, with a
 `PASS`/`FAIL` exit code. Checks that manifests match their schema, concept bodies have
 envelopes, output predicates aren't duplicated, datasource references resolve, and context
-bodies exist. Also **warns** when a project ships an ontology but has no concepts (that
+bodies exist. Also **warns** when an ontology ships a schema graph but has no concepts (that
 renders empty on the platform).
 
 | Option | Meaning |
 |---|---|
 | `--strict` | Treat warnings as failures. |
+| `--online` | Also validate each concept body server-side with the Vadalog engine (needs `px login`). |
 
 `PATH` defaults to searching up from the current directory for `prometheux.workspace.yaml`.
 
 ```bash
-px validate            # find workspace from CWD
-px validate /tmp/ws    # explicit
+px validate            # offline: find workspace from CWD
+px validate --online   # also engine-check every concept body
 ```
 
 ## `px login`
@@ -52,22 +58,42 @@ Authenticate and store URL + token in `~/.prometheux/config.json`. See
 | `--token TEXT` | API token; omit to be prompted (hidden input). |
 | `--no-verify` | Skip the live auth check. |
 
-## `px pull [PROJECT]`
+## `px pull [ONTOLOGY]`
 
-Export a live project into `projects/<slug>/` (concepts → body + `.meta.yaml`,
-datasources, ontology, apps). With **no** `PROJECT`, lists the projects visible to you and exits.
+Export a live ontology into `ontologies/<slug>/` (concepts → body + `.meta.yaml`,
+datasources, ontology schema, apps). With **no** `ONTOLOGY`, lists the ontologies visible to
+you and exits.
 
 | Option | Meaning |
 |---|---|
 | `--scope [user\|organization]` | Scope to pull from. |
 | `--out PATH` | Workspace directory (default: `.`). |
-| `--slug TEXT` | Directory name under `projects/` (default: from project name). |
-| `--with-files` | Download uploaded **file-datasource content** into `files/` and write portable `file:` specs, so the project (with its files) can be re-applied elsewhere. |
+| `--slug TEXT` | Directory name under `ontologies/` (default: from the ontology name). |
+| `--with-files` | Download uploaded **file-datasource content** into `files/` and write portable `file:` specs, so the ontology (with its files) can be re-applied elsewhere. |
 
 ```bash
-px pull                                  # list projects
-px pull 1d22942b9a0                      # write to ./projects/<slug>
+px pull                                  # list ontologies
+px pull 1d22942b9a0                      # write to ./ontologies/<slug>
 px pull 1d22942b9a0 --with-files --out /tmp/copy
+```
+
+## `px list <resource>`
+
+Browse platform resources. Each subcommand prints the identifier first (the value other
+commands take) plus a human name.
+
+| Subcommand | Lists |
+|---|---|
+| `px list ontologies` | Your ontologies (id + name + author). |
+| `px list concepts --ontology <id>` | An ontology's concepts (predicate + type + populated). |
+| `px list apps` | Apps across all ontologies (id + name + ontology + status). |
+| `px list datasources` | Connected datasources (id + table + type + bind predicate). |
+| `px list context` | Context notes (`--scope global\|project`, `--ontology <id>` for project scope). |
+
+```bash
+px list ontologies
+px list concepts --ontology 1d22942b9a0
+px list datasources
 ```
 
 ## `px plan [PATH]`
@@ -78,42 +104,43 @@ changes; also diffs datasources, ontology schema, and apps.
 
 | Option | Meaning |
 |---|---|
-| `-p, --project TEXT` | Only plan the named project(s), by name / slug / id. Repeatable. |
+| `-o, --ontology TEXT` | Only plan the named ontology(ies), by name / slug / id. Repeatable. |
 
 ```bash
 px plan
-px plan -p "Credit Risk" -p fraud-detection
+px plan -o "Credit Risk" -o fraud-detection
 ```
 
 ## `px apply [PATH]`
 
 Apply the plan: connect datasources, then create/update concepts, ontology schema, and
-apps. Creates the project if new; snapshots each project first (best-effort).
+apps. Creates the ontology if new; snapshots each ontology first (best-effort).
 
 | Option | Meaning |
 |---|---|
-| `-p, --project TEXT` | Only apply the named project(s). Repeatable. |
+| `-o, --ontology TEXT` | Only apply the named ontology(ies). Repeatable. |
 | `-y, --yes` | Skip the confirmation prompt. |
-| `--prune` | Also delete concepts present on the server but absent from files. |
-| `--no-snapshot` | Do not snapshot each project before applying. |
+| `--prune` | Also delete concepts (and apps) present on the server but absent from files. |
+| `--no-snapshot` | Do not snapshot each ontology before applying. |
 | `--with-files` | Re-upload file datasources even when an identical one already exists (refresh content). New files always upload. |
 
 **Behaviour:**
 
 - **Deletions are safe by default** — a concept isn't deleted just because its file
-  vanished; use `--prune`. Datasources are user-scoped and never deleted.
+  vanished; use `--prune`. Datasources are user-scoped and never deleted by `apply`.
 - **A datasource already on the account is reused** (matched by type/host/port/table), not
-  re-connected — so repeated applies don't pile up duplicate rows.
+  re-connected — so repeated applies don't pile up duplicate rows. To disconnect one, use
+  `px datasource delete`.
 - **Best-effort concepts:** a concept whose body references something unresolvable (a
   source defect, or a dep not in this apply) is **skipped** with a warning; the rest of the
-  project still applies, and the run exits non-zero with a skip summary. A genuine error
+  ontology still applies, and the run exits non-zero with a skip summary. A genuine error
   (parse, conflict) aborts fast.
-- **Cross-account port:** a recreated project's new id is written back to `prometheux.yaml`,
+- **Cross-account port:** a recreated ontology's new id is written back to `prometheux.yaml`,
   and app `project.id` references + sibling-output paths are retargeted automatically.
 
 ```bash
 px apply -y
-px apply -p "Credit Risk" --prune
+px apply -o "Credit Risk" --prune
 PG_PASSWORD=... px apply --with-files    # (re)upload local file datasources
 ```
 
@@ -123,7 +150,7 @@ Run a concept (an output predicate) and emit OpenLineage `START`/`COMPLETE`/`FAI
 
 | Option | Meaning |
 |---|---|
-| `-p, --project TEXT` | Limit the lookup to the named project(s). Repeatable. |
+| `-o, --ontology TEXT` | Limit the lookup to the named ontology(ies). Repeatable. |
 | `--param KEY=VALUE` | Run parameter (repeatable). |
 | `--persist` | Materialize the concept's outputs. |
 | `--openlineage-file PATH` | Append events here (default `<workspace>/.px/openlineage.jsonl`). |
@@ -132,7 +159,53 @@ Run a concept (an output predicate) and emit OpenLineage `START`/`COMPLETE`/`FAI
 
 ```bash
 px run risk_score
-px run risk_score --persist --param year=2025 -p "Credit Risk"
+px run risk_score --persist --param year=2025 -o "Credit Risk"
+```
+
+## `px show CONCEPT [PATH]`
+
+Fetch and print the rows of a populated concept (resolved from the local workspace),
+paginated.
+
+| Option | Meaning |
+|---|---|
+| `-o, --ontology TEXT` | Limit the lookup to the named ontology(ies). Repeatable. |
+| `--page INTEGER` | 1-based page number (default `1`). |
+| `--page-size INTEGER` | Rows per page (default `100`). |
+| `--order-by TEXT` | Ordering, e.g. `0:asc,2:desc` (column positions). |
+| `--json` | Emit raw JSON instead of a table. |
+
+```bash
+px show risk_score
+px show risk_score --page-size 20 --order-by 1:desc
+```
+
+## `px query ONTOLOGY CONCEPT SQL`
+
+Run a read-only SQL `SELECT`/`WITH` over one populated concept (aggregates, `DISTINCT`,
+`GROUP BY`) without pulling the workspace. Takes the ontology id and concept name directly.
+
+| Option | Meaning |
+|---|---|
+| `--scope [user\|organization]` | Scope (default `user`). |
+| `--json` | Emit raw JSON instead of a table. |
+
+```bash
+px query 1d22942b9a0 tx "SELECT country, count(*) FROM tx GROUP BY country"
+```
+
+## `px search <concepts\|company>`
+
+Semantic search across the platform.
+
+| Subcommand | Searches |
+|---|---|
+| `px search concepts QUERY` | Existing concepts across ontologies to reuse (`--top-k`, `--exclude <ontology-id>`). |
+| `px search company QUERY` | The Prometheux company knowledge base. |
+
+```bash
+px search concepts "customer risk score" --top-k 5
+px search company "supported data connectors"
 ```
 
 ## `px status`
@@ -150,13 +223,137 @@ progress. The engine is globally serialized, so at most one ontology is ever `ru
 ```bash
 px status                       # one-shot table
 px status --watch               # live; announces when a run starts
-px status -w -i 5 --scope user,organization
 ```
 
-## `px delete PROJECT`
+## `px snapshot <list\|create\|restore\|delete>`
 
-Permanently delete a whole project (a server project id or exact name) and everything in
-it — concepts, datasource binds, ontology, apps, notes. The server auto-snapshots first
+Point-in-time snapshots of a server ontology. `apply` already snapshots before it writes
+(unless `--no-snapshot`); these let you manage snapshots directly. All take the ontology id
+and accept `--scope`.
+
+| Command | Meaning |
+|---|---|
+| `px snapshot list ONTOLOGY` | List snapshots, newest first. |
+| `px snapshot create ONTOLOGY [-d TEXT]` | Create a snapshot with an optional label. |
+| `px snapshot restore ONTOLOGY SNAPSHOT_ID` | Restore (prompts; `--yes` to skip, `--no-safety` to skip the pre-restore snapshot). |
+| `px snapshot delete ONTOLOGY SNAPSHOT_ID` | Delete a snapshot (prompts; `--yes`). |
+
+```bash
+px snapshot create 1d22942b9a0 -d "before refactor"
+px snapshot restore 1d22942b9a0 snap_abc --yes
+```
+
+## `px policy <list\|get\|create\|update\|delete\|trigger\|runs>`
+
+Evaluation policies run a concept on a cron schedule or when its inputs change. All take the
+ontology id and accept `--scope`.
+
+| Command | Meaning |
+|---|---|
+| `px policy list ONTOLOGY` | List policies (`--concept` to filter). |
+| `px policy get ONTOLOGY POLICY_ID` | Full config + last-run status (JSON). |
+| `px policy create ONTOLOGY CONCEPT` | Create a policy — `--trigger-type cron\|data_change`, `--cron "0 0 * * *"` or `--config '<json>'`, `--disabled`. |
+| `px policy update ONTOLOGY POLICY_ID` | Change schedule (`--cron`/`--config`) and/or `--enable`/`--disable`. |
+| `px policy delete ONTOLOGY POLICY_ID` | Delete + unschedule (prompts; `--yes`). |
+| `px policy trigger ONTOLOGY POLICY_ID` | Run the policy's concept now. |
+| `px policy runs ONTOLOGY POLICY_ID` | Execution history (`--limit`, `--offset`). |
+
+```bash
+px policy create 1d22942b9a0 risk_score --cron "0 6 * * *"
+px policy trigger 1d22942b9a0 pol_abc
+px policy runs 1d22942b9a0 pol_abc
+```
+
+## `px template <list\|import>`
+
+The catalogue of starter ontologies you can clone.
+
+| Command | Meaning |
+|---|---|
+| `px template list` | List catalogue templates (id + name). |
+| `px template import TEMPLATE_ID` | Clone a template into a new ontology (`--name`, `--scope`). |
+
+```bash
+px template list
+px template import 1af0afbf00b --name "My Supply Chain"
+```
+
+## `px datasource <preview\|delete>`
+
+Connecting datasources is declarative (`datasources/*.yaml` + `apply`); these cover the reads
+and removals `apply` doesn't.
+
+| Command | Meaning |
+|---|---|
+| `px datasource preview BIND` | Preview the first rows (`--limit`). |
+| `px datasource delete BIND` | Disconnect a datasource by its bind annotation (or id with `--by-id`; prompts, `--yes`). |
+
+```bash
+px datasource preview '@bind("customers","csv",...)'
+px datasource delete customers_csv --yes
+```
+
+## `px app <publish\|unpublish>`
+
+Creating and editing apps is declarative (`apps/*.app.yaml` + `apply`); publishing freezes a
+shareable snapshot of the current draft.
+
+| Command | Meaning |
+|---|---|
+| `px app publish ONTOLOGY APP_ID` | Publish a frozen, shareable snapshot. |
+| `px app unpublish ONTOLOGY APP_ID` | Remove the published snapshot (back to draft-only). |
+
+```bash
+px app publish 1d22942b9a0 app_abc
+```
+
+## `px context <apply\|search>`
+
+Manage the [context layer](/integrations/cli/context-as-code) (knowledge notes).
+
+| Command | Meaning |
+|---|---|
+| `px context apply [PATH]` | Apply notes + links from every `*.context.md` manifest. Idempotent (`--yes`, `--prune`). |
+| `px context search QUERY` | Semantic search over saved notes (`--scope global\|project`, `--ontology`, `--top-k`). |
+
+```bash
+px context apply -y
+px context search "escalation policy"
+```
+
+## `px playbook <list\|show>`
+
+The platform's step-by-step skill playbooks (what the AI assistant follows). Distinct from
+`px skill install`, which installs the *authoring* skill into your editor.
+
+| Command | Meaning |
+|---|---|
+| `px playbook list` | List available playbooks (id + name). |
+| `px playbook show SKILL_ID` | Print a playbook's full body. |
+
+## `px compute <status\|start\|stop\|catalog\|provision\|remove>`
+
+Runs need a compute machine. These manage your machines from the terminal.
+
+| Command | Meaning |
+|---|---|
+| `px compute status` | List your enabled machines and active state. |
+| `px compute start [NAME]` | Power on a machine (billable session). `--autotermination N`. |
+| `px compute stop [NAME]` | Stop a running machine. |
+| `px compute catalog` | List catalog machines available to provision (with ids). |
+| `px compute provision MACHINE_ID` | Add a catalog machine to your list (`--name`; not billable yet). |
+| `px compute remove USER_MACHINE_ID` | Remove (soft-disable) a machine; usage history is kept. |
+
+```bash
+px compute catalog
+px compute provision 5c1da01e-... --name my-box
+px compute start && px run risk_score
+```
+
+## `px delete ONTOLOGY`
+
+Permanently delete a whole ontology (a server id or exact name) and everything in it —
+concepts, datasource binds, ontology schema, apps, notes. The server auto-snapshots first
 when versioning is available. **Local workspace files are not touched.** Resolves by id
 first, then by exact name (ambiguous names must be deleted by id).
 
@@ -168,21 +365,6 @@ first, then by exact name (ambiguous names must be deleted by id).
 ```bash
 px delete 245ba23a329           # prompts, then hard-deletes
 px delete "Credit Risk" -y      # by name, no prompt
-```
-
-## `px context apply [PATH]`
-
-Apply the context layer from every `*.context.md` manifest in the workspace. **Idempotent**
-via `.px/context-state.json`. See [Context as code](/integrations/cli/context-as-code) for the full model.
-
-| Option | Meaning |
-|---|---|
-| `-y, --yes` | Skip the confirmation prompt. |
-| `--prune` | Delete notes previously applied but no longer in any manifest. |
-
-```bash
-px context apply -y
-px context apply --prune
 ```
 
 ## `px skill install`
@@ -207,12 +389,12 @@ px skill install -t cursor --dir .     # Cursor rule in this repo
 |---|---|
 | `validate` | `0` PASS, non-zero FAIL |
 | `apply` | `0` on success; non-zero if any concept was skipped (with a summary) or on a hard error |
-| `plan`, `status` | `0` |
+| `plan`, `status`, `list`, and other reads | `0` |
 
 ## State & idempotency
 
-- **Project id** is written into `projects/<slug>/prometheux.yaml` on create — commit it so
-  re-apply targets the same project. If lost, `apply` reconciles by name.
+- **Ontology id** is written into `ontologies/<slug>/prometheux.yaml` on create — commit it so
+  re-apply targets the same ontology. If lost, `apply` reconciles by name.
 - **Context state** (`.px/context-state.json`) drives idempotent `context apply` — commit
   it; if lost, `context apply` reconciles against server notes by content.
 - A clean `pull` then `plan`/`apply` reports **no changes**; re-applying is a no-op.
