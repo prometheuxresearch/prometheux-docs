@@ -4,9 +4,13 @@ description: "px — author a Prometheux workspace (lineage + context) as files,
 ---
 
 `px` is the Prometheux command-line tool. It lets you keep an entire Prometheux
-environment — the **lineage** (concepts, datasources, ontology, apps) *and* the
+environment — the **lineage** (concepts, datasources, ontology schema, apps) *and* the
 **context layer** (knowledge notes) — as a directory of files that you author locally,
 review in a pull request, and **apply** to a Prometheux platform over REST.
+
+Beyond authoring, `px` covers the full platform surface — snapshots, policies, templates,
+apps, ad-hoc queries, semantic search, and compute — so it is a scriptable alternative to
+the [MCP connection](/integrations/mcp/overview) for everything you'd otherwise do in chat.
 
 It is a thin, files-first layer over the [`prometheux_chain` Python SDK](/integrations/python-sdk):
 `px` owns the file format, the offline validator, and the `plan`/diff engine; every
@@ -29,11 +33,11 @@ platform call underneath goes through the SDK.
 
 ## Why lineage as code
 
-Everything a Prometheux project is — concepts, their bindings, the ontology, apps, and
+Everything a Prometheux ontology is — concepts, their bindings, the ontology schema, apps, and
 the notes your AI assistant reads — becomes plain files in one git repo. That gives you:
 
 - **Version control & review** — diff a change, review it in a PR, roll back with git.
-- **Reproducibility** — recreate a project on another account or environment from the files.
+- **Reproducibility** — recreate an ontology on another account or environment from the files.
 - **Automation** — apply from CI on every merge (see [CI/CD](/integrations/cli/ci-cd)).
 - **Agent authoring** — a coding agent writes the files and runs `px` for you
   (see [the agent skill](/integrations/cli/agent-skill)).
@@ -72,15 +76,16 @@ px plan                  # preview create / update / delete + the re-run cascade
 px apply                 # reconcile local files to the platform
 ```
 
-`init` and `validate` are **fully offline** — no platform connection, no SDK. Only
-`login`, `pull`, `plan`, `apply`, `run`, `status`, `delete`, and `context apply` reach
-the platform.
+`init` and `validate` are **fully offline** — no platform connection, no SDK. Every other
+command (`login`, `pull`, `list`, `plan`, `apply`, `run`, `show`, `query`, `search`,
+`status`, `snapshot`, `policy`, `template`, `datasource`, `app`, `context`, `playbook`,
+`compute`, `delete`) reaches the platform — see the [command reference](/integrations/cli/command-reference).
 
 ## How it fits with the rest of Prometheux
 
 | Surface | Use it for |
 |---|---|
-| **px CLI** (this section) | Author & deploy a whole project as files; GitOps; agent-driven authoring. |
+| **px CLI** (this section) | Author & deploy a whole ontology as files; GitOps; agent-driven authoring; a scriptable alternative to MCP for the full platform surface. |
 | [Python SDK](/integrations/python-sdk) | Programmatic access to individual platform operations from Python. |
 | [REST API](/integrations/rest-api) | Direct HTTP integration. |
 | [MCP](/integrations/mcp/overview) | Connect an AI client to the platform for interactive, in-chat operations. |

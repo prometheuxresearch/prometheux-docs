@@ -47,7 +47,7 @@ Optional prose for the human reader; ignored by import.
 
 | Field | Values | Meaning |
 |---|---|---|
-| `scope` | `global` \| `project` | `global` is exposed to every project; `project` belongs to this project. Declared in the manifest, **not** inferred from the folder. |
+| `scope` | `global` \| `project` | `global` is exposed to every ontology; `project` belongs to a single ontology. (The scope value stays `project` — it is the platform's wire name.) Declared in the manifest, **not** inferred from the folder. |
 | `activation` | `retrieved` \| `always` \| `on_demand` | How the note is served (below). |
 | `kind` | e.g. `fact`, `rule` | Default kind for the set. `type: rule` is sugar for `activation: always`. |
 | `notes` | list of body paths | The body files this set publishes (one note each). Per-entry overrides allowed. |

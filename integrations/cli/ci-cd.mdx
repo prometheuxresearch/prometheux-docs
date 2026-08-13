@@ -1,10 +1,10 @@
 ---
 title: "CI/CD"
-description: "Make a git repo the source of truth for your Prometheux projects: validate on every PR, apply on every merge."
+description: "Make a git repo the source of truth for your Prometheux ontologies: validate on every PR, apply on every merge."
 ---
 
 Because a `px` workspace is just files, a git repo can be the source of truth for your
-Prometheux projects — validated on every pull request and applied on every merge. `px`
+Prometheux ontologies — validated on every pull request and applied on every merge. `px`
 runs headless in CI: authenticate with environment variables, no interactive login.
 
 ## Authenticate in CI
@@ -113,8 +113,8 @@ CI can gate on exit codes directly (see the [command reference](/integrations/cl
 
 ## Idempotency & state to commit
 
-- **Project id** in `projects/<slug>/prometheux.yaml` — commit it so re-apply targets the
-  same project (never creates a duplicate). If it's lost, `apply` reconciles by project name.
+- **Project id** in `ontologies/<slug>/prometheux.yaml` — commit it so re-apply targets the
+  same ontology (never creates a duplicate). If it's lost, `apply` reconciles by ontology name.
 - **Context state** `.px/context-state.json` — commit it so `context apply` updates rather
   than re-creates notes.
 
