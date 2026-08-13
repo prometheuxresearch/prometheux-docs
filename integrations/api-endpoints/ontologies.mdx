@@ -225,10 +225,10 @@ connectors need to be reconfigured before running concepts.
 
 Serialize a single ontology — its concepts (structure only, not cached output
 rows), data source binds, schema, and metadata — into a portable JSON payload.
-Use `import-project` to restore it.
+Use `import-ontology` to restore it.
 
 ```
-POST /ontologies/export-project
+POST /ontologies/export-ontology
 ```
 
 | Parameter | In | Required | Default | Description |
@@ -237,7 +237,7 @@ POST /ontologies/export-project
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
-curl -X POST "$BASE_URL/ontologies/export-project" \
+curl -X POST "$BASE_URL/ontologies/export-ontology" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "project_id": "'$PROJECT_ID'", "scope": "user" }'
@@ -266,23 +266,23 @@ must be re-run after import.
 
 ## Import an ontology
 
-Restore an ontology from a payload previously produced by `export-project`. A new
+Restore an ontology from a payload previously produced by `export-ontology`. A new
 ontology ID is assigned; data source connections are validated after import and
 any that fail are reported in `failed_datasources`.
 
 ```
-POST /ontologies/import-project
+POST /ontologies/import-ontology
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `export_data` | body | yes | — | The `data` object from an `export-project` response. |
+| `export_data` | body | yes | — | The `data` object from an `export-ontology` response. |
 | `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the imported ontology. |
 | `force_new_id` | body | no | `false` | Assign a fresh ID even if the original ontology ID is available. |
 | `compute` | body | no | `{}` | Compute configuration overrides. |
 
 ```bash
-curl -X POST "$BASE_URL/ontologies/import-project" \
+curl -X POST "$BASE_URL/ontologies/import-ontology" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -309,7 +309,7 @@ curl -X POST "$BASE_URL/ontologies/import-project" \
 ## Export workspace
 
 Export every ontology in the workspace — and all workspace-level tables — in a
-single payload. Equivalent to calling `export-project` for each ontology plus the
+single payload. Equivalent to calling `export-ontology` for each ontology plus the
 workspace-level tables in one request.
 
 ```

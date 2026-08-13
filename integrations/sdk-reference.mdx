@@ -44,8 +44,8 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `copy_ontology(...)` | [`POST /ontologies/copy`](/integrations/api-endpoints/ontologies#copy-an-ontology) | Duplicate an ontology. |
 | `list_templates(...)` | [`GET /ontologies/list-templates`](/integrations/api-endpoints/ontologies#list-templates) | Browse marketplace templates. |
 | `import_template(...)` | [`POST /ontologies/import-template`](/integrations/api-endpoints/ontologies#import-a-template) | Create an ontology from a template. |
-| `export_ontology(...)` | [`POST /ontologies/export-project`](/integrations/api-endpoints/ontologies#export-an-ontology) | Serialize an ontology to a portable payload. |
-| `import_ontology(...)` | [`POST /ontologies/import-project`](/integrations/api-endpoints/ontologies#import-an-ontology) | Restore an ontology from a payload. |
+| `export_ontology(...)` | [`POST /ontologies/export-ontology`](/integrations/api-endpoints/ontologies#export-an-ontology) | Serialize an ontology to a portable payload. |
+| `import_ontology(...)` | [`POST /ontologies/import-ontology`](/integrations/api-endpoints/ontologies#import-an-ontology) | Restore an ontology from a payload. |
 | `export_workspace(...)` | [`POST /ontologies/export-workspace`](/integrations/api-endpoints/ontologies#export-workspace) | Export every ontology in the workspace. |
 | `import_workspace(...)` | [`POST /ontologies/import-workspace`](/integrations/api-endpoints/ontologies#import-workspace) | Restore a full workspace. |
 | `create_ontology_from_context(...)` | [`POST /ontologies/create-from-context`](/integrations/api-endpoints/ontologies#create-from-context) | Build an ontology from text/files via the LLM. |
@@ -139,7 +139,7 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `search_context_notes(...)` | [`POST /knowledge/context/search`](/integrations/api-endpoints/context-layer#semantic-search) | Semantic search over notes. |
 | `create_context_notes_from_file(...)` | [`POST /knowledge/context/from-file`](/integrations/api-endpoints/context-layer#ingest-a-file-as-context) | Ingest a file as context notes. |
 | `auto_seed(...)` <Icon icon="bolt" /> | [`POST /knowledge/auto-seed`](/integrations/api-endpoints/context-layer#auto-seed-from-data-sources) | Profile sources, stream observations. |
-| `ontology_text(...)` | [`GET /knowledge/project/{ontology_id}/text`](/integrations/api-endpoints/context-layer#render-project-document) | Render the ontology document. |
+| `ontology_text(...)` | [`GET /knowledge/ontology/{ontology_id}/text`](/integrations/api-endpoints/context-layer#render-project-document) | Render the ontology document. |
 | `interview_template(...)` | `GET /knowledge/interview/template` | Onboarding interview template. |
 | `submit_interview(...)` | `POST /knowledge/interview` | Submit onboarding interview answers. |
 | `onboarding_status(...)` | `GET /knowledge/onboarding-status` | Report onboarding progress. |
