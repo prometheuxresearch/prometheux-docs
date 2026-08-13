@@ -349,7 +349,7 @@ Each NDJSON line follows this shape:
 Return a combined document view for a project: an LLM-generated natural-language summary alongside the full executable Vadalog program assembled from all concepts. The summary is cached and is automatically invalidated when concepts or context notes change. Pass `refresh=true` to force regeneration regardless of the cache state.
 
 ```
-GET /knowledge/project/{ontology_id}/text
+GET /knowledge/ontology/{ontology_id}/text
 ```
 
 | Parameter | In | Required | Default | Description |
@@ -359,7 +359,7 @@ GET /knowledge/project/{ontology_id}/text
 | `refresh` | query | no | `false` | Bypass the summary cache and regenerate unconditionally. |
 
 ```bash
-curl "$BASE_URL/knowledge/project/$PROJECT_ID/text?scope=user" \
+curl "$BASE_URL/knowledge/ontology/$ONTOLOGY_ID/text?scope=user" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
