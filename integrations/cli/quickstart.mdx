@@ -20,12 +20,12 @@ before you have an account. Only `login`, `plan`, `apply`, and `run` reach the p
     cd my-workspace
     ```
     This writes a starter workspace: the JSON Schemas under `.px/schemas/`, an `AGENTS.md`
-    authoring guide, and a worked example of each concept kind under `projects/example/`.
+    authoring guide, and a worked example of each concept kind under `ontologies/example/`.
   </Step>
 
   <Step title="Author your files">
     Edit the example, or add your own. A concept is a **body file** plus a
-    **`.meta.yaml`** envelope. For example, `projects/example/concepts/customers.vadalog`:
+    **`.meta.yaml`** envelope. For example, `ontologies/example/concepts/customers.vadalog`:
     ```prolog
     customer(Id, Name, Country) :- source_customers(Id, Name, Country).
     ```
@@ -63,7 +63,7 @@ before you have an account. Only `login`, `plan`, `apply`, and `run` reach the p
     update / delete per concept, plus the **downstream re-run cascade** for any definition
     change. Nothing is written.
     ```text
-    Plan against project "Demo" (scope: user)  (new project — everything is create)
+    Plan against ontology "Demo" (scope: user)  (new ontology — everything is create)
       + concept customer   create
       Plan: 1 to create, 0 to update, 0 downstream re-run(s), 0 to destroy (withheld).
     ```
@@ -74,8 +74,8 @@ before you have an account. Only `login`, `plan`, `apply`, and `run` reach the p
     px apply
     ```
     Connects datasources, then creates/updates concepts, ontology, and apps. A brand-new
-    project is created and its server `id` is written back into `prometheux.yaml` — commit
-    that so the next apply targets the same project.
+    ontology is created and its server `id` is written back into `prometheux.yaml` — commit
+    that so the next apply targets the same ontology.
   </Step>
 
   <Step title="Run a concept">
@@ -87,13 +87,13 @@ before you have an account. Only `login`, `plan`, `apply`, and `run` reach the p
   </Step>
 </Steps>
 
-## Pull an existing project → edit → apply
+## Pull an existing ontology → edit → apply
 
-Already have a project on the platform? Bring it down to files:
+Already have an ontology on the platform? Bring it down to files:
 
 ```bash
-px pull                     # list the projects visible to you
-px pull <project-id>        # write it to ./projects/<slug>
+px pull                     # list the ontologies visible to you
+px pull <ontology-id>        # write it to ./ontologies/<slug>
 px validate && px plan      # a fresh pull plans clean — no changes
 # ...edit files...
 px apply

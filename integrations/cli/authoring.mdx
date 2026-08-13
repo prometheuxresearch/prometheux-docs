@@ -1,21 +1,21 @@
 ---
 title: "Authoring a workspace"
-description: "The px file model: workspace and project manifests, the six concept kinds, datasources, and the derived lineage graph."
+description: "The px file model: workspace and ontology manifests, the six concept kinds, datasources, and the derived lineage graph."
 ---
 
 A `px` **workspace** is one git repo holding a shared context vault plus one or more
-projects. This page is the reference for the files that describe a project's lineage.
+ontologies. This page is the reference for the files that describe an ontology's lineage.
 
 ## Workspace anatomy
 
 ```
 my-workspace/
-  prometheux.workspace.yaml     # lists the shared context vault + projects
+  prometheux.workspace.yaml     # lists the shared context vault + ontologies
   .px/schemas/                  # bundled JSON Schemas ($schema-referenced by files)
   context/                      # workspace-global context (see Context as code)
-  projects/
+  ontologies/
     credit-risk/
-      prometheux.yaml           # project manifest (id, name, scope + section paths)
+      prometheux.yaml           # ontology manifest (id, name, scope + section paths)
       concepts/
         customers.vadalog       # concept body (per-kind extension)
         customers.meta.yaml     # envelope: conceptType, outputPredicate, binds, …
@@ -29,7 +29,7 @@ my-workspace/
         schema.yaml             # node/edge graph
       apps/
         credit_risk.app.yaml    # AppDefinition v2
-      context/                  # this project's project-scoped context
+      context/                  # this ontology's project-scoped context
       files/                    # local datasource files (e.g. from `pull --with-files`)
 ```
 
@@ -48,32 +48,32 @@ schemaVersion: 1
 workspace:
   name: acme-data
 context: ./context            # the shared, global-scope context vault
-projects:
-  - ./projects/credit-risk
-  - ./projects/fraud-detection
+ontologies:
+  - ./ontologies/credit-risk
+  - ./ontologies/fraud-detection
 ```
 
-### `projects/<slug>/prometheux.yaml`
+### `ontologies/<slug>/prometheux.yaml`
 
 ```yaml
 schemaVersion: 1
-project:
-  id: 1d22942b9a0        # server project id; absent on a brand-new project (apply fills it)
+ontology:
+  id: 1d22942b9a0        # server ontology id; absent on a brand-new ontology (apply fills it)
   name: Credit Risk
   scope: user            # user | organization
 concepts: ./concepts
 datasources:
   - ./datasources/snowflake_prod.yaml
-ontology: ./ontology/schema.yaml
+ontologySchema: ./ontology/schema.yaml
 apps: ./apps
 context: ./context
 ```
 
 <Warning>
-`apply` writes the assigned `id` back into this file after creating a project — **commit
-it**, so re-apply targets the same project. If the id is lost, `apply` reconciles by
-**name** (adopts a single existing same-name project in scope rather than duplicating), so
-a unique project name makes recovery reliable.
+`apply` writes the assigned `id` back into this file after creating an ontology — **commit
+it**, so re-apply targets the same ontology. If the id is lost, `apply` reconciles by
+**name** (adopts a single existing same-name ontology in scope rather than duplicating), so
+a unique ontology name makes recovery reliable.
 </Warning>
 
 ## Concept kinds
@@ -238,11 +238,11 @@ duplicate rows.
 
 ## Ontology and apps
 
-- **`ontology/schema.yaml`** — an entity/edge graph in the `save_ontology_schema` shape.
-  The platform ontology view is drawn from concept lineage, so a project with an ontology
-  but **no concepts** renders empty; `px validate` warns about this.
+- **`ontologySchema` (`ontology/schema.yaml`)** — an entity/edge graph in the
+  `save_ontology_schema` shape. The platform ontology view is drawn from concept lineage, so
+  an ontology with a schema graph but **no concepts** renders empty; `px validate` warns about this.
 - **`apps/*.app.yaml`** — an [AppDefinition v2](/platform/apps/schema-reference). App
-  `project.id` references are retargeted automatically when a project is recreated on
+  `project.id` references are retargeted automatically when an ontology is recreated on
   another account.
 
 ## Guardrails
@@ -251,7 +251,7 @@ duplicate rows.
 - **Never put secrets in files** — reference them as `${ENV_VAR}`.
 - **Never hand-write lineage edges**, and never bind a predicate that another concept produces.
 - **One table per datasource file** for DB connections.
-- **v1 concepts refer only within their own project** — the only cross-project sharing is
+- **v1 concepts refer only within their own ontology** — the only cross-ontology sharing is
   `scope: global` [context](/integrations/cli/context-as-code).
 </Warning>
 
