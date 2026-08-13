@@ -1,0 +1,258 @@
+---
+title: "Authoring a workspace"
+description: "The px file model: workspace and project manifests, the six concept kinds, datasources, and the derived lineage graph."
+---
+
+A `px` **workspace** is one git repo holding a shared context vault plus one or more
+projects. This page is the reference for the files that describe a project's lineage.
+
+## Workspace anatomy
+
+```
+my-workspace/
+  prometheux.workspace.yaml     # lists the shared context vault + projects
+  .px/schemas/                  # bundled JSON Schemas ($schema-referenced by files)
+  context/                      # workspace-global context (see Context as code)
+  projects/
+    credit-risk/
+      prometheux.yaml           # project manifest (id, name, scope + section paths)
+      concepts/
+        customers.vadalog       # concept body (per-kind extension)
+        customers.meta.yaml     # envelope: conceptType, outputPredicate, binds, …
+        revenue.sql             # sql source (transpiled server-side)
+        enrich.py               # python script
+        summarize.llm.md        # llm prompt (frontmatter config + prompt body)
+        relevant.context.yaml   # context concept (note selection)
+      datasources/
+        snowflake_prod.yaml     # connection or file spec
+      ontology/
+        schema.yaml             # node/edge graph
+      apps/
+        credit_risk.app.yaml    # AppDefinition v2
+      context/                  # this project's project-scoped context
+      files/                    # local datasource files (e.g. from `pull --with-files`)
+```
+
+<Tip>
+Every YAML/manifest carries a `$schema` reference to a file under `.px/schemas/`, so any
+editor's language server gives you autocomplete and validation as you type. The schema is
+the single source of truth `px validate` enforces.
+</Tip>
+
+## The manifests
+
+### `prometheux.workspace.yaml`
+
+```yaml
+schemaVersion: 1
+workspace:
+  name: acme-data
+context: ./context            # the shared, global-scope context vault
+projects:
+  - ./projects/credit-risk
+  - ./projects/fraud-detection
+```
+
+### `projects/<slug>/prometheux.yaml`
+
+```yaml
+schemaVersion: 1
+project:
+  id: 1d22942b9a0        # server project id; absent on a brand-new project (apply fills it)
+  name: Credit Risk
+  scope: user            # user | organization
+concepts: ./concepts
+datasources:
+  - ./datasources/snowflake_prod.yaml
+ontology: ./ontology/schema.yaml
+apps: ./apps
+context: ./context
+```
+
+<Warning>
+`apply` writes the assigned `id` back into this file after creating a project — **commit
+it**, so re-apply targets the same project. If the id is lost, `apply` reconciles by
+**name** (adopts a single existing same-name project in scope rather than duplicating), so
+a unique project name makes recovery reliable.
+</Warning>
+
+## Concept kinds
+
+A concept is a body file (`concepts/<predicate>.<ext>`) plus, for most kinds, a
+`<predicate>.meta.yaml` envelope. The body extension carries the language you authored —
+don't rename everything to `.vadalog`.
+
+| Kind | Body file | `conceptType` | Notes |
+|---|---|---|---|
+| logic | `.vadalog` | `logic` | native Vadalog rules |
+| sql | `.sql` | `sql` | SQL source; server transpiles to Vadalog on apply |
+| cypher | `.cypher` | `cypher` | Cypher source; transpiled on apply |
+| python | `.py` | `python` | a Python script (leaf node, never spliced) |
+| llm | `.llm.md` | `llm` | prompt template + `llmConfig` frontmatter |
+| context | `.context.yaml` | `context` | note selection (static or dynamic) |
+
+### The `.meta.yaml` envelope
+
+```yaml
+conceptType: logic
+outputPredicate: customer      # the concept's output predicate (its lineage node name)
+group: ingest                  # optional grouping
+binds:
+  input:
+    - predicate: source_customers   # the predicate used in the body
+      datasource: snowflake_prod    # a datasources/ file name
+      table_name: RAW.CUSTOMERS     # optional, for DB tables
+  output: []                        # empty/unbound → materialized by the engine
+fields:
+  - { name: Id, type: string }
+  - { name: Name, type: string }
+```
+
+<Note>
+Bind a predicate in `binds.input` **only** when it comes from a datasource. A predicate
+produced by *another concept* is a derived edge — never bind it (see below).
+</Note>
+
+### logic
+
+Native Vadalog. `customers.vadalog`:
+```prolog
+customer(Id, Name, Country) :- source_customers(Id, Name, Country).
+```
+
+### sql / cypher
+
+Store the **source** query you wrote; the server transpiles it to Vadalog on apply, and
+`pull` recovers the source (not the transpiled form). `revenue.sql`:
+```sql
+SELECT customer_id, SUM(amount) AS revenue FROM orders GROUP BY customer_id
+```
+The `.meta.yaml` uses `conceptType: sql` (or `cypher`).
+
+### python
+
+A Python script — a leaf node, never parsed as Vadalog. `enrich.py` plus a
+`enrich.meta.yaml` with `conceptType: python`.
+
+### llm
+
+A prompt template with `llmConfig` frontmatter and the prompt as the body.
+`summarize.llm.md`:
+```markdown
+---
+conceptType: llm
+outputPredicate: customer_summary
+llmConfig:
+  provider: anthropic
+  model: claude-sonnet-4-6
+  output_columns: [Id, summary]
+---
+Summarize each customer's risk profile in one sentence, given {{ Id }} and their attributes.
+```
+
+### context
+
+A note selection — static (pin note paths) or dynamic (retrieve by query).
+`relevant.context.yaml`:
+```yaml
+conceptType: context
+outputPredicate: relevant_policy
+contextMode: dynamic
+query: "credit-risk scoring policy"
+```
+
+## The derived graph
+
+You never hand-write lineage edges. A concept's Vadalog head/body predicates *are* the
+edges:
+
+```prolog
+% risk_score.vadalog — references `customer`, which another concept outputs
+risk(Id, Score) :- customer(Id, _, Country), country_risk(Country, Score).
+```
+
+Because `customer` and `country_risk` are produced by other concepts, `px plan`
+reconstructs the edge `customer → risk` automatically. There is **no** `binds.input` entry
+for them — only datasource-backed predicates get bound. Changing a concept's rules
+invalidates its results and cascades to everything downstream; `plan` renders that cascade
+before you apply.
+
+## Datasources
+
+Datasource specs live in `datasources/*.yaml`. Secrets are always `${ENV_VAR}`
+placeholders, resolved from the environment at apply and **never** written to files.
+
+<Tabs>
+  <Tab title="Connection">
+    Databases (postgres / mariadb / clickhouse / teradata / snowflake / …). Author **one
+    table per file** so the concept binds it unambiguously (a DB connect returns the whole group):
+    ```yaml
+    name: pg_companies
+    type: postgresql
+    host: databases.prometheux.ai
+    port: 5432
+    username: prometheux
+    password: ${PG_PASSWORD}
+    database: prometheux
+    tables:
+      - prometheux.public.companies
+    ```
+  </Tab>
+  <Tab title="Local file">
+    csv / parquet / json / excel. `apply` uploads the file to the workspace disk, then
+    connects it (requires the Data Manager service):
+    ```yaml
+    name: customers_csv
+    type: csv
+    file: ../data/customers.csv
+    diskPath: uploads         # optional subdir under disk/
+    ```
+  </Tab>
+  <Tab title="Object store (S3)">
+    Connected in place, no upload. Put the **full path** (bucket **and** sub-dir) in
+    `host`, and **do not** set `database`:
+    ```yaml
+    name: s3_air_routes
+    type: csv
+    host: s3a://my-bucket/airports    # full path — bucket AND sub-dir
+    port: 0
+    s3aAccessKey: ${S3_ACCESS_KEY}
+    s3aSecretKey: ${S3_SECRET_KEY}
+    useHeaders: "true"
+    tables:
+      - air-routes-nodes.csv
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+For S3, splitting the path (`host: s3a://my-bucket`, `database: airports`) makes the
+*connect* succeed but drops the sub-dir from the stored bind — the concept then fails at
+**run** time with `PATH_NOT_FOUND`. Always put the whole path in `host`.
+</Warning>
+
+A concept reads a datasource through an input bind in its `.meta.yaml` (`binds.input`,
+referencing the datasource `name`). A datasource already on the account is **reused**
+(matched by type/host/port/table), not re-connected — so repeated applies never pile up
+duplicate rows.
+
+## Ontology and apps
+
+- **`ontology/schema.yaml`** — an entity/edge graph in the `save_ontology_schema` shape.
+  The platform ontology view is drawn from concept lineage, so a project with an ontology
+  but **no concepts** renders empty; `px validate` warns about this.
+- **`apps/*.app.yaml`** — an [AppDefinition v2](/platform/apps/schema-reference). App
+  `project.id` references are retargeted automatically when a project is recreated on
+  another account.
+
+## Guardrails
+
+<Warning>
+- **Never put secrets in files** — reference them as `${ENV_VAR}`.
+- **Never hand-write lineage edges**, and never bind a predicate that another concept produces.
+- **One table per datasource file** for DB connections.
+- **v1 concepts refer only within their own project** — the only cross-project sharing is
+  `scope: global` [context](/integrations/cli/context-as-code).
+</Warning>
+
+Next: [Context as code](/integrations/cli/context-as-code) or the [Command reference](/integrations/cli/command-reference).

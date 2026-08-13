@@ -123,6 +123,19 @@
           "integrations/config",
           "integrations/chat-api",
           {
+            "group": "CLI",
+            "pages": [
+              "integrations/cli/overview",
+              "integrations/cli/installation",
+              "integrations/cli/quickstart",
+              "integrations/cli/authoring",
+              "integrations/cli/context-as-code",
+              "integrations/cli/command-reference",
+              "integrations/cli/agent-skill",
+              "integrations/cli/ci-cd"
+            ]
+          },
+          {
             "group": "MCP",
             "pages": [
               "integrations/mcp/overview",

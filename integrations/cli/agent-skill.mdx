@@ -1,0 +1,95 @@
+---
+title: "Agent skill"
+description: "Give Claude Code or Cursor everything they need to author Prometheux workspaces — installed from px itself, no repo to clone."
+---
+
+Coding agents author `px` workspaces well when they know the file model, the concept
+kinds, the datasource rules, and the schemas. `px skill install` gives them exactly that —
+generated from the installed `px`, so it always matches your version and needs no repo to clone.
+
+The flow is: **install `px` → add the skill → profit.**
+
+```bash
+uv tool install prometheux    # or pipx / pip
+px skill install              # Claude Code global skill
+```
+
+## What it installs
+
+The skill is generated from the same bundled schemas and curated guide that `px validate`
+enforces, so it can't drift from what the CLI accepts.
+
+<Tabs>
+  <Tab title="Claude Code (global)">
+    ```bash
+    px skill install                 # default target: claude
+    ```
+    Writes `~/.claude/skills/prometheux/`:
+    - `SKILL.md` — the authoring guide + command reference
+    - `reference/schemas.md` — the field-by-field schema reference
+    - `reference/*.schema.json` — the raw JSON Schemas
+
+    Reload skills or restart Claude Code to pick it up.
+  </Tab>
+  <Tab title="Claude Code (per-repo)">
+    ```bash
+    px skill install -t claude-project --dir .
+    ```
+    Writes `./.claude/skills/prometheux/` so the skill is committed alongside a specific
+    workspace.
+  </Tab>
+  <Tab title="Cursor">
+    ```bash
+    px skill install -t cursor --dir .
+    ```
+    Writes `./.cursor/rules/prometheux.mdc` — a project rule with the schema reference
+    inlined. (Cursor has no global on-demand skill primitive, so this is per-project.)
+  </Tab>
+</Tabs>
+
+Install several at once by repeating `-t`:
+
+```bash
+px skill install -t claude -t cursor
+```
+
+## When it activates
+
+The skill's description triggers it whenever you work on Vadalog, Prometheux concepts /
+ontologies / datasources / apps, lineage-as-code, the context layer, or any `px` command.
+You don't invoke it manually — the agent pulls it in when the task matches.
+
+## What the agent can then do
+
+With the skill installed, an agent drives the same loop you would:
+
+```text
+You:  "Add a concept that flags customers in high-risk countries, downstream of
+       risk_score, then apply it to my Credit Risk project."
+
+Agent:
+  1. reads the skill (file model, concept kinds, guardrails, schemas)
+  2. writes concepts/high_risk_flag.vadalog + .meta.yaml
+  3. runs `px validate`  → fixes anything red (offline)
+  4. runs `px plan`      → reads the downstream cascade
+  5. runs `px apply`     → applied
+```
+
+<Tip>
+Keep the skill current after upgrading `px`: run `px skill install --force` again to
+regenerate it from the new version's schemas.
+</Tip>
+
+## Refreshing / removing
+
+- **Refresh:** `px skill install --force` overwrites an existing install.
+- **Remove:** delete the installed path (`~/.claude/skills/prometheux/`,
+  `./.claude/skills/prometheux/`, or `./.cursor/rules/prometheux.mdc`).
+
+## Interactive access via MCP (optional)
+
+The skill teaches file-based authoring. For *interactive* in-chat operations (list, run,
+or query concepts without files), you can also connect your agent to the platform's
+[MCP server](/integrations/mcp/overview) — e.g. [Claude Code](/integrations/mcp/claude-code)
+or [Cursor](/integrations/mcp/cursor). The two compose: MCP for interactive ops, `px` (with
+the skill) for file-based authoring and deploy. Neither requires the other.

@@ -1,0 +1,129 @@
+---
+title: "CI/CD"
+description: "Make a git repo the source of truth for your Prometheux projects: validate on every PR, apply on every merge."
+---
+
+Because a `px` workspace is just files, a git repo can be the source of truth for your
+Prometheux projects — validated on every pull request and applied on every merge. `px`
+runs headless in CI: authenticate with environment variables, no interactive login.
+
+## Authenticate in CI
+
+Skip `px login` and set two environment variables (they override any stored config):
+
+```bash
+export JARVISPY_URL="https://api.prometheux.ai/jarvispy/<org>/<user>"
+export PMTX_TOKEN="<JWT>"
+```
+
+Store them as repository secrets. Any datasource secrets your files reference as
+`${ENV_VAR}` must also be present in the environment at `apply` time.
+
+## Validate on pull requests
+
+`validate` is fully offline — no token, no platform — so it's a fast, cheap PR gate:
+
+```yaml
+# .github/workflows/prometheux-validate.yml
+name: Validate Prometheux workspace
+on:
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pipx install prometheux
+      - run: px validate --strict
+```
+
+`--strict` turns warnings into failures so a PR can't merge with, for example, a
+concept-less ontology.
+
+## Apply on merge to main
+
+```yaml
+# .github/workflows/prometheux-apply.yml
+name: Apply Prometheux workspace
+on:
+  push:
+    branches: [main]
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pipx install prometheux
+      - name: Plan (log the diff)
+        run: px plan
+        env:
+          JARVISPY_URL: ${{ secrets.JARVISPY_URL }}
+          PMTX_TOKEN: ${{ secrets.PMTX_TOKEN }}
+      - name: Apply
+        run: px apply -y
+        env:
+          JARVISPY_URL: ${{ secrets.JARVISPY_URL }}
+          PMTX_TOKEN: ${{ secrets.PMTX_TOKEN }}
+          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}   # any ${ENV_VAR} your datasources use
+```
+
+<Note>
+Run `px plan` before `px apply` in the job so the diff (including the downstream re-run
+cascade) is captured in the build log for review/audit.
+</Note>
+
+## Sync the context layer
+
+Apply the [context layer](/integrations/cli/context-as-code) the same way. Commit
+`.px/context-state.json` so the sync stays idempotent across runs:
+
+```yaml
+# .github/workflows/prometheux-context.yml
+name: Sync context to Prometheux
+on:
+  push:
+    branches: [main]
+    paths: ["context/**", "**/*.context.md"]
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install prometheux
+      - run: px context apply --prune -y
+        env:
+          JARVISPY_URL: ${{ secrets.JARVISPY_URL }}
+          PMTX_TOKEN: ${{ secrets.PMTX_TOKEN }}
+```
+
+## Exit codes for gating
+
+CI can gate on exit codes directly (see the [command reference](/integrations/cli/command-reference#exit-codes)):
+
+- `px validate` → `0` PASS, non-zero FAIL.
+- `px apply` → `0` on success; **non-zero if any concept was skipped** (with a summary) or
+  on a hard error — so a partial apply fails the job.
+- `px plan`, `px status` → `0`.
+
+## Idempotency & state to commit
+
+- **Project id** in `projects/<slug>/prometheux.yaml` — commit it so re-apply targets the
+  same project (never creates a duplicate). If it's lost, `apply` reconciles by project name.
+- **Context state** `.px/context-state.json` — commit it so `context apply` updates rather
+  than re-creates notes.
+
+A clean checkout that's already in sync plans as **no changes** — so re-running the apply
+job is safe.
+
+## Corporate runners
+
+`px` honours `HTTPS_PROXY`, `NO_PROXY`, `PIP_INDEX_URL`, and
+`REQUESTS_CA_BUNDLE` / `SSL_CERT_FILE`, so it works on locked-down self-hosted runners
+behind a proxy with a corporate CA. Install the signed wheel from your internal mirror
+instead of the public one-liner. See [Installation → Corporate install](/integrations/cli/installation#corporate--enterprise-install).
