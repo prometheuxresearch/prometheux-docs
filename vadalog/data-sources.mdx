@@ -66,7 +66,7 @@ Supported `datasource_type` values:
 | `databricks` | Databricks |
 | `dynamodb` | Amazon DynamoDB |
 | `qdrant` | Qdrant vector database |
-| `rdf` | RDF serializations (N-Triples / N-Quads / Turtle) for RDF triple stores |
+| `rdf` | RDF serializations (N-Triples / N-Quads / Turtle / RDF/XML / JSON-LD) for RDF triple stores |
 | `api` | Consuming data via API |
 | `text` | Plain text files |
 | `binary` | Binary files (PDF, images, etc.) |
@@ -3065,7 +3065,9 @@ The optimization pipeline handles Qdrant SQL rules in two ways:
 
 Prometheux can serialize a reasoning result to **RDF** files on disk or object storage, ready for bulk import into any RDF triple store. The connector is powered by [Apache Jena](https://jena.apache.org/), so IRI and literal escaping follow the RDF 1.1 grammar rather than a hand-rolled encoder.
 
-The `rdf` connector is **write-only** (an export target): you bind it on an `@output` concept exactly like the Parquet writer, using the same `<schema>/<table>` path convention. The output is a **directory** of RDF files plus a `_SUCCESS` marker — one file per Spark partition — so large results are written in parallel across the cluster.
+The `rdf` connector is **write-only** (an export target): you bind it on an `@output` concept exactly like the Parquet writer, using the same `<schema>/<table>` path convention. By default the output is a **directory** of RDF files plus a `_SUCCESS` marker — one file per Spark partition — so large results are written in parallel across the cluster. Set [`singleFile=true`](#bind-options-for-rdf) to instead emit **one correctly named file** (`<table>.ttl` / `.rdf` / `.jsonld` / `.nt` / `.nq`) that is trivial to hand off.
+
+The produced files are **standard, W3C-conformant RDF** (there is no Prometheux-specific framing), so any RDF platform can ingest them directly with its native bulk loader — see [Loading into a triple store](#loading-into-a-triple-store).
 
 The same row-to-triple mapping can also target a **relational or warehouse connector** (PostgreSQL, Databricks, Snowflake, …) instead of files, by adding `outputFormat=rdf` to that connector's `@bind` — see [Writing RDF triples to a database](#writing-rdf-triples-to-a-database).
 
@@ -3078,10 +3080,16 @@ Choose the serialization with the `format` option:
 | `ntriples` (default) | Line-oriented N-Triples — one triple per line. Aliases: `nt`, `n-triples`. | Fully distributed (one triple line per row, written independently). |
 | `nquads` | Line-oriented N-Quads — adds a named-graph term (see `graphIri`). Aliases: `nq`, `n-quads`. | Fully distributed. |
 | `turtle` | Human-readable Turtle — one self-contained document per partition. Aliases: `ttl`. | Distributed per partition; each partition builds an in-memory graph. |
+| `rdfxml` | RDF/XML — one self-contained `<rdf:RDF>` document per partition. Aliases: `rdf/xml`, `xml`, `owl`. | Distributed per partition; each partition builds an in-memory graph. |
+| `jsonld` | JSON-LD 1.1 — one self-contained JSON document per partition. Aliases: `json-ld`, `jsonld11`. | Distributed per partition; each partition builds an in-memory graph. |
 
 <Info>
-For bulk loading into a triple store, prefer the line-oriented **N-Triples** (or **N-Quads**) format: it is written fully in parallel and is the fastest to ingest. Use **Turtle** when you want human-readable output; because each partition materializes an in-memory graph, increase the number of partitions for very large results.
+For bulk loading into a triple store, prefer the line-oriented **N-Triples** (or **N-Quads**) format: it is written fully in parallel and is the fastest to ingest. The **document** formats (`turtle`, `rdfxml`, `jsonld`) are more human/tooling-friendly; because each partition materializes an in-memory graph, increase the number of partitions for very large results.
 </Info>
+
+<Warning>
+In the default distributed mode each part file is a **complete, standalone document** over its slice of the data, so import the files **individually** (or point the loader at the directory). The line formats (`ntriples`/`nquads`) can also be safely concatenated into one file, but `turtle`, `rdfxml` and `jsonld` part files **cannot** be blindly `cat`-ed together (concatenating two `<rdf:RDF>` roots or two JSON documents is invalid). When you want a single valid document, use `singleFile=true`.
+</Warning>
 
 ### Row-to-RDF modes
 
@@ -3095,7 +3103,8 @@ How each row becomes triples is driven by the [`@model`](/vadalog/annotations#mo
 
 In addition to the shared writer options (`saveMode`, `compression`, `repartition`), the RDF connector supports:
 
-- `format`: `ntriples` (default), `nquads`, or `turtle` (aliases accepted, see table above).
+- `format`: `ntriples` (default), `nquads`, `turtle`, `rdfxml`, or `jsonld` (aliases accepted, see table above).
+- `singleFile`: when `true`, write **one** correctly named file `<schema>/<table>.<ext>` (extension derived from `format`: `.nt` / `.nq` / `.ttl` / `.rdf` / `.jsonld`) instead of a directory of Spark part files. For the document formats this rebuilds one valid document (instance triples + the `@model` ontology header) so the artifact is a single, self-contained `.ttl` / `.rdf` / `.jsonld`. This pulls the serialized document to the driver, so it is intended for moderate exports meant to be shared as one file; leave it `false` (default) for fully distributed output of very large results.
 - `baseIri`: the base IRI used to build subject, class and property IRIs. A trailing `/` or `#` is added if missing (default: `http://prometheux.co.uk/`).
 - `mode`: `entity` (default) or `triple`. Auto-derived from the `@model` when omitted.
 - `subjectColumn`: the column whose value identifies the subject entity in `entity` mode. Falls back to the `@model` primary key, then the first column.
@@ -3174,9 +3183,9 @@ Produces one relationship triple per row (plus the `rdf:Property` / `rdfs:domain
 <http://acme.example/person/alice> <http://acme.example/knows> <http://acme.example/person/bob> .
 ```
 
-### Example 3: Turtle and N-Quads
+### Example 3: Turtle, RDF/XML, JSON-LD and N-Quads
 
-Turtle produces human-readable documents (one per partition); N-Quads places every data triple in a named graph via `graphIri`:
+The document formats (`turtle`, `rdfxml`, `jsonld`) produce tooling-friendly documents (one per partition); N-Quads places every data triple in a named graph via `graphIri`:
 
 ```prolog
 % Turtle
@@ -3184,10 +3193,34 @@ Turtle produces human-readable documents (one per partition); N-Quads places eve
       "rdf format='turtle', baseIri='http://acme.example/'",
       "rdf_out", "person_ttl").
 
+% RDF/XML
+@bind("person",
+      "rdf format='rdfxml', baseIri='http://acme.example/'",
+      "rdf_out", "person_rdf").
+
+% JSON-LD
+@bind("person",
+      "rdf format='jsonld', baseIri='http://acme.example/'",
+      "rdf_out", "person_jsonld").
+
 % N-Quads into a named graph
 @bind("person",
       "rdf format='nquads', baseIri='http://acme.example/', graphIri='http://acme.example/graph/people'",
       "rdf_out", "person_nq").
+```
+
+To share **one** clean file instead of a directory of part files, add `singleFile=true`. This is the usual choice for RDF/XML and JSON-LD, which are meant to be handed over as a single self-contained document:
+
+```prolog
+% One 'person.ttl' file (instance triples + the @model ontology header) under 'rdf_out'
+@bind("person",
+      "rdf format='turtle', singleFile=true, baseIri='http://acme.example/'",
+      "rdf_out", "person").
+
+% One 'person.jsonld' file
+@bind("person",
+      "rdf format='jsonld', singleFile=true, baseIri='http://acme.example/'",
+      "rdf_out", "person").
 ```
 
 ### Example 4: generic triple table (column-driven)
@@ -3347,7 +3380,29 @@ Literals are persisted as their bare lexical value (e.g. `Alice`, `30`) so the t
 
 ### Loading into a triple store
 
-The output directory contains standard RDF files, so any triple store can ingest them with its native bulk-load facility or over the [SPARQL 1.1 Graph Store HTTP Protocol](https://www.w3.org/TR/sparql11-http-rdf-update/). For example, uploading a part file into a named graph:
+The output contains standard, W3C-conformant RDF files, so any triple store can ingest them with its native bulk-load facility (e.g. Fuseki `tdb2.tdbloader`, GraphDB import, the rdf4j console, or a cloud bulk loader) or over the [SPARQL 1.1 Graph Store HTTP Protocol](https://www.w3.org/TR/sparql11-http-rdf-update/). Point the loader at the whole directory, or upload files individually; in the default distributed mode each part file is a **complete, standalone document**, and with `singleFile=true` you get a single ready-to-load file.
+
+Set the request `Content-Type` to match the `format` you wrote:
+
+| `format` | Media type | Single-file extension |
+|----------|-----------|-----------------------|
+| `ntriples` | `application/n-triples` | `.nt` |
+| `nquads` | `application/n-quads` | `.nq` |
+| `turtle` | `text/turtle` | `.ttl` |
+| `rdfxml` | `application/rdf+xml` | `.rdf` |
+| `jsonld` | `application/ld+json` | `.jsonld` |
+
+For example, uploading a single Turtle file into a named graph over the Graph Store Protocol:
+
+```bash
+# Written with: rdf format='turtle', singleFile=true  ->  rdf_out/person.ttl
+curl -X POST \
+     -H "Content-Type: text/turtle" \
+     --data-binary @rdf_out/person.ttl \
+     "http://localhost:5820/myDb?graph=http://acme.example/graph/people"
+```
+
+Or, in the default distributed mode, upload one N-Triples part file (Spark names distributed part files `part-*.txt`; the content is valid RDF regardless of the `.txt` suffix — set the `Content-Type` explicitly, or use `singleFile=true` for a correctly named file):
 
 ```bash
 curl -X POST \
@@ -4963,6 +5018,22 @@ Databricks is a cloud-based platform for data engineering and data science.
 <Note>
 **Note on writing:** When writing to Databricks, the default `saveMode` is `error`, meaning the write fails if the target table already exists. To replace the existing table, add `saveMode='overwrite'` to the bind options (e.g. `"databricks saveMode='overwrite', ..."`).
 </Note>
+
+### Running inside a Databricks cluster (`inCluster=true`)
+
+When Prometheux runs **inside** a Databricks cluster, add `inCluster=true` to the bind. The connector then uses the cluster's ambient Spark session and native **Unity Catalog** access — `spark.table(...)` / `saveAsTable(...)` / `spark.sql(...)` — instead of opening a JDBC connection, so **no `host`, `token`, `OAuth2ClientId`/`OAuth2Secret` or `/sql/1.0/warehouses/...` warehouse path is required**. In this mode the third `@bind` argument is the `catalog.schema` and the fourth is the table; on write the schema is created if missing.
+
+```prolog
+% Read from a Unity Catalog table with no credentials
+@bind("sales", "databricks inCluster=true", "main.sales", "transactions").
+report(Product, Total) <- SELECT product_id, sum(amount) AS total FROM sales GROUP BY product_id.
+@output("report").
+
+% Write back into Unity Catalog (saveAsTable); saveMode='overwrite' replaces the table
+@bind("report", "databricks inCluster=true, saveMode=overwrite", "main.sales", "product_totals").
+```
+
+The same safe-default applies: if you omit `saveMode` on a write, the connector uses `saveMode=errorIfExists` (the write fails if the table already exists), so set `saveMode='overwrite'` or `'append'` explicitly. Without `inCluster=true`, the connector uses the JDBC path shown below (host + OAuth/PAT credentials + a warehouse path as the third argument).
 
 This example demonstrates writing data to a Databricks table.
 
