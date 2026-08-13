@@ -42,8 +42,8 @@ enforces, so it can't drift from what the CLI accepts.
     ```bash
     px skill install -t cursor --dir .
     ```
-    Writes `./.cursor/rules/prometheux.mdc` — a project rule with the schema reference
-    inlined. (Cursor has no global on-demand skill primitive, so this is per-project.)
+    Writes `./.cursor/rules/prometheux.mdc` — an ontology rule with the schema reference
+    inlined. (Cursor has no global on-demand skill primitive, so this is per-ontology.)
   </Tab>
 </Tabs>
 
@@ -65,7 +65,7 @@ With the skill installed, an agent drives the same loop you would:
 
 ```text
 You:  "Add a concept that flags customers in high-risk countries, downstream of
-       risk_score, then apply it to my Credit Risk project."
+       risk_score, then apply it to my Credit Risk ontology."
 
 Agent:
   1. reads the skill (file model, concept kinds, guardrails, schemas)
