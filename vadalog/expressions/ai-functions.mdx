@@ -13,9 +13,13 @@ Generate and compare vector embeddings for semantic similarity:
 
 ```prolog
 embeddings:vectorize(arg1: string, arg2: string, …) → array<double>
-embeddings:cosine_sim_udf(left: array<double>, right: array<double>) → double
-embeddings:cosine_sim(left: array<double>, right: array<double>) → double
+similarity:cosine_sim_udf(left: array<double>, right: array<double>) → double
+similarity:cosine_sim(left: array<double>, right: array<double>) → double
 ```
+
+<Note>
+The cosine similarity operators live in the `similarity:` namespace alongside the other [similarity operators](/vadalog/expressions/operators#similarity-operators). Embedding *generation* (`embeddings:vectorize`) remains in the `embeddings:` namespace.
+</Note>
 
 **Example:**
 
@@ -26,7 +30,7 @@ customer_similarity(Name1, Name2, Similarity) <-
     customer(Name2, Info2), 
     Vec1 = embeddings:vectorize(Name1, Info1), 
     Vec2 = embeddings:vectorize(Name2, Info2), 
-    Similarity = embeddings:cosine_sim(Vec1, Vec2).
+    Similarity = similarity:cosine_sim(Vec1, Vec2).
 ```
 
 ---
@@ -439,7 +443,7 @@ similar_documents(Doc1, Doc2, Score, Summary) <-
     document(Doc2, Content2), 
     Vec1 = embeddings:vectorize(Content1), 
     Vec2 = embeddings:vectorize(Content2), 
-    Score = embeddings:cosine_sim(Vec1, Vec2), 
+    Score = similarity:cosine_sim(Vec1, Vec2), 
     Score > 0.8,
     result(_, _, Summary) <- #LLM(document, "prompt=Summarize the key similarities between these documents: {arg_2},output_type=string").
 ```

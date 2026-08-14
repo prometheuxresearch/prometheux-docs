@@ -295,6 +295,28 @@ email_domain(Domain) <-
     Domain = collections:get(Parts, 2).
 ```
 
+## Similarity Operations
+
+```prolog
+similarity:levenshtein(str1, str2)      % Edit distance (integer: number of edits)
+similarity:levenshtein_sim(str1, str2)  % Normalized edit similarity in [0, 1]
+similarity:jaro_winkler(str1, str2)     % Jaro-Winkler similarity in [0, 1] (best for names)
+similarity:jaccard(str1, str2)          % Whitespace-token set overlap in [0, 1]
+similarity:cosine_sim(vec1, vec2)       % Cosine similarity between numeric vectors / embeddings
+similarity:cosine_sim_udf(vec1, vec2)   % Cosine similarity (UDF variant)
+```
+
+**Examples:**
+```prolog
+likely_same_person(Name1, Name2) <- 
+    left(Name1), right(Name2), 
+    similarity:jaro_winkler(Name1, Name2) >= 0.9.
+
+close_match(A, B) <- 
+    candidate(A), reference(B), 
+    similarity:levenshtein(A, B) <= 2.
+```
+
 ## Logical Operations
 
 ```prolog
