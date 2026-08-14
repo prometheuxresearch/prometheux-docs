@@ -20,6 +20,7 @@ _multi-facts operators_ (called **aggregation operators**).
 | double        | (monadic) `-`, `*`, `/`, `+`, `-`, `( )`                                                                |
 | boolean       | `&&`, `\|\|`, `!`, `not`, `( )` for associativity                                                    |
 | string        | `substring`, `contains`, `contains_any`, `rlike`, `starts_with`, `ends_with`, `concat`, `concat_ws`, `replace`, `join`, `index_of`, `string_length`, `to_lower`, `to_upper`, `split`, `is_empty`, `strip` |
+| similarity    | `similarity:levenshtein`, `similarity:levenshtein_sim`, `similarity:jaro_winkler`, `similarity:jaccard`  |
 | set           | `\|` (union), `&` (intersection), `( )` for associativity                                                  |
 
 
@@ -822,6 +823,120 @@ Expected output:
 ```prolog
 b("  hello world  ", "hello world").
 b("no_spaces", "no_spaces").
+```
+
+## Similarity operators
+
+The similarity operators measure how close two strings are, which is useful for fuzzy matching, deduplication, and entity resolution. They live in the `similarity:` namespace.
+
+| Operator                          | Returns   | Range         | Best for                                             |
+| --------------------------------- | --------- | ------------- | ---------------------------------------------------- |
+| `similarity:levenshtein`          | `integer` | `0` and up    | Raw edit distance (typos, codes, identifiers)        |
+| `similarity:levenshtein_sim`      | `double`  | `[0.0, 1.0]`  | Normalized edit similarity                           |
+| `similarity:jaro_winkler`         | `double`  | `[0.0, 1.0]`  | Short strings such as person or company names        |
+| `similarity:jaccard`              | `double`  | `[0.0, 1.0]`  | Multi-word text where word order does not matter     |
+| `similarity:cosine_sim`           | `double`  | `[-1.0, 1.0]` | Numeric vectors / embeddings (arrays of doubles)     |
+| `similarity:cosine_sim_udf`       | `double`  | `[-1.0, 1.0]` | Same as `cosine_sim`, computed via a UDF             |
+
+For the string operators `_sim`/`jaro_winkler`/`jaccard`, `1.0` means identical and `0.0` means completely different. The `cosine_sim` operators instead operate on numeric vectors (`array<double>`), typically embeddings produced by `embeddings:vectorize` — see [AI functions](/vadalog/expressions/ai-functions).
+
+### `similarity:levenshtein`
+A rule with `similarity:levenshtein` returns the edit distance between two strings: the minimum number of single-character insertions, deletions, or substitutions needed to turn one into the other (`0` means identical).
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = similarity:levenshtein(string1, string2).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("kitten", "sitting").
+b(Distance) <- a(Left, Right), Distance = similarity:levenshtein(Left, Right).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b(3).
+```
+
+### `similarity:levenshtein_sim`
+A rule with `similarity:levenshtein_sim` returns the normalized edit similarity, computed as `1 - distance / max(length)`. Two empty strings are defined as fully similar (`1.0`).
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = similarity:levenshtein_sim(string1, string2).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("kitten", "sitting").
+b(Similarity) <- a(Left, Right), Similarity = similarity:levenshtein_sim(Left, Right).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b(0.5714285714285714).
+```
+
+### `similarity:jaro_winkler`
+A rule with `similarity:jaro_winkler` returns the Jaro-Winkler similarity, which boosts the score of strings sharing a common prefix. This makes it well suited to matching short strings such as person or company names.
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = similarity:jaro_winkler(string1, string2).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("MARTHA", "MARHTA").
+b(Similarity) <- a(Left, Right), Similarity = similarity:jaro_winkler(Left, Right).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b(0.9611111111111111).
+```
+
+### `similarity:jaccard`
+A rule with `similarity:jaccard` treats each string as the set of its whitespace-delimited tokens and returns the size of their intersection divided by the size of their union. Two empty token sets are defined as fully similar (`1.0`).
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = similarity:jaccard(string1, string2).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a("apple banana cherry", "banana cherry date").
+b(Similarity) <- a(Left, Right), Similarity = similarity:jaccard(Left, Right).
+@output("b").
+```
+
+Expected output:
+
+```prolog
+b(0.5).
+```
+
+### `similarity:cosine_sim`
+A rule with `similarity:cosine_sim` returns the cosine similarity between two numeric vectors (arrays of doubles), such as embeddings. `similarity:cosine_sim_udf` computes the same value via a UDF. See [AI functions](/vadalog/expressions/ai-functions) for generating embeddings with `embeddings:vectorize`.
+
+```prolog
+q(K1, K2, Kn, J) <- body, J = similarity:cosine_sim(vector1, vector2).
+```
+
+Example:
+
+```prolog showLineNumbers {2}
+a([0.1, 0.2, 0.3], [0.5, 0.2, 0.5]).
+b(Score) <- a(Vec1, Vec2), Score = similarity:cosine_sim(Vec1, Vec2).
+@output("b").
 ```
 
 ## Set operators
