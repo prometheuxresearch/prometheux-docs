@@ -19,7 +19,7 @@ _multi-facts operators_ (called **aggregation operators**).
 | integer       | (monadic) `-`, `*`, `/`, `+`, `-`, `( )`                                                                |
 | double        | (monadic) `-`, `*`, `/`, `+`, `-`, `( )`                                                                |
 | boolean       | `&&`, `\|\|`, `!`, `not`, `( )` for associativity                                                    |
-| string        | `substring`, `contains`, `contains_any`, `rlike`, `starts_with`, `ends_with`, `concat`, `concat_ws`, `replace`, `join`, `index_of`, `string_length`, `to_lower`, `to_upper`, `split`, `is_empty`, `strip` |
+| string        | `substring`, `contains`, `contains_any`, `rlike`, `starts_with`, `ends_with`, `concat`, `concat_ws`, `replace`, `join`, `index_of`, `string_length` (alias `strlen`), `to_lower`, `to_upper`, `split`, `is_empty`, `strip` |
 | similarity    | `similarity:levenshtein`, `similarity:levenshtein_sim`, `similarity:jaro_winkler`, `similarity:jaccard`  |
 | set           | `\|` (union), `&` (intersection), `( )` for associativity                                                  |
 
@@ -588,10 +588,11 @@ q("prometheux", "engine", "prometheuxengine").
 ```
 
 ### `string_length`
-A rule with `string_length` returns an integer representing the length of the `string`:
+A rule with `string_length` returns an integer representing the length of the `string`. `strlen` is an accepted alias:
 
 ```prolog
 q(K1, K2, Kn, J) <- body, J = string_length(string).
+q(K1, K2, Kn, J) <- body, J = strlen(string).          % equivalent alias
 ```
 
 Example:
