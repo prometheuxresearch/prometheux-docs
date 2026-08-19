@@ -13,6 +13,13 @@ The Prometheux platform provides multiple ways to interact with all platform fea
 
 All interfaces provide equivalent functionality—choose the one that best fits your workflow.
 
+<Note>
+Building a **custom app on your own infrastructure** (e.g. a chat UI over the AI
+agent)? See [Bring your own frontend](/integrations/bring-your-own-frontend) for
+an end-to-end walkthrough — auth, streaming, CORS, and keeping your token
+server-side.
+</Note>
+
 ## Quick Start
 
 <Tabs>
@@ -247,7 +254,10 @@ The API is organized into the following categories:
 | Category | Description |
 |----------|-------------|
 | [**REST API conventions**](/integrations/rest-api) | Base URL, response envelope, scoping, pagination, errors |
+| [**Bring your own frontend**](/integrations/bring-your-own-frontend) | Build a custom app (chat, history, context) on your own infra |
 | [**Authentication**](/integrations/api-endpoints/authentication) | Obtain, list, and revoke API tokens |
+| [**AI Agent**](/integrations/api-endpoints/agent) | Streaming conversational agent (chat endpoint, NDJSON events) |
+| [**Chat History**](/integrations/api-endpoints/chat-history) | Browse, load, rename, and delete agent chat sessions |
 | [**Ontologies**](/integrations/api-endpoints/ontologies) | Ontology management, export/import, snapshots |
 | [**Concepts**](/integrations/api-endpoints/concepts) | Define, run, and read results from concepts |
 | [**Data Sources**](/integrations/api-endpoints/data) | Connect data sources, infer schema, upload and preview data |

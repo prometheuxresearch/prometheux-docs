@@ -45,20 +45,28 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/agent/my-
 
 The response is a stream of newline-delimited JSON objects. Each line has a `type` and `data` field:
 
-| Type | Description |
-|------|-------------|
-| `metadata` | Session metadata (project, model, context loaded) |
-| `tool_start` | Agent is invoking a tool (tool name and input) |
-| `proposal` | Agent proposes a concept (definition, name, description) |
-| `tool_result` | Result from a tool invocation |
-| `content` | Text chunk from the agent's response |
-| `done` | Stream complete |
-| `error` | An error occurred |
+| Type | `data` shape | Description |
+|------|------|-------------|
+| `metadata` | `{ ontology_id, model, context_loaded }` | Session metadata — the first frame of a turn. |
+| `context_loaded` | `{ count, notes: [...] }` | Which context notes were pulled in for this turn. |
+| `thinking` | `{ chunk }` | A chunk of the agent's **reasoning** stream. Emitted continuously while the agent plans and runs tools — this is what fills the wait between the question and the answer. |
+| `tool_start` | `{ tool, input }` | Agent is invoking a tool. |
+| `tool_result` | `{ tool, result }` | Result from a tool invocation. |
+| `proposal` | `{ tool, concept_name, definition, description }` | Agent proposes a concept/app/schema change. |
+| `content` | `{ chunk }` | A chunk of the agent's **answer** text. Concatenate chunks in order. |
+| `done` | `{ ontology_id }` | Stream complete. |
+| `session_meta` | `{ session_id, title }` | Streamed after `done` on the first turn, carrying the auto-generated session title. |
+| `error` | `{ error }` | An error occurred. |
+
+<Tip>
+Render `thinking` chunks live (e.g. a collapsible "thinking…" panel) so users see progress. Without it the UI looks frozen while the agent works, then dumps the whole answer at once. Handle unknown `type` values by ignoring them — new event types may be added over time.
+</Tip>
 
 **Example stream:**
 
 ```json
-{"type": "metadata", "data": {"ontology_id": "my-ontology-id", "model": "gpt-4o", "context_loaded": true}}
+{"type": "metadata", "data": {"ontology_id": "my-ontology-id", "model": "claude-sonnet-4-6", "context_loaded": true}}
+{"type": "thinking", "data": {"chunk": "The user wants transitive suppliers. Let me create a recursive concept..."}}
 {"type": "tool_start", "data": {"tool": "create_concept", "input": {"definition": "..."}}}
 {"type": "proposal", "data": {"tool": "create_concept", "concept_name": "transitive_suppliers", "definition": "...", "description": "..."}}
 {"type": "tool_result", "data": {"tool": "create_concept", "result": {"id": "concept-uuid"}}}
@@ -66,7 +74,16 @@ The response is a stream of newline-delimited JSON objects. Each line has a `typ
 {"type": "tool_result", "data": {"tool": "run_concept", "result": {"total_records": 42}}}
 {"type": "content", "data": {"chunk": "I created and ran the transitive_suppliers concept. It derived 42 records..."}}
 {"type": "done", "data": {"ontology_id": "my-ontology-id"}}
+{"type": "session_meta", "data": {"session_id": "session-1", "title": "Transitive suppliers"}}
 ```
+
+<Note>
+**Read-only vs. tool-authorizing clients.** Sent as shown above, the agent runs its tools autonomously and streams the result. If you include a `mode` field in the request body, the agent instead pauses and emits `authorization_request` events for tools that need approval — your client must then reply (with `approved_calls` / `authorized_tools`) to continue. For a simple question-and-answer client, **omit `mode`**.
+</Note>
+
+<Warning>
+On the free tier the agent is capped (default 150 messages/month). Over the cap the endpoint returns HTTP `402` with a JSON body `{ "code": "AGENT_MESSAGE_LIMIT_REACHED", "used", "limit", "resets_at" }` instead of a stream. Handle it as a distinct "limit reached" state.
+</Warning>
 
 ## Reset Session
 

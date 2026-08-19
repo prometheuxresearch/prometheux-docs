@@ -53,6 +53,22 @@ Tokens are JarvisPy API keys (JWTs). See
 [Authentication](/integrations/api-endpoints/authentication) for how to obtain,
 list, and revoke them.
 
+## Cross-origin requests (CORS)
+
+The API sends `Access-Control-Allow-Origin: *` and allows all standard methods
+(`GET, POST, PUT, PATCH, DELETE, OPTIONS`) and the `Authorization`,
+`Content-Type`, and `X-Supabase-Token` headers. This means a **browser-based
+single-page app served from any origin can call the API directly** — no proxy is
+required to get past CORS.
+
+<Warning>
+CORS does not protect your token. A token placed in browser code ships to every
+visitor and grants full account access. For a public app, keep the token
+**server-side** behind a small proxy (or serverless function) that adds the
+`Authorization` header, and have the browser call your proxy. See
+[Bring your own frontend](/integrations/bring-your-own-frontend).
+</Warning>
+
 ## Response envelope
 
 Every JSON response uses the same envelope:

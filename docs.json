@@ -121,6 +121,7 @@
           "integrations/sdk-reference",
           "integrations/rest-api",
           "integrations/config",
+          "integrations/bring-your-own-frontend",
           "integrations/chat-api",
           {
             "group": "CLI",

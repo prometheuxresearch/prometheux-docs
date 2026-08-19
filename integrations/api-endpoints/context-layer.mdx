@@ -1,12 +1,12 @@
 ---
 title: "Context Layer"
-description: "Store, search, and ingest context notes that ground the AI agent's knowledge base, scoped globally or per-project."
+description: "Store, search, and ingest context notes that ground the AI agent's knowledge base, scoped globally or per-ontology."
 ---
 
-The **Context Layer** is the AI agent's knowledge base. It stores *context notes* — discrete facts, observations, and document chunks — that the agent retrieves at inference time to reason over your data. Notes are scoped either `global` (workspace-wide) or `project` (tied to a single project via a `scope_id`).
+The **Context Layer** is the AI agent's knowledge base. It stores *context notes* — discrete facts, preferences, observations, and document chunks — that the agent retrieves at inference time to reason over your data. Notes are scoped either `global` (workspace-wide) or `ontology` (tied to a single ontology via a `scope_id`).
 
 <Note>
-This **scope model** (`global` | `project` + `scope_id`) is distinct from the user/organization scope used by the rest of the API. A note scoped to `project` with a given `scope_id` is invisible to the agent when it operates on a different project, even within the same organization.
+This **note scope model** (`global` | `ontology` + `scope_id`) is distinct from the user/organization [scope](/integrations/rest-api#scope) used by the rest of the API. A note scoped to `ontology` with a given `scope_id` is only retrieved when the agent operates on that same ontology. The `scope_id` is the **ontology ID** — the same identifier you pass to the [AI Agent](/integrations/api-endpoints/agent) chat endpoint.
 </Note>
 
 All paths are relative to the [base URL](/integrations/rest-api#base-url) and
@@ -17,11 +17,43 @@ responses use the standard [envelope](/integrations/rest-api#response-envelope).
 The platform also ships an onboarding interview wizard that populates context notes interactively. Those endpoints (`GET /knowledge/interview/template`, `POST /knowledge/interview`) are UI-internal and not documented here.
 </Note>
 
+## Note fields
+
+Every context note has these fields:
+
+| Field | Description |
+|---|---|
+| `id` | Note UUID. |
+| `scope` | `global` or `ontology`. |
+| `scope_id` | The ontology ID when `scope` is `ontology`; `null` for `global`. |
+| `kind` | One of `fact`, `preference`, `observation`, `document_chunk`. |
+| `title` | Short label (≤ 120 chars). Auto-derived from the first line of `text` when omitted. |
+| `text` | The note content. Markdown is allowed. |
+| `activation` | How the note enters context — `retrieved` (default), `always`, or `on_demand`. See below. |
+| `source` | Originator: `user`, `agent_writer`, or `import`. |
+| `created_at` | ISO-8601 timestamp. |
+| `use_count` | How many times the note has been retrieved. |
+| `superseded_by` | UUID of the note that replaced this one, or `null`. Superseded notes are excluded from listing and retrieval. |
+
+### Activation
+
+`activation` controls how a note enters the agent's context:
+
+| Value | Behavior |
+|---|---|
+| `retrieved` *(default)* | Added to a semantic pool and surfaced only when relevant to the message. |
+| `always` | Injected into the system prompt on **every** message (a standing rule). |
+| `on_demand` | The title is always listed; the body is fetched only when the agent asks for it. |
+
+<Warning>
+Notes with `activation` of `always` or `on_demand` enter the system prompt, so on create/update they are passed through a safety screen. If rejected, the request returns `400` with a message like `Rule rejected by screening: <reason>`. `retrieved` notes are never screened.
+</Warning>
+
 ## Context notes
 
 ### List notes
 
-Return all context notes for the given scope, optionally filtered by kind.
+Return active context notes for the given scope, optionally filtered by kind or activation.
 
 ```
 GET /knowledge/context
@@ -29,12 +61,13 @@ GET /knowledge/context
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | query | yes | — | `global` or `project`. |
-| `scope_id` | query | no | — | Project UUID. Required when `scope` is `project`. |
-| `kinds` | query | no | — | Comma-separated list of note kinds to include (e.g. `fact,observation`). Omit to return all kinds. |
+| `scope` | query | yes | — | `global` or `ontology`. |
+| `scope_id` | query | no | — | The ontology ID. Required when `scope` is `ontology`; omit for `global`. |
+| `kinds` | query | no | — | Comma-separated list of kinds to include (e.g. `fact,preference`). Omit to return all. |
+| `activation` | query | no | — | Filter to a single activation (`retrieved`, `always`, or `on_demand`). |
 
 ```bash
-curl "$BASE_URL/knowledge/context?scope=project&scope_id=$PROJECT_ID" \
+curl "$BASE_URL/knowledge/context?scope=ontology&scope_id=$ONTOLOGY_ID" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -45,12 +78,14 @@ curl "$BASE_URL/knowledge/context?scope=project&scope_id=$PROJECT_ID" \
   "data": [
     {
       "id": "note_a1b2...",
-      "scope": "project",
-      "scope_id": "proj_123",
+      "scope": "ontology",
+      "scope_id": "28b8678395e",
       "kind": "fact",
+      "title": "Composite key on orders",
       "text": "The `orders` table has a composite primary key on (order_id, tenant_id).",
+      "activation": "retrieved",
       "source": "user",
-      "pinned": false,
+      "use_count": 3,
       "superseded_by": null,
       "created_at": "2026-06-20T09:15:00+00:00"
     }
@@ -68,24 +103,26 @@ POST /knowledge/context
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | body | yes | — | `global` or `project`. |
-| `scope_id` | body | no | — | Project UUID. Required when `scope` is `project`. |
-| `kind` | body | yes | — | Free-form note type, e.g. `fact`, `observation`, `constraint`, `document_chunk`. |
-| `text` | body | yes | — | The note content. |
-| `source` | body | no | `"user"` | Originator label: `user`, `agent`, `auto_seed`, etc. |
-| `pinned` | body | no | `false` | Pinned notes are always included in retrieval regardless of relevance score. |
-| `supersedes` | body | no | `[]` | List of note IDs that this note replaces. Superseded notes are excluded from future retrieval. |
+| `scope` | body | yes | — | `global` or `ontology`. |
+| `scope_id` | body | conditional | — | The ontology ID. **Required** when `scope` is `ontology`; must be absent/`null` for `global`. |
+| `kind` | body | yes | — | One of `fact`, `preference`, `observation`, `document_chunk`. |
+| `text` | body | yes | — | The note content (non-empty). |
+| `title` | body | no | derived | Short label (≤ 120 chars). Auto-derived from the first line of `text` when omitted. |
+| `activation` | body | no | `"retrieved"` | `retrieved`, `always`, or `on_demand`. Non-`retrieved` values are screened (see above). |
+| `source` | body | no | `"user"` | `user`, `agent_writer`, or `import`. |
+| `supersedes` | body | no | `[]` | List of note IDs this note replaces. Superseded notes are excluded from future retrieval. |
 
 ```bash
 curl -X POST "$BASE_URL/knowledge/context" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "scope": "project",
-    "scope_id": "proj_123",
-    "kind": "fact",
-    "text": "Revenue figures are always in USD unless the currency column is populated.",
-    "pinned": true
+    "scope": "ontology",
+    "scope_id": "28b8678395e",
+    "kind": "preference",
+    "title": "Default build level",
+    "text": "Prefer level-150 builds unless the user asks otherwise.",
+    "activation": "retrieved"
   }'
 ```
 
@@ -95,17 +132,23 @@ curl -X POST "$BASE_URL/knowledge/context" \
   "message": "Context note created",
   "data": {
     "id": "note_c3d4...",
-    "scope": "project",
-    "scope_id": "proj_123",
-    "kind": "fact",
-    "text": "Revenue figures are always in USD unless the currency column is populated.",
+    "scope": "ontology",
+    "scope_id": "28b8678395e",
+    "kind": "preference",
+    "title": "Default build level",
+    "text": "Prefer level-150 builds unless the user asks otherwise.",
+    "activation": "retrieved",
     "source": "user",
-    "pinned": true,
+    "use_count": 0,
     "superseded_by": null,
     "created_at": "2026-06-25T11:00:00+00:00"
   }
 }
 ```
+
+<Warning>
+On the free tier, creating notes consumes the embedding quota. When it is exhausted the endpoint returns `402` with `code: "..._LIMIT_REACHED"`.
+</Warning>
 
 ### Get a note
 
@@ -124,27 +167,9 @@ curl "$BASE_URL/knowledge/context/note_c3d4..." \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-```jsonc
-{
-  "status": "success",
-  "message": "Context note retrieved",
-  "data": {
-    "id": "note_c3d4...",
-    "scope": "project",
-    "scope_id": "proj_123",
-    "kind": "fact",
-    "text": "Revenue figures are always in USD unless the currency column is populated.",
-    "source": "user",
-    "pinned": true,
-    "superseded_by": null,
-    "created_at": "2026-06-25T11:00:00+00:00"
-  }
-}
-```
-
 ### Update a note
 
-Partially update a context note. Only fields present in the request body are modified. Omitting `scope` or `scope_id` entirely leaves those fields unchanged; passing them explicitly (even as `null`) overwrites them.
+Partially update a context note **in place** (the note keeps its ID). Only fields present in the request body are modified. Omitting `scope`/`scope_id` leaves them unchanged; passing them explicitly (even as `null`) overwrites them.
 
 ```
 PATCH /knowledge/context/{note_id}
@@ -154,34 +179,17 @@ PATCH /knowledge/context/{note_id}
 |---|---|---|---|---|
 | `note_id` | path | yes | — | Context note UUID. |
 | `text` | body | no | — | Replacement note content. |
-| `kind` | body | no | — | Replacement kind label. |
-| `pinned` | body | no | — | `true` or `false`. |
-| `scope` | body | no | — | Move the note to a different scope (`global` or `project`). |
-| `scope_id` | body | no | — | Move the note to a different project. Pass `null` together with `scope: "global"` to clear the project binding. |
+| `title` | body | no | — | Replacement title (non-empty; ≤ 120 chars). |
+| `kind` | body | no | — | Replacement kind. |
+| `activation` | body | no | — | Change activation. Setting `always`/`on_demand` (or editing the text of a note that is already one of those) triggers the safety screen. |
+| `scope` | body | no | — | Move the note to a different scope (`global` or `ontology`). |
+| `scope_id` | body | no | — | Move to a different ontology. Pass `null` with `scope: "global"` to clear the binding. |
 
 ```bash
 curl -X PATCH "$BASE_URL/knowledge/context/note_c3d4..." \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "pinned": false, "text": "Revenue figures are in USD (pre-2025) or EUR (2025+)." }'
-```
-
-```jsonc
-{
-  "status": "success",
-  "message": "Context note updated",
-  "data": {
-    "id": "note_c3d4...",
-    "scope": "project",
-    "scope_id": "proj_123",
-    "kind": "fact",
-    "text": "Revenue figures are in USD (pre-2025) or EUR (2025+).",
-    "source": "user",
-    "pinned": false,
-    "superseded_by": null,
-    "created_at": "2026-06-25T11:00:00+00:00"
-  }
-}
+  -d '{ "text": "Prefer level-125 (meta PvP) builds unless the user asks otherwise." }'
 ```
 
 ### Delete a note
@@ -221,17 +229,17 @@ POST /knowledge/context/search
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | query | yes | — | `global` or `project`. |
-| `scope_id` | query | no | — | Project UUID. Required when `scope` is `project`. |
+| `scope` | query | yes | — | `global` or `ontology`. |
+| `scope_id` | query | no | — | The ontology ID. Required when `scope` is `ontology`. |
 | `kinds` | query | no | — | Comma-separated kind filter. |
 | `top_k` | query | no | `10` | Maximum number of results to return (1–100). |
 | `query` | body | yes | — | The natural-language search string to embed and match against. |
 
 ```bash
-curl -X POST "$BASE_URL/knowledge/context/search?scope=project&scope_id=$PROJECT_ID&top_k=5" \
+curl -X POST "$BASE_URL/knowledge/context/search?scope=ontology&scope_id=$ONTOLOGY_ID&top_k=5" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "query": "currency handling for revenue columns" }'
+  -d '{ "query": "spell family requirement floors" }'
 ```
 
 ```jsonc
@@ -242,9 +250,10 @@ curl -X POST "$BASE_URL/knowledge/context/search?scope=project&scope_id=$PROJECT
     {
       "id": "note_c3d4...",
       "kind": "fact",
-      "text": "Revenue figures are in USD (pre-2025) or EUR (2025+).",
+      "title": "Death family requirements",
+      "text": "The Death sorcery family caps at INT 42 / FAI 30.",
       "score": 0.91,
-      "pinned": false,
+      "activation": "retrieved",
       "source": "user"
     }
   ]
@@ -265,8 +274,8 @@ POST /knowledge/context/from-file
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | body | no | `"global"` | `global` or `project`. |
-| `scope_id` | body | no | — | Project UUID. Required when `scope` is `project`. |
+| `scope` | body | no | `"global"` | `global` or `ontology`. |
+| `scope_id` | body | no | — | The ontology ID. Required when `scope` is `ontology`. |
 | `file_path` | body | yes | — | The `disk/<name>` path returned by the file-upload endpoint. |
 
 ```bash
@@ -274,8 +283,8 @@ curl -X POST "$BASE_URL/knowledge/context/from-file" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "scope": "project",
-    "scope_id": "proj_123",
+    "scope": "ontology",
+    "scope_id": "28b8678395e",
     "file_path": "disk/data_dictionary_v3.pdf"
   }'
 ```
@@ -289,8 +298,8 @@ curl -X POST "$BASE_URL/knowledge/context/from-file" \
     "filename": "data_dictionary_v3.pdf",
     "chunk_count": 14,
     "persisted": 14,
-    "scope": "project",
-    "scope_id": "proj_123"
+    "scope": "ontology",
+    "scope_id": "28b8678395e"
   }
 }
 ```
@@ -311,8 +320,8 @@ POST /knowledge/auto-seed
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | body | no | `"project"` | `global` or `project`. |
-| `scope_id` | body | no | — | Project UUID. Required when `scope` is `project`. |
+| `scope` | body | no | `"ontology"` | `global` or `ontology`. |
+| `scope_id` | body | no | — | The ontology ID. Required when `scope` is `ontology`. |
 | `datasource_ids` | body | no | — | Array of data source IDs to profile. Omit to profile all connected sources. |
 
 ```bash
@@ -320,8 +329,8 @@ curl -X POST "$BASE_URL/knowledge/auto-seed" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "scope": "project",
-    "scope_id": "proj_123",
+    "scope": "ontology",
+    "scope_id": "28b8678395e",
     "datasource_ids": ["ds_aaa", "ds_bbb"]
   }'
 ```
@@ -359,7 +368,7 @@ GET /knowledge/project/{ontology_id}/text
 | `refresh` | query | no | `false` | Bypass the summary cache and regenerate unconditionally. |
 
 ```bash
-curl "$BASE_URL/knowledge/project/$PROJECT_ID/text?scope=user" \
+curl "$BASE_URL/knowledge/project/$ONTOLOGY_ID/text?scope=user" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
