@@ -15,7 +15,7 @@ responses use the standard [envelope](/integrations/rest-api#response-envelope).
 ## List sessions
 
 Return recent chat sessions, newest first. Optionally filter to a single
-project.
+ontology.
 
 ```
 GET /chat-history/sessions
@@ -23,11 +23,12 @@ GET /chat-history/sessions
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `project_id` | query | no | — | Filter sessions to a single project. |
+| `ontology_id` | query | no | — | Filter sessions to a single ontology. Omit to return **all** of the user's sessions across every ontology. |
+| `project_id` | query | no | — | Deprecated alias for `ontology_id`. |
 | `limit` | query | no | `50` | Maximum sessions to return (1–200). |
 
 ```bash
-curl "$BASE_URL/chat-history/sessions?limit=20" \
+curl "$BASE_URL/chat-history/sessions?ontology_id=$ONTOLOGY_ID&limit=20" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -38,7 +39,7 @@ curl "$BASE_URL/chat-history/sessions?limit=20" \
   "data": [
     {
       "id": "sess_a1b2...",
-      "project_id": "proj_123",
+      "ontology_id": "28b8678395e",
       "title": "Modeling supplier risk",
       "created_at": "2026-06-24T08:30:00+00:00",
       "updated_at": "2026-06-24T09:10:00+00:00"
@@ -46,6 +47,10 @@ curl "$BASE_URL/chat-history/sessions?limit=20" \
   ]
 }
 ```
+
+<Note>
+The `session_id` here is the same identifier the [AI Agent](/integrations/api-endpoints/agent) chat endpoint accepts. Load a past session, then keep sending chat messages with that `session_id` to **continue** the conversation.
+</Note>
 
 ## Get a session
 
@@ -70,16 +75,28 @@ curl "$BASE_URL/chat-history/sessions/sess_a1b2..." \
   "message": "Session loaded",
   "data": {
     "id": "sess_a1b2...",
-    "project_id": "proj_123",
+    "ontology_id": "28b8678395e",
     "title": "Modeling supplier risk",
     "created_at": "2026-06-24T08:30:00+00:00",
     "messages": [
-      { "role": "user", "content": "Find all transitive suppliers" },
-      { "role": "assistant", "content": "I created the transitive_suppliers concept..." }
+      { "role": "user", "content": "Find all transitive suppliers", "created_at": "2026-06-24T08:30:01+00:00" },
+      { "role": "assistant", "content": "Let me create that concept.", "tool_calls": [{ "id": "call_1", "type": "function", "function": { "name": "create_concept", "arguments": "{...}" } }], "created_at": "2026-06-24T08:30:05+00:00" },
+      { "role": "tool", "content": "{\"id\": \"concept-uuid\"}", "tool_call_id": "call_1", "created_at": "2026-06-24T08:30:06+00:00" },
+      { "role": "assistant", "content": "I created the transitive_suppliers concept...", "created_at": "2026-06-24T08:30:10+00:00" }
     ]
   }
 }
 ```
+
+Messages are stored in **OpenAI wire format**, ordered oldest-first:
+
+- `role` is `user`, `assistant`, `tool`, or `system`.
+- `content` may be `null` on an assistant turn that only makes tool calls.
+- `tool_calls` (assistant) is the raw OpenAI array; each has `id`, `type`, and `function: { name, arguments }` where `arguments` is a JSON string.
+- `tool_call_id` (tool role) links a tool result back to its call.
+- There is no persisted `thinking` field — the reasoning stream is only emitted live over the [agent chat](/integrations/api-endpoints/agent) response, not stored.
+
+To render a past conversation, show the `user` and `assistant` (`content`) turns; `tool` rows are internal.
 
 Returns `404` if no session with that ID exists.
 
