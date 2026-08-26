@@ -8,7 +8,7 @@ A **data source** is an external database table or file that a concept can read 
 All paths are relative to the [base URL](/integrations/rest-api#base-url) and
 require [authentication](/integrations/api-endpoints/authentication). All
 responses use the standard [envelope](/integrations/rest-api#response-envelope)
-unless noted otherwise. The `scope` parameter follows the [scope](/integrations/rest-api#scope) conventions; paginated endpoints follow [pagination](/integrations/rest-api#pagination).
+unless noted otherwise. Paginated endpoints follow [pagination](/integrations/rest-api#pagination).
 
 ## Connections
 
@@ -22,7 +22,6 @@ POST /data/connect
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the connection. |
 | `database` | body | yes | — | Connection descriptor (see fields below). |
 | `computeRowCount` | body | no | `false` | Whether to count rows per table after connecting. |
 
@@ -46,7 +45,6 @@ curl -X POST "$BASE_URL/data/connect" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "scope": "user",
     "database": {
       "databaseType": "postgresql",
       "host": "db.example.com",
@@ -80,18 +78,14 @@ On a failed connection `connectionStatus` is `false` and `errorMessage` contains
 
 ### List data sources
 
-Return all registered data sources for the authenticated user.
+Return all registered data sources for the authenticated user. No parameters required.
 
 ```
 GET /data/list
 ```
 
-| Parameter | In | Required | Default | Description |
-|---|---|---|---|---|
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of sources to return. |
-
 ```bash
-curl "$BASE_URL/data/list?scope=user" \
+curl "$BASE_URL/data/list" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -171,14 +165,11 @@ POST /data/refresh
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of sources to refresh. |
 | `group_filter` | body | no | — | If set, refresh only sources matching this connection group identifier. |
 
 ```bash
 curl -X POST "$BASE_URL/data/refresh" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{ "scope": "user" }'
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ```jsonc
@@ -247,7 +238,6 @@ POST /data/preview
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `bind_annotation` | body | yes | — | The full `@bind(...)` annotation string identifying the source. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the source. |
 | `page` | body | no | `1` | [Page](/integrations/rest-api#pagination) number. |
 | `page_size` | body | no | `0` | Rows per page (`0` falls back to the server default of `10`). |
 | `order_by` | body | no | — | e.g. `"0:asc,2:desc"`. |
@@ -260,7 +250,6 @@ curl -X POST "$BASE_URL/data/preview" \
   -H "Content-Type: application/json" \
   -d '{
     "bind_annotation": "@bind(\"orders\", \"postgresql\", \"db.example.com\", 5432, \"customers\", \"public\", \"reader\", \"s3cr3t\").",
-    "scope": "user",
     "page": 1,
     "page_size": 20
   }'
@@ -513,4 +502,4 @@ curl -X POST "$BASE_URL/data/files/move" \
 
 | Operation | Endpoint | Notes |
 |---|---|---|
-| Remove data sources | `POST /data/cleanup` | Body: `scope` (default `"user"`), `source_ids` (array; omit to delete all sources in scope). |
+| Remove data sources | `POST /data/cleanup` | Body: `source_ids` (array; omit to delete all sources). |

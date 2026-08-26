@@ -154,7 +154,7 @@ reconnect to the server to pick up the current one.
 |------|-------------|------------|
 | `list_ontologies` | List every ontology you can access, including ones shared with you | — |
 | `create_ontology` | Create a new empty ontology | **`name`**, `description` |
-| `delete_ontology` | Permanently delete an ontology and everything in it | **`ontology_id`**, `confirm`, `scope` |
+| `delete_ontology` | Permanently delete an ontology and everything in it | **`ontology_id`**, `confirm` |
 | `list_templates` | List the curated template ontologies in the Prometheux catalogue | — |
 | `get_template` | Read one template's concepts as read-only reference material | **`template_id`** |
 
@@ -166,7 +166,7 @@ reconnect to the server to pick up the current one.
 | `preview_data_source` | Preview the first rows of a connected data source | **`bind_annotation`**, `limit` |
 | `create_csv_datasource` | Materialise inline rows as a CSV data source that Vadalog can bind to | **`ontology_id`**, **`predicate_name`**, **`columns`**, **`rows`**, `description` |
 | `connect_file_as_datasource` | Register a tabular file already on disk as a queryable data source | **`file_path`** |
-| `delete_data_source` | Permanently disconnect a data source from the workspace | **`bind_annotation`**, `scope` |
+| `delete_data_source` | Permanently disconnect a data source from the workspace | **`bind_annotation`** |
 
 ### Concepts — read and run
 
@@ -186,7 +186,7 @@ reconnect to the server to pick up the current one.
 | `validate_concept` | Check a concept body before saving it, at no LLM cost | **`definition`**, `concept_type`, `concept_name`, `ontology_id`, `concept_config` |
 | `create_concept` | Save a new concept of any of the six kinds | **`ontology_id`**, `definition`, `concept_type`, `concept_name`, `description`, `concept_config`, `group`, `confirm_new` |
 | `update_concept` | Overwrite an existing concept's definition | **`ontology_id`**, **`concept_name`**, `definition`, `concept_type`, `description`, `concept_config`, `group` |
-| `delete_concept` | Permanently delete a concept | **`ontology_id`**, **`concept_name`**, `scope` |
+| `delete_concept` | Permanently delete a concept | **`ontology_id`**, **`concept_name`** |
 
 <Note>
 **Writing a concept**
@@ -212,9 +212,9 @@ to proceed.
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `create_ontology_snapshot` | Take a point-in-time snapshot of an ontology | **`ontology_id`**, `description` |
-| `list_snapshots` | List an ontology's snapshots, newest first | **`ontology_id`**, `scope` |
-| `restore_snapshot` | Restore an ontology to a snapshot, overwriting its current state | **`ontology_id`**, **`snapshot_id`**, `scope` |
-| `delete_snapshot` | Permanently delete one snapshot | **`ontology_id`**, **`snapshot_id`**, `scope` |
+| `list_snapshots` | List an ontology's snapshots, newest first | **`ontology_id`** |
+| `restore_snapshot` | Restore an ontology to a snapshot, overwriting its current state | **`ontology_id`**, **`snapshot_id`** |
+| `delete_snapshot` | Permanently delete one snapshot | **`ontology_id`**, **`snapshot_id`** |
 
 `restore_snapshot` takes an automatic safety snapshot before it overwrites anything.
 
@@ -254,8 +254,8 @@ for the app definition, along with the authoring guide.
 | `extract_concepts_from_document` | Run a concept-shaped extraction pass over an ingested document | **`document_id`**, `ontology_id` |
 | `get_user_rules` | Return your standing rules, the same ones the in-app assistant loads | `ontology_id` |
 
-Here `scope` is the note's own scope — `global` or `project` — rather than the
-workspace scope used elsewhere. `kind` is `preference` or `fact`.
+Here `scope` is the note's own reach — `global` or `project`. `kind` is
+`preference` or `fact`.
 
 ### Skills
 
@@ -283,13 +283,13 @@ list.
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `list_policies` | List the scheduled or triggered runs configured for an ontology | **`ontology_id`**, `concept_name`, `scope` |
-| `get_policy` | Return one policy with its trigger config and last-run status | **`ontology_id`**, **`policy_id`**, `scope` |
-| `get_policy_runs` | Execution history for a policy, most recent first | **`ontology_id`**, **`policy_id`**, `limit`, `offset`, `scope` |
-| `create_policy` | Re-run a concept on a cron schedule, or when its data changes | **`ontology_id`**, **`concept_name`**, **`trigger_type`**, **`trigger_config`**, `enabled`, `scope` |
-| `update_policy` | Change a policy's schedule, or enable and disable it | **`ontology_id`**, **`policy_id`**, `trigger_config`, `enabled`, `scope` |
-| `delete_policy` | Permanently delete a policy and unschedule its job | **`ontology_id`**, **`policy_id`**, `scope` |
-| `trigger_policy` | Run a policy's concept immediately | **`ontology_id`**, **`policy_id`**, `scope` |
+| `list_policies` | List the scheduled or triggered runs configured for an ontology | **`ontology_id`**, `concept_name` |
+| `get_policy` | Return one policy with its trigger config and last-run status | **`ontology_id`**, **`policy_id`** |
+| `get_policy_runs` | Execution history for a policy, most recent first | **`ontology_id`**, **`policy_id`**, `limit`, `offset` |
+| `create_policy` | Re-run a concept on a cron schedule, or when its data changes | **`ontology_id`**, **`concept_name`**, **`trigger_type`**, **`trigger_config`**, `enabled` |
+| `update_policy` | Change a policy's schedule, or enable and disable it | **`ontology_id`**, **`policy_id`**, `trigger_config`, `enabled` |
+| `delete_policy` | Permanently delete a policy and unschedule its job | **`ontology_id`**, **`policy_id`** |
+| `trigger_policy` | Run a policy's concept immediately | **`ontology_id`**, **`policy_id`** |
 
 `trigger_type` is either `cron`, whose config looks like
 `{"cron_expression": "0 6 * * *"}`, or `data_change`, whose config looks like
@@ -306,9 +306,7 @@ list.
 <Tip>
 **Parameter defaults**
 
-Tools that expose a `scope` parameter accept `"user"` or `"organization"` and
-default to `"user"`; tools that omit it operate on your personal workspace. On
-`run_concept`, both `force_rerun` and `persist_outputs` default to `true`.
+On `run_concept`, both `force_rerun` and `persist_outputs` default to `true`.
 
 On `update_concept`, omitting `description`, `concept_config`, or `group` leaves
 that field unchanged — which is different from passing an empty value, since an

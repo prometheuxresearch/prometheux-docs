@@ -10,16 +10,6 @@ so you can manage, share, and move that work as a whole.
 {/* NEEDS_REVIEW: This page is derived from the Ontologies API reference. Confirm exact UI
 labels, buttons, and navigation in the product before publishing. */}
 
-## Ontology scopes
-
-Every ontology belongs to a **scope** that controls who can see and use it:
-
-- `user` — private to your own workspace (the default scope).
-- `organization` — shared across your organization.
-
-When listing ontologies you can filter by one or more scopes, and when copying or
-importing an ontology you choose the scope it lands in.
-
 ## Working with ontologies
 
 The platform supports the full lifecycle of an ontology. Each of these operations
@@ -27,9 +17,9 @@ is also available through the SDK and REST API (see the
 [Ontologies API reference](/integrations/api-endpoints/ontologies)):
 
 - **Create or update** — save a new ontology with a name and optional description, or update an existing one.
-- **List** — browse the ontologies available in your selected scopes.
+- **List** — browse the ontologies available to you.
 - **Load** — open a specific ontology by its ID.
-- **Copy** — duplicate an ontology within or between scopes/workspaces.
+- **Copy** — duplicate an ontology, within your workspace or into another.
 - **Export / Import** — export an ontology (including its data and metadata) to a portable file, and import it back into a workspace later.
 - **Cleanup** — delete a single ontology or remove all of your ontology resources.
 
@@ -42,8 +32,8 @@ new ontology to get going quickly without building from scratch.
 
 ## Workspaces
 
-A **workspace** holds all the ontologies for a given scope. You can export an
-entire workspace — every ontology and its associated data — and import it back
+A **workspace** holds all of your ontologies. You can export an entire
+workspace — every ontology and its associated data — and import it back
 elsewhere, which is useful for backups or moving work between environments.
 
 ## Quick example (SDK)

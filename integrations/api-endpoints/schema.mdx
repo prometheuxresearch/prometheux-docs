@@ -27,14 +27,12 @@ POST /concepts/{ontology_id}/save-ontology-schema
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `ontology_schema_data` | body | yes | — | The schema document — an object with `nodes` and `edges`, or a JSON string. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
 curl -X POST "$BASE_URL/concepts/$PROJECT_ID/save-ontology-schema" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "scope": "user",
     "ontology_schema_data": {
       "nodes": [{ "id": "company", "label": "Company" }],
       "edges": [{ "source": "company", "target": "location", "label": "located_in" }]
@@ -62,10 +60,9 @@ GET /concepts/{ontology_id}/load-ontology-schema
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
-curl "$BASE_URL/concepts/$PROJECT_ID/load-ontology-schema?scope=user" \
+curl "$BASE_URL/concepts/$PROJECT_ID/load-ontology-schema" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -97,7 +94,6 @@ PATCH /concepts/{ontology_id}/concepts/{concept_name}/ontology-schema-type
 | `ontology_schema_type` | body | no | — | `"node"`, `"edge"`, or omit/`null` to reset to default. |
 | `edge_source` | body | conditional | — | Source node predicate. **Required** when `ontology_schema_type` is `"edge"`. |
 | `edge_target` | body | conditional | — | Target node predicate. **Required** when `ontology_schema_type` is `"edge"`. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
 curl -X PATCH "$BASE_URL/concepts/$PROJECT_ID/concepts/located_in/ontology-schema-type" \
@@ -106,8 +102,7 @@ curl -X PATCH "$BASE_URL/concepts/$PROJECT_ID/concepts/located_in/ontology-schem
   -d '{
     "ontology_schema_type": "edge",
     "edge_source": "company",
-    "edge_target": "location",
-    "scope": "user"
+    "edge_target": "location"
   }'
 ```
 
@@ -134,7 +129,6 @@ POST /concepts/{ontology_id}/add-to-lineage
 | `element_type` | body | yes | — | `"node"` or `"edge"`. |
 | `element_data` | body | yes | — | The element definition object. |
 | `all_nodes` | body | no | `[]` | Current node list, used to resolve edge endpoints. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
 curl -X POST "$BASE_URL/concepts/$PROJECT_ID/add-to-lineage" \
@@ -143,8 +137,7 @@ curl -X POST "$BASE_URL/concepts/$PROJECT_ID/add-to-lineage" \
   -d '{
     "element_type": "node",
     "element_data": { "id": "supplier", "label": "Supplier" },
-    "all_nodes": [],
-    "scope": "user"
+    "all_nodes": []
   }'
 ```
 

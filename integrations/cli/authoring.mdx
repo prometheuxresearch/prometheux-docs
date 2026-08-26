@@ -15,7 +15,7 @@ my-workspace/
   context/                      # workspace-global context (see Context as code)
   ontologies/
     credit-risk/
-      prometheux.yaml           # ontology manifest (id, name, scope + section paths)
+      prometheux.yaml           # ontology manifest (id, name + section paths)
       concepts/
         customers.vadalog       # concept body (per-kind extension)
         customers.meta.yaml     # envelope: conceptType, outputPredicate, binds, …
@@ -60,7 +60,6 @@ schemaVersion: 1
 ontology:
   id: 1d22942b9a0        # server ontology id; absent on a brand-new ontology (apply fills it)
   name: Credit Risk
-  scope: user            # user | organization
 concepts: ./concepts
 datasources:
   - ./datasources/snowflake_prod.yaml

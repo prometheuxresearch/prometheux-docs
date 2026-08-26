@@ -46,19 +46,17 @@ The value associated with the specified key, or `None` if the key does not exist
 ### HTTP Request
 
 ```bash
-GET /api/v1/users/load-config?scope=user
+GET /api/v1/users/load-config
 ```
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| scope | string | No | Configuration scope (default: "user") |
+This endpoint takes no parameters.
 
 ### cURL Example
 
 ```bash
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/load-config?scope=user" \
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/load-config" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -107,7 +105,6 @@ POST /api/v1/users/save-config
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | config_data | object | Yes | Configuration data to save |
-| scope | string | No | Configuration scope (default: "user") |
 
 ### cURL Example
 
@@ -120,8 +117,7 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/sav
       "theme": "dark",
       "language": "en",
       "notifications": true
-    },
-    "scope": "user"
+    }
   }'
 ```
 
@@ -171,8 +167,7 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/sav
     "config_data": {
       "PMTX_TOKEN": "updated_token",
       "LLM_API_KEY": "new_api_key"
-    },
-    "scope": "user"
+    }
   }'
 ```
 
@@ -504,13 +499,13 @@ Persist user-scoped configuration on the server (for example UI preferences).
 ```python
 import prometheux_chain as px
 
-px.save_user_config(config_data={"theme": "dark"}, scope="user")
+px.save_user_config(config_data={"theme": "dark"})
 ```
 
 **Function Signature**
 
 ```python
-def save_user_config(config_data: Dict[str, Any], scope: str = "user") -> str
+def save_user_config(config_data: Dict[str, Any]) -> str
 ```
 
 **Parameters**
@@ -518,7 +513,6 @@ def save_user_config(config_data: Dict[str, Any], scope: str = "user") -> str
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `config_data` | dict | Yes | Key-value configuration to save |
-| `scope` | str | No | Configuration scope (default: `"user"`) |
 
 **Returns**
 
@@ -539,8 +533,7 @@ POST /api/v1/users/save-config
 {
   "config_data": {
     "theme": "dark"
-  },
-  "scope": "user"
+  }
 }
 ```
 
@@ -553,8 +546,7 @@ curl -X POST "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/sav
   -d '{
     "config_data": {
       "theme": "dark"
-    },
-    "scope": "user"
+    }
   }'
 ```
 
@@ -573,20 +565,18 @@ Load user-scoped configuration from the server.
 ```python
 import prometheux_chain as px
 
-config = px.load_user_config(scope="user")
+config = px.load_user_config()
 ```
 
 **Function Signature**
 
 ```python
-def load_user_config(scope: str = "user") -> Dict[str, Any]
+def load_user_config() -> Dict[str, Any]
 ```
 
 **Parameters**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `scope` | str | No | Configuration scope (default: `"user"`) |
+This function takes no parameters.
 
 **Returns**
 
@@ -598,13 +588,13 @@ A dictionary of configuration key-value pairs.
 ### HTTP Request
 
 ```bash
-GET /api/v1/users/load-config?scope=user
+GET /api/v1/users/load-config
 ```
 
 ### cURL Example
 
 ```bash
-curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/load-config?scope=user" \
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/users/load-config" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 

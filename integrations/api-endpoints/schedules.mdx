@@ -8,8 +8,6 @@ A **schedule** (called a *policy* in the API) attaches an automated trigger to a
 All paths are relative to the [base URL](/integrations/rest-api#base-url) and
 require [authentication](/integrations/api-endpoints/authentication). All
 responses use the standard [envelope](/integrations/rest-api#response-envelope).
-The `scope` parameter follows the same [scope](/integrations/rest-api#scope)
-semantics used across the platform.
 
 ## Create a policy
 
@@ -27,7 +25,6 @@ POST /schedules/{ontology_id}/policies
 | `concept_name` | body | yes | — | Name of the concept this policy targets. |
 | `trigger_type` | body | no | `"cron"` | `"cron"` to fire on a calendar schedule; `"data_change"` to fire when upstream data changes. |
 | `trigger_config` | body | yes | — | Configuration object for the chosen trigger type (see below). |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the concept. |
 | `enabled` | body | no | `true` | Whether the policy is active immediately after creation. |
 
 **`trigger_config` for `cron`**
@@ -52,7 +49,6 @@ curl -X POST "$BASE_URL/schedules/$PROJECT_ID/policies" \
     "concept_name": "daily_report",
     "trigger_type": "cron",
     "trigger_config": { "cron_expression": "0 3 * * *" },
-    "scope": "user",
     "enabled": true
   }'
 ```
@@ -67,7 +63,6 @@ curl -X POST "$BASE_URL/schedules/$PROJECT_ID/policies" \
     "concept_name": "daily_report",
     "trigger_type": "cron",
     "trigger_config": { "cron_expression": "0 3 * * *" },
-    "scope": "user",
     "enabled": true,
     "created_at": "2026-06-25T09:00:00+00:00"
   }
@@ -85,11 +80,10 @@ GET /schedules/{ontology_id}/policies
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `concept_name` | query | no | — | Filter results to policies targeting this concept. |
 
 ```bash
-curl "$BASE_URL/schedules/$PROJECT_ID/policies?scope=user" \
+curl "$BASE_URL/schedules/$PROJECT_ID/policies" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -107,10 +101,9 @@ GET /schedules/{ontology_id}/policies/{policy_id}
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
-curl "$BASE_URL/schedules/$PROJECT_ID/policies/$POLICY_ID?scope=user" \
+curl "$BASE_URL/schedules/$PROJECT_ID/policies/$POLICY_ID" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -124,7 +117,6 @@ curl "$BASE_URL/schedules/$PROJECT_ID/policies/$POLICY_ID?scope=user" \
     "concept_name": "daily_report",
     "trigger_type": "cron",
     "trigger_config": { "cron_expression": "0 3 * * *" },
-    "scope": "user",
     "enabled": true,
     "created_at": "2026-06-25T09:00:00+00:00"
   }
@@ -146,7 +138,6 @@ PATCH /schedules/{ontology_id}/policies/{policy_id}
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `trigger_config` | body | no | — | Replacement trigger configuration object. Must be a valid config for the policy's existing `trigger_type`. |
 | `enabled` | body | no | — | Pass `true` to activate or `false` to pause the policy. |
 
@@ -156,7 +147,7 @@ PATCH /schedules/{ontology_id}/policies/{policy_id}
 curl -X PATCH "$BASE_URL/schedules/$PROJECT_ID/policies/$POLICY_ID" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "enabled": false, "scope": "user" }'
+  -d '{ "enabled": false }'
 ```
 
 ```jsonc
@@ -185,10 +176,9 @@ DELETE /schedules/{ontology_id}/policies/{policy_id}
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
-curl -X DELETE "$BASE_URL/schedules/$PROJECT_ID/policies/$POLICY_ID?scope=user" \
+curl -X DELETE "$BASE_URL/schedules/$PROJECT_ID/policies/$POLICY_ID" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -216,10 +206,9 @@ POST /schedules/{ontology_id}/policies/{policy_id}/trigger
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
-curl -X POST "$BASE_URL/schedules/$PROJECT_ID/policies/$POLICY_ID/trigger?scope=user" \
+curl -X POST "$BASE_URL/schedules/$PROJECT_ID/policies/$POLICY_ID/trigger" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -254,7 +243,6 @@ GET /schedules/{ontology_id}/policies/{policy_id}/runs
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `policy_id` | path | yes | — | The policy ID. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `limit` | query | no | `50` | Number of runs to return (1–500). |
 | `offset` | query | no | `0` | Number of runs to skip before returning results. |
 

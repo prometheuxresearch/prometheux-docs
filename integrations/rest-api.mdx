@@ -1,6 +1,6 @@
 ---
 title: "REST API"
-description: "Conventions for the Prometheux platform REST API — base URL, authentication, the response envelope, scoping, pagination, and error handling."
+description: "Conventions for the Prometheux platform REST API — base URL, authentication, the response envelope, pagination, and error handling."
 ---
 
 The Prometheux platform exposes a REST API that lets you drive every part of the
@@ -112,19 +112,6 @@ A typical error response:
   "data": null
 }
 ```
-
-## Scope
-
-Most resources exist in one of two scopes, selected with a `scope` parameter
-(query or body, depending on the endpoint):
-
-| Scope | Meaning |
-|---|---|
-| `user` *(default)* | Private to your user. |
-| `organization` | Shared across your organization. |
-
-Endpoints that read across scopes accept a comma-separated `scopes` parameter
-instead — e.g. `?scopes=user,organization`.
 
 ## Pagination
 
