@@ -1,0 +1,134 @@
+---
+title: "Installation"
+description: "Install the px CLI on macOS, Linux, or Windows, then authenticate to your Prometheux platform."
+---
+
+`px` is distributed as the **`prometheux`** package on PyPI. It requires **Python ≥ 3.9**.
+
+## Install
+
+<Tabs>
+  <Tab title="uv (recommended)">
+    ```bash
+    uv tool install prometheux
+    px --help
+    ```
+    `uv` installs `px` into its own isolated environment with its own Python — nothing to
+    manage. Upgrade with `uv tool upgrade prometheux`.
+  </Tab>
+  <Tab title="pipx">
+    ```bash
+    pipx install prometheux
+    px --help
+    ```
+    Isolated install into a dedicated virtualenv. Upgrade with `pipx upgrade prometheux`.
+  </Tab>
+  <Tab title="pip">
+    ```bash
+    pip install prometheux
+    px --help
+    ```
+    Installs into the current environment. Use a virtualenv to avoid dependency conflicts.
+  </Tab>
+</Tabs>
+
+### One-liner installers
+
+<CodeGroup>
+```bash macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/prometheuxresearch/prometheux-cli/main/install.sh | sh
+```
+
+```powershell Windows
+irm https://raw.githubusercontent.com/prometheuxresearch/prometheux-cli/main/install.ps1 | iex
+```
+</CodeGroup>
+
+The installer prefers **uv** (bootstrapping it if absent), then **pipx**, then
+`pip --user`. Pin a release with `PROMETHEUX_VERSION`; skip the uv bootstrap with
+`PROMETHEUX_NO_BOOTSTRAP=1`.
+
+<Note>
+Native Windows is a first-class target. If `px` isn't found after install, restart your
+shell (uv/pipx add their bin directory to `PATH` on first install).
+</Note>
+
+### From source (development)
+
+```bash
+git clone https://github.com/prometheuxresearch/prometheux-cli.git
+cd prometheux-cli
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+px --help
+```
+
+## Authenticate
+
+Most commands need a platform URL and an API token. `init` and `validate` do not.
+
+```bash
+px login --url https://api.prometheux.ai/jarvispy/<org>/<user> --token <JWT>
+```
+
+- Credentials persist to `~/.prometheux/config.json`.
+- Omit `--token` to be prompted with hidden input.
+- `--no-verify` stores the credentials without the live auth check.
+- The default URL is `http://localhost:8000` (local dev; token `devtoken`).
+
+<Warning>
+The base URL is `.../jarvispy/<org>/<user>` with **no** `/api` suffix — the SDK appends
+`/api/v1` itself. For example: `https://api.prometheux.ai/jarvispy/prometheux/alice`.
+</Warning>
+
+### CI / scripts
+
+Skip `px login` and set environment variables instead — they override the stored config,
+so no file is needed in CI:
+
+```bash
+export JARVISPY_URL="https://api.prometheux.ai/jarvispy/<org>/<user>"
+export PMTX_TOKEN="<JWT>"
+```
+
+See [CI/CD](/integrations/cli/ci-cd) for a full GitHub Actions example.
+
+## Add the agent skill
+
+Once `px` is installed, give your coding agent full knowledge of how to author
+workspaces — no repo to clone:
+
+```bash
+px skill install                       # global Claude Code skill
+px skill install -t claude -t cursor   # Claude Code + a Cursor rule
+```
+
+See [Agent skill](/integrations/cli/agent-skill) for details.
+
+## Corporate / enterprise install
+
+`px` is built to pass locked-down security review:
+
+- **Standard wheel + sdist on PyPI** — proxy it through your internal Artifactory/Nexus
+  mirror and `pip install prometheux` with your sanctioned Python. No bespoke installer needed.
+- **Proxy + corporate CA** — the CLI honours `HTTPS_PROXY`, `NO_PROXY`,
+  `PIP_INDEX_URL`, and `REQUESTS_CA_BUNDLE` / `SSL_CERT_FILE`, so it works behind a
+  TLS-intercepting proxy.
+- **Minimal dependency tree** — a small, mainstream set of dependencies (fewer approval items).
+- **Provenance** — every release ships a CycloneDX **SBOM**, **SHA256** checksums, and a
+  Sigstore build-provenance attestation; PyPI uploads carry PEP 740 attestations.
+
+<Tip>
+`curl … | sh` from the public internet is a self-serve convenience, **not** the
+enterprise path. For banks and other locked-down environments, install the signed wheel
+from your internal mirror with your own Python.
+</Tip>
+
+## Verify
+
+```bash
+px --version
+px --help
+```
+
+Next: the [Quickstart](/integrations/cli/quickstart).

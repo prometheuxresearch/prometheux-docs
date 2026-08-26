@@ -1,0 +1,148 @@
+---
+title: "Bring Your Own Frontend"
+description: "Build a custom app on your own infrastructure that uses Prometheux as its backend — a chat UI over the AI agent, chat history, and an editable context layer."
+---
+
+Prometheux is usable as a **headless backend**. You can host your own frontend
+anywhere — a static SPA, a mobile app, a server — and drive the platform over
+the REST API. This guide shows how to build a chat app over one ontology,
+end to end.
+
+Everything here uses only the public REST API. You need three things:
+
+| | |
+|---|---|
+| **Base URL** | `https://api.prometheux.ai/jarvispy/{org}/{user}/api/v1` — see [Base URL](/integrations/rest-api#base-url). |
+| **Token** | A long-lived API token (JWT). See [step 1](#step-1-mint-a-token). |
+| **Ontology ID** | The ontology (project) your app talks to. Copy it from the platform, or list ontologies via the API. |
+
+The agent already knows your data — its [concepts](/integrations/api-endpoints/concepts)
+and [context notes](/integrations/api-endpoints/context-layer) — and refuses
+off-topic questions, so a thin chat UI is often all you need.
+
+<Steps>
+
+<Step title="Mint a token">
+
+Create a long-lived token to authenticate your app. Bootstrapping one requires
+an already-authenticated session (see [Authentication](/integrations/api-endpoints/authentication)):
+
+```bash
+curl -X POST "$BASE_URL/auth/issue-token" \
+  -H "Authorization: Bearer $EXISTING_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "my-frontend", "expires_in_minutes": null }'
+```
+
+`expires_in_minutes: null` mints a non-expiring key (cap: 1 year otherwise). The
+raw token is returned **once** — store it securely. You can revoke it anytime.
+
+</Step>
+
+<Step title="Stream a chat response">
+
+Send a message to the [AI Agent](/integrations/api-endpoints/agent) and read the
+NDJSON stream. Render `content` as the answer and `thinking` as live progress:
+
+```js
+async function* streamChat({ baseUrl, token, ontologyId, message, sessionId }) {
+  const res = await fetch(`${baseUrl}/agent/${ontologyId}/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ message, session_id: sessionId }),
+  });
+
+  if (res.status === 402) throw new Error("Message limit reached");
+  if (!res.ok || !res.body) throw new Error(`Request failed (${res.status})`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? ""; // keep the incomplete last line
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed) yield JSON.parse(trimmed); // { type, data }
+    }
+  }
+}
+
+// Usage
+for await (const ev of streamChat({ baseUrl, token, ontologyId, message, sessionId })) {
+  if (ev.type === "content") appendAnswer(ev.data.chunk);
+  else if (ev.type === "thinking") showThinking(ev.data.chunk);
+  else if (ev.type === "tool_start") showTool(ev.data.tool);
+  else if (ev.type === "error") throw new Error(ev.data.error);
+  // ignore unknown event types
+}
+```
+
+Keep the same `session_id` across turns to preserve conversation context.
+
+</Step>
+
+<Step title="Add history and an editable context layer (optional)">
+
+- **Chat history** — list, load, rename, and delete past conversations with
+  [Chat History](/integrations/api-endpoints/chat-history). A loaded session's
+  `id` is a `session_id` you can keep chatting on to continue it.
+- **Context** — let users view and edit what the assistant knows via the
+  [Context Layer](/integrations/api-endpoints/context-layer). To show the notes
+  for your ontology: `GET /knowledge/context?scope=ontology&scope_id={ontology_id}`.
+  Create and edit notes (including their `activation`) with `POST`/`PATCH`.
+
+</Step>
+
+<Step title="Deploy — keep the token server-side">
+
+[CORS](/integrations/rest-api#cross-origin-requests-cors) is open, so a browser
+app can call the API directly. That is fine for local development, but a token
+in browser code is visible to every visitor and grants full account access.
+
+For anything public, put a **thin proxy** in front: the browser calls your
+origin, the proxy adds the `Authorization` header and forwards to Prometheux.
+The token never reaches the client. Example — a Cloudflare Worker that serves a
+static SPA and proxies `/api/*`:
+
+```js
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith("/api/")) {
+      const upstream = env.UPSTREAM_BASE + url.pathname.replace(/^\/api/, "") + url.search;
+      const headers = new Headers(request.headers);
+      headers.set("Authorization", `Bearer ${env.PMTX_TOKEN}`); // secret, server-side
+      const resp = await fetch(upstream, {
+        method: request.method,
+        headers,
+        body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
+      });
+      // stream the body straight through so agent NDJSON stays incremental
+      return new Response(resp.body, { status: resp.status, headers: resp.headers });
+    }
+    return env.ASSETS.fetch(request); // static SPA
+  },
+};
+```
+
+Point your frontend's base URL at `/api` (same origin) instead of the direct
+Prometheux URL, and store the token as an encrypted secret on the proxy. The
+streaming passthrough above keeps `thinking`/`content` events incremental.
+
+</Step>
+
+</Steps>
+
+<Note>
+Prefer a higher-level wrapper? The [Python SDK](/integrations/python-sdk)
+exposes the same agent chat and concept operations as functions. This guide
+covers the raw HTTP path for building custom (often browser) frontends.
+</Note>
