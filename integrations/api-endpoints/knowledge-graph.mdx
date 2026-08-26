@@ -11,8 +11,7 @@ concept-level lineage DAG for a project.
 All paths are relative to the [base URL](/integrations/rest-api#base-url) and
 require [authentication](/integrations/api-endpoints/authentication). All
 responses use the standard [envelope](/integrations/rest-api#response-envelope).
-Graph-building endpoints are [paginated](/integrations/rest-api#pagination) and
-[scoped](/integrations/rest-api#scope).
+Graph-building endpoints are [paginated](/integrations/rest-api#pagination).
 
 ## Build a graph
 
@@ -41,7 +40,6 @@ POST /kgs/{ontology_id}/build-graph/{output_predicate}
 | `output_predicate` | path | yes | — | Name of the edge predicate to graph. |
 | `column_roles` | body | yes | — | Object mapping `"source"` and `"target"` to column positions (integers ≥ 0). Optional `"edge_value"` sets the edge label column. |
 | `compute` | body | no | — | [Compute](/integrations/rest-api#compute) target. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the output predicate. |
 | `page` | query | no | `1` | [Page](/integrations/rest-api#pagination) number. |
 | `page_size` | query | no | config default | Rows per page. |
 | `order_by` | query | no | — | Column ordering, e.g. `0:asc,2:desc`. Records mode only. |
@@ -54,7 +52,7 @@ POST /kgs/{ontology_id}/build-graph/{output_predicate}
 ### Example
 
 ```bash
-curl -X POST "$BASE_URL/kgs/$PROJECT_ID/build-graph/edge?scope=user&page=1&page_size=50" \
+curl -X POST "$BASE_URL/kgs/$PROJECT_ID/build-graph/edge?page=1&page_size=50" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -113,13 +111,11 @@ POST /kgs/{ontology_id}/graph-analytics/{output_predicate}
 | `function` | body | yes | — | Analytics function to run. Must be a key returned by [List graph functions](#list-graph-functions). |
 | `function_params` | body | no | `{}` | Function-specific parameter object. See the function's schema in the registry. |
 | `compute` | body | no | — | [Compute](/integrations/rest-api#compute) target. |
-| `project` | body | no | — | Object `{ "scope": "user" }` overriding the query-level scope. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the output predicate. |
 
 ### Example
 
 ```bash
-curl -X POST "$BASE_URL/kgs/$PROJECT_ID/graph-analytics/edge?scope=user" \
+curl -X POST "$BASE_URL/kgs/$PROJECT_ID/graph-analytics/edge" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -222,15 +218,12 @@ POST /kgs/{ontology_id}/visualize-concept-lineage
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
-| `project.scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. Passed as `{ "project": { "scope": "user" } }`. |
 
 ### Example
 
 ```bash
 curl -X POST "$BASE_URL/kgs/$PROJECT_ID/visualize-concept-lineage" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{ "project": { "scope": "user" } }'
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ```jsonc

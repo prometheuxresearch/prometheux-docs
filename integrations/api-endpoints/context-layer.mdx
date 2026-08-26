@@ -6,7 +6,7 @@ description: "Store, search, and ingest context notes that ground the AI agent's
 The **Context Layer** is the AI agent's knowledge base. It stores *context notes* — discrete facts, preferences, observations, and document chunks — that the agent retrieves at inference time to reason over your data. Notes are scoped either `global` (workspace-wide) or `ontology` (tied to a single ontology via a `scope_id`).
 
 <Note>
-This **note scope model** (`global` | `ontology` + `scope_id`) is distinct from the user/organization [scope](/integrations/rest-api#scope) used by the rest of the API. A note scoped to `ontology` with a given `scope_id` is only retrieved when the agent operates on that same ontology. The `scope_id` is the **ontology ID** — the same identifier you pass to the [AI Agent](/integrations/api-endpoints/agent) chat endpoint.
+This **note scope model** (`global` | `ontology` + `scope_id`) is specific to the Context Layer. A note scoped to `ontology` with a given `scope_id` is only retrieved when the agent operates on that same ontology. The `scope_id` is the **ontology ID** — the same identifier you pass to the [AI Agent](/integrations/api-endpoints/agent) chat endpoint.
 </Note>
 
 All paths are relative to the [base URL](/integrations/rest-api#base-url) and
@@ -364,11 +364,10 @@ GET /knowledge/ontology/{ontology_id}/text
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
-| `scope` | query | no | `"user"` | Workspace [scope](/integrations/rest-api#scope) of the project. |
 | `refresh` | query | no | `false` | Bypass the summary cache and regenerate unconditionally. |
 
 ```bash
-curl "$BASE_URL/knowledge/ontology/$ONTOLOGY_ID/text?scope=user" \
+curl "$BASE_URL/knowledge/ontology/$ONTOLOGY_ID/text" \
   -H "Authorization: Bearer $TOKEN"
 ```
 

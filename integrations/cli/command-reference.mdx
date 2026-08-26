@@ -66,7 +66,6 @@ you and exits.
 
 | Option | Meaning |
 |---|---|
-| `--scope [user\|organization]` | Scope to pull from. |
 | `--out PATH` | Workspace directory (default: `.`). |
 | `--slug TEXT` | Directory name under `ontologies/` (default: from the ontology name). |
 | `--with-files` | Download uploaded **file-datasource content** into `files/` and write portable `file:` specs, so the ontology (with its files) can be re-applied elsewhere. |
@@ -187,7 +186,6 @@ Run a read-only SQL `SELECT`/`WITH` over one populated concept (aggregates, `DIS
 
 | Option | Meaning |
 |---|---|
-| `--scope [user\|organization]` | Scope (default `user`). |
 | `--json` | Emit raw JSON instead of a table. |
 
 ```bash
@@ -218,7 +216,6 @@ progress. The engine is globally serialized, so at most one ontology is ever `ru
 |---|---|
 | `-w, --watch` | Refresh continuously until Ctrl-C. |
 | `-i, --interval FLOAT` | Seconds between refreshes with `--watch` (default `3.0`). |
-| `--scope TEXT` | Comma-separated scopes, e.g. `user,organization` (default `user`). |
 
 ```bash
 px status                       # one-shot table
@@ -228,8 +225,7 @@ px status --watch               # live; announces when a run starts
 ## `px snapshot <list\|create\|restore\|delete>`
 
 Point-in-time snapshots of a server ontology. `apply` already snapshots before it writes
-(unless `--no-snapshot`); these let you manage snapshots directly. All take the ontology id
-and accept `--scope`.
+(unless `--no-snapshot`); these let you manage snapshots directly. All take the ontology id.
 
 | Command | Meaning |
 |---|---|
@@ -246,7 +242,7 @@ px snapshot restore 1d22942b9a0 snap_abc --yes
 ## `px policy <list\|get\|create\|update\|delete\|trigger\|runs>`
 
 Evaluation policies run a concept on a cron schedule or when its inputs change. All take the
-ontology id and accept `--scope`.
+ontology id.
 
 | Command | Meaning |
 |---|---|
@@ -271,7 +267,7 @@ The catalogue of starter ontologies you can clone.
 | Command | Meaning |
 |---|---|
 | `px template list` | List catalogue templates (id + name). |
-| `px template import TEMPLATE_ID` | Clone a template into a new ontology (`--name`, `--scope`). |
+| `px template import TEMPLATE_ID` | Clone a template into a new ontology (`--name`). |
 
 ```bash
 px template list
@@ -359,7 +355,6 @@ first, then by exact name (ambiguous names must be deleted by id).
 
 | Option | Meaning |
 |---|---|
-| `--scope [user\|organization]` | Scope to delete from (default `user`). |
 | `-y, --yes` | Skip the confirmation prompt. |
 
 ```bash
