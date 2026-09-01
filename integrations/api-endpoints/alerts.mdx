@@ -26,11 +26,10 @@ rule should set two labels — `project_id` (the Prometheux project) and `concep
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) the alert is stored under. |
 | *(body)* | body | yes | — | The raw alert payload sent by the monitoring system. |
 
 ```bash
-curl -X POST "$BASE_URL/alerts/webhook/prometheus?scope=user" \
+curl -X POST "$BASE_URL/alerts/webhook/prometheus" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -72,10 +71,9 @@ GET /alerts/history
 |---|---|---|---|---|
 | `limit` | query | no | `100` | Maximum alerts to return (1–1000). |
 | `offset` | query | no | `0` | Number of alerts to skip. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) to read from. |
 
 ```bash
-curl "$BASE_URL/alerts/history?limit=50&offset=0&scope=user" \
+curl "$BASE_URL/alerts/history?limit=50&offset=0" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -121,14 +119,11 @@ POST /alerts/{alert_id}/reprocess
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `alert_id` | path | yes | — | The ID of the alert to reprocess. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the alert. |
 | `compute` | body | no | `{}` | [Compute](/integrations/rest-api#compute) target for the re-run. |
 
 ```bash
 curl -X POST "$BASE_URL/alerts/alt_a1b2.../reprocess" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{ "scope": "user" }'
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ```jsonc
@@ -146,4 +141,4 @@ curl -X POST "$BASE_URL/alerts/alt_a1b2.../reprocess" \
 }
 ```
 
-Returns `404` if no alert with that ID exists in the given scope.
+Returns `404` if no alert with that ID exists.

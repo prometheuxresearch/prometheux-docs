@@ -11,13 +11,11 @@ between workspaces via export/import, and capture point-in-time snapshots.
 All paths are relative to the [base URL](/integrations/rest-api#base-url) and
 require [authentication](/integrations/api-endpoints/authentication). All
 responses use the standard [envelope](/integrations/rest-api#response-envelope).
-Where [scope](/integrations/rest-api#scope) is accepted, valid values are `user`
-(default) and `organization`.
 
 <Note>
 On the wire the request/response payloads still use `project`-prefixed keys
-(`project`, `project_id`, `project_scope`) for backward compatibility. These name
-the ontology container.
+(`project`, `project_id`) for backward compatibility. These name the ontology
+container.
 </Note>
 
 ## Save an ontology
@@ -34,7 +32,6 @@ POST /ontologies/save
 | `project` | body | yes | — | Ontology object (see fields below). |
 | `project.id` | body | yes | — | Ontology identifier. |
 | `project.name` | body | yes | — | Human-readable ontology name. |
-| `project.scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the ontology. |
 | `project.description` | body | no | — | Optional ontology description. |
 
 ### Example
@@ -47,7 +44,6 @@ curl -X POST "$BASE_URL/ontologies/save" \
     "project": {
       "id": "my-ontology-001",
       "name": "Supply Chain Analysis",
-      "scope": "user",
       "description": "Vadalog models for supplier risk."
     }
   }'
@@ -63,30 +59,20 @@ curl -X POST "$BASE_URL/ontologies/save" \
 
 ## List ontologies
 
-Return all ontologies visible to the authenticated user across one or more
-[scopes](/integrations/rest-api#scope). Results from multiple scopes are merged
-and deduplicated by ontology ID.
+Return all ontologies visible to the authenticated user, deduplicated by
+ontology ID. No parameters required.
 
 ```
 GET /ontologies/list
 ```
 
-| Parameter | In | Required | Default | Description |
-|---|---|---|---|---|
-| `scopes` | query | no | `"user"` | Comma-separated [scopes](/integrations/rest-api#scope), e.g. `user,organization`. |
-
-<Note>
-The `organization` scope is temporarily disabled — passing it is silently
-ignored and only `user`-scoped ontologies are returned.
-</Note>
-
 ```bash
-curl "$BASE_URL/ontologies/list?scopes=user" \
+curl "$BASE_URL/ontologies/list" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-`data` is an array of ontology objects (id, name, scope, description, and
-associated metadata).
+`data` is an array of ontology objects (id, name, description, and associated
+metadata).
 
 ## Load an ontology
 
@@ -99,10 +85,9 @@ GET /ontologies/load
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `project_id` | query | yes | — | The ontology ID to load. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
-curl "$BASE_URL/ontologies/load?project_id=$PROJECT_ID&scope=user" \
+curl "$BASE_URL/ontologies/load?project_id=$PROJECT_ID" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -113,7 +98,6 @@ curl "$BASE_URL/ontologies/load?project_id=$PROJECT_ID&scope=user" \
   "data": {
     "id": "my-ontology-001",
     "name": "Supply Chain Analysis",
-    "scope": "user",
     "description": "Vadalog models for supplier risk."
   }
 }
@@ -121,8 +105,8 @@ curl "$BASE_URL/ontologies/load?project_id=$PROJECT_ID&scope=user" \
 
 ## Copy an ontology
 
-Duplicate an existing ontology into the same or a different scope. All concepts,
-data source binds, and the schema are copied; a new ontology ID is assigned.
+Duplicate an existing ontology. All concepts, data source binds, and the schema
+are copied; a new ontology ID is assigned.
 
 ```
 POST /ontologies/copy
@@ -132,7 +116,6 @@ POST /ontologies/copy
 |---|---|---|---|---|
 | `project_id` | body | yes | — | ID of the source ontology to copy. |
 | `new_project_name` | body | no | — | Name for the copy. Defaults to the source name with a suffix. |
-| `target_scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new ontology. |
 | `compute` | body | no | `{}` | Compute configuration overrides for the copy (Databricks / Snowflake). |
 
 ```bash
@@ -141,8 +124,7 @@ curl -X POST "$BASE_URL/ontologies/copy" \
   -H "Content-Type: application/json" \
   -d '{
     "project_id": "'$PROJECT_ID'",
-    "new_project_name": "Supply Chain Analysis (Copy)",
-    "target_scope": "user"
+    "new_project_name": "Supply Chain Analysis (Copy)"
   }'
 ```
 
@@ -189,7 +171,6 @@ POST /ontologies/import-template
 |---|---|---|---|---|
 | `template_id` | body | yes | — | ID of the template to import. |
 | `new_project_name` | body | no | — | Name for the resulting ontology. Defaults to the template name. |
-| `project_scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new ontology. |
 | `compute` | body | no | `{}` | Compute configuration overrides (Databricks / Snowflake). |
 
 ```bash
@@ -198,8 +179,7 @@ curl -X POST "$BASE_URL/ontologies/import-template" \
   -H "Content-Type: application/json" \
   -d '{
     "template_id": "tmpl_supply_chain_01",
-    "new_project_name": "My Supply Chain Ontology",
-    "project_scope": "user"
+    "new_project_name": "My Supply Chain Ontology"
   }'
 ```
 
@@ -209,8 +189,7 @@ curl -X POST "$BASE_URL/ontologies/import-template" \
   "message": "Template imported successfully as ontology 'My Supply Chain Ontology'",
   "data": {
     "id": "onto_abc123",
-    "name": "My Supply Chain Ontology",
-    "scope": "user"
+    "name": "My Supply Chain Ontology"
   }
 }
 ```
@@ -234,13 +213,12 @@ POST /ontologies/export-ontology
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `project_id` | body | yes | — | ID of the ontology to export. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
 curl -X POST "$BASE_URL/ontologies/export-ontology" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "project_id": "'$PROJECT_ID'", "scope": "user" }'
+  -d '{ "project_id": "'$PROJECT_ID'" }'
 ```
 
 ```jsonc
@@ -277,7 +255,6 @@ POST /ontologies/import-ontology
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `export_data` | body | yes | — | The `data` object from an `export-ontology` response. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the imported ontology. |
 | `force_new_id` | body | no | `false` | Assign a fresh ID even if the original ontology ID is available. |
 | `compute` | body | no | `{}` | Compute configuration overrides. |
 
@@ -287,7 +264,6 @@ curl -X POST "$BASE_URL/ontologies/import-ontology" \
   -H "Content-Type: application/json" \
   -d '{
     "export_data": { "project_id": "my-ontology-001", "tables": { "..." } },
-    "scope": "user",
     "force_new_id": false
   }'
 ```
@@ -310,21 +286,15 @@ curl -X POST "$BASE_URL/ontologies/import-ontology" \
 
 Export every ontology in the workspace — and all workspace-level tables — in a
 single payload. Equivalent to calling `export-ontology` for each ontology plus the
-workspace-level tables in one request.
+workspace-level tables in one request. No parameters required.
 
 ```
 POST /ontologies/export-workspace
 ```
 
-| Parameter | In | Required | Default | Description |
-|---|---|---|---|---|
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) to export. |
-
 ```bash
 curl -X POST "$BASE_URL/ontologies/export-workspace" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{ "scope": "user" }'
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ```jsonc
@@ -358,15 +328,13 @@ POST /ontologies/import-workspace
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `export_data` | body | yes | — | The `data` object from an `export-workspace` response. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) for the imported workspace. |
 
 ```bash
 curl -X POST "$BASE_URL/ontologies/import-workspace" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "export_data": { "..." },
-    "scope": "user"
+    "export_data": { "..." }
   }'
 ```
 
@@ -403,7 +371,6 @@ POST /ontologies/create-from-context
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `context` | form | conditional | `""` | Text describing the domain or task. Required if no files are attached. |
-| `scope` | form | no | `"user"` | [Scope](/integrations/rest-api#scope) for the new ontology. |
 | `concept_names` | form | no | `"[]"` | JSON array (as a string) of existing concept names whose schemas should inform generation. |
 | `files` | form | no | — | One or more file attachments. Supported: PDF, CSV, TXT/MD, and images (JPG, PNG, GIF, BMP, TIFF, WEBP — OCR'd via computer vision). |
 
@@ -413,7 +380,6 @@ Provide at least one of `context` or `files`; supplying neither returns a `400`.
 curl -X POST "$BASE_URL/ontologies/create-from-context" \
   -H "Authorization: Bearer $TOKEN" \
   -F "context=Model suppliers, the parts they make, and which factories consume them." \
-  -F "scope=user" \
   -F "files=@/local/path/supply_chain.pdf"
 ```
 
@@ -452,7 +418,6 @@ POST /ontologies/snapshots/create
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `project_id` | body | yes | — | ID of the ontology to snapshot. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 | `description` | body | no | — | Optional human-readable label for the snapshot. |
 
 ```bash
@@ -461,7 +426,6 @@ curl -X POST "$BASE_URL/ontologies/snapshots/create" \
   -H "Content-Type: application/json" \
   -d '{
     "project_id": "'$PROJECT_ID'",
-    "scope": "user",
     "description": "Before schema refactor"
   }'
 ```
@@ -491,10 +455,9 @@ GET /ontologies/snapshots/list
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `project_id` | query | yes | — | The ontology whose snapshots to list. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
-curl "$BASE_URL/ontologies/snapshots/list?project_id=$PROJECT_ID&scope=user" \
+curl "$BASE_URL/ontologies/snapshots/list?project_id=$PROJECT_ID" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -511,7 +474,6 @@ POST /ontologies/snapshots/restore
 |---|---|---|---|---|
 | `snapshot_id` | body | yes | — | ID of the snapshot to restore. |
 | `project_id` | body | yes | — | ID of the ontology to overwrite. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 | `create_safety_snapshot` | body | no | `true` | Capture the current state before restoring. |
 
 ```bash
@@ -521,7 +483,6 @@ curl -X POST "$BASE_URL/ontologies/snapshots/restore" \
   -d '{
     "snapshot_id": "snap_a1b2c3",
     "project_id": "'$PROJECT_ID'",
-    "scope": "user",
     "create_safety_snapshot": true
   }'
 ```
@@ -548,7 +509,6 @@ POST /ontologies/snapshots/delete
 |---|---|---|---|---|
 | `snapshot_id` | body | yes | — | ID of the snapshot to delete. |
 | `project_id` | body | yes | — | ID of the owning ontology. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the ontology. |
 
 ```bash
 curl -X POST "$BASE_URL/ontologies/snapshots/delete" \
@@ -556,8 +516,7 @@ curl -X POST "$BASE_URL/ontologies/snapshots/delete" \
   -H "Content-Type: application/json" \
   -d '{
     "snapshot_id": "snap_a1b2c3",
-    "project_id": "'$PROJECT_ID'",
-    "scope": "user"
+    "project_id": "'$PROJECT_ID'"
   }'
 ```
 
@@ -573,4 +532,4 @@ curl -X POST "$BASE_URL/ontologies/snapshots/delete" \
 
 | Operation | Endpoint | Notes |
 |---|---|---|
-| Delete an ontology or all ontologies | `POST /ontologies/cleanup` | Body: `project` object with `id` (omit to delete all user ontologies) and `scope`. Shared/scoped users cannot delete ontologies. |
+| Delete an ontology or all ontologies | `POST /ontologies/cleanup` | Body: `project` object with `id` (omit to delete all your ontologies). Shared/scoped users cannot delete ontologies. |

@@ -34,7 +34,6 @@ POST /concepts/{ontology_id}/save
 | `output_predicate` | body | no | `""` | The predicate this concept outputs. |
 | `description` | body | no | — | Human-readable description. |
 | `binds` | body | no | — | Bind annotations linking input/output predicates to data sources. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the concept. |
 | `force_overwrite` | body | no | `false` | Overwrite a conflicting concept instead of returning `409`. |
 
 ### Example
@@ -45,8 +44,7 @@ curl -X POST "$BASE_URL/concepts/$PROJECT_ID/save" \
   -H "Content-Type: application/json" \
   -d '{
     "definition": "@output(\"location\").\nlocation(L) <- company(_, L).",
-    "concept_type": "logic",
-    "scope": "user"
+    "concept_type": "logic"
   }'
 ```
 
@@ -69,10 +67,9 @@ GET /concepts/{ontology_id}/list
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
-curl "$BASE_URL/concepts/$PROJECT_ID/list?scope=user" \
+curl "$BASE_URL/concepts/$PROJECT_ID/list" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -93,7 +90,6 @@ POST /concepts/{ontology_id}/run/{concept_name}
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `concept_name` | path | yes | — | The target concept to run. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `params` | body | no | `{}` | Runtime parameter values referenced by the program. |
 | `force_rerun` | body | no | `true` | Re-run even if cached results exist. |
 | `persist_outputs` | body | no | `true` | Persist output predicates so they can be read with [`/fetch`](#fetch-concept-results). |
@@ -105,7 +101,7 @@ POST /concepts/{ontology_id}/run/{concept_name}
 curl -X POST "$BASE_URL/concepts/$PROJECT_ID/run/location" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "scope": "user", "persist_outputs": true }'
+  -d '{ "persist_outputs": true }'
 ```
 
 On success, `data` contains the execution result. On a run error, `status` is
@@ -142,7 +138,6 @@ GET /concepts/{ontology_id}/fetch
 | `page` | query | no | `1` | [Page](/integrations/rest-api#pagination) number. |
 | `page_size` | query | no | `30` | Rows per page (max `1000`). |
 | `order_by` | query | no | — | e.g. `0:asc,2:desc`. |
-| `project_scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
 curl "$BASE_URL/concepts/$PROJECT_ID/fetch?output_predicate=location&page=1&page_size=30" \
@@ -177,7 +172,6 @@ POST /concepts/{ontology_id}/search
 | `output_predicate` | query | yes | — | The predicate to search. |
 | `search_term` | body | no | — | Free-text term matched across columns. |
 | `column_filters` | body | no | — | Array of `{ "position": <col index>, "value": <string> }`. |
-| `project_scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```bash
 curl -X POST "$BASE_URL/concepts/$PROJECT_ID/search?output_predicate=location" \
@@ -201,7 +195,6 @@ POST /concepts/{ontology_id}/rename
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `old_name` | body | yes | — | Current concept name. |
 | `new_name` | body | yes | — | New concept name. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ## Reorder concepts
 
@@ -216,14 +209,13 @@ POST /concepts/{ontology_id}/reorder
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `concept_names` | body | yes | — | Array of concept names in the desired order. |
-| `scope` | body | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 | `group` | body | no | — | Restrict reordering to concepts in this group. |
 
 ```bash
 curl -X POST "$BASE_URL/concepts/$PROJECT_ID/reorder" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "concept_names": ["raw_data", "cleaned", "final_report"], "scope": "user" }'
+  -d '{ "concept_names": ["raw_data", "cleaned", "final_report"] }'
 ```
 
 ```jsonc
@@ -249,7 +241,6 @@ GET /concepts/{ontology_id}/execution-status
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
-| `scope` | query | no | `"user"` | [Scope](/integrations/rest-api#scope) of the project. |
 
 ```jsonc
 {
@@ -291,13 +282,11 @@ every 1.5 s while `running`, and stop once the status is terminal or `idle`.
 
 ### All projects (batch)
 
+Takes no parameters — it reports on every project in your workspace.
+
 ```
 GET /concepts/execution-statuses
 ```
-
-| Parameter | In | Required | Default | Description |
-|---|---|---|---|---|
-| `scopes` | query | no | `"user"` | Comma-separated [scopes](/integrations/rest-api#scope), e.g. `user,organization`. |
 
 `data` is a map keyed by `project_id`, where each value is the same snapshot as
 above. Only projects whose latest run is `running`, `error`, `cancelled`, or
@@ -308,8 +297,8 @@ its last run succeeded).
 
 | Operation | Endpoint | Notes |
 |---|---|---|
-| Generate a description with the LLM | `POST /concepts/{ontology_id}/generate-description` | Body: `concept_name`, `scope`. Returns `{ "description": "..." }`. |
-| Read (or lazily generate) a description | `GET /concepts/{ontology_id}/description` | Query: `concept_name`, `scope`. |
+| Generate a description with the LLM | `POST /concepts/{ontology_id}/generate-description` | Body: `concept_name`. Returns `{ "description": "..." }`. |
+| Read (or lazily generate) a description | `GET /concepts/{ontology_id}/description` | Query: `concept_name`. |
 | Ask a question over predicate data | `POST /concepts/{ontology_id}/llm` | Body: `predicate_names`/`predicate_data`, `question`. Returns `{ "response": "..." }`. |
 | Export results to CSV / download a file | `GET /concepts/{ontology_id}/download` | Query: `path`, `export_csv`, `concept_name`. Returns the raw file, not the envelope. |
-| Delete concepts | `POST /concepts/{ontology_id}/cleanup` | Body: `concept_names` (omit to delete all), `scope`. |
+| Delete concepts | `POST /concepts/{ontology_id}/cleanup` | Body: `concept_names` (omit to delete all). |
