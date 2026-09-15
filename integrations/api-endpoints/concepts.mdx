@@ -91,9 +91,24 @@ POST /concepts/{ontology_id}/run/{concept_name}
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `concept_name` | path | yes | — | The target concept to run. |
 | `params` | body | no | `{}` | Runtime parameter values referenced by the program. |
-| `force_rerun` | body | no | `true` | Re-run even if cached results exist. |
+| `run_mode` | body | no | `"auto"` | How much of the dependency chain to rebuild: `single`, `auto`, or `all`. See below. |
 | `persist_outputs` | body | no | `true` | Persist output predicates so they can be read with [`/fetch`](#fetch-concept-results). |
 | `compute` | body | no | — | [Compute](/integrations/rest-api#compute) target. |
+
+**`run_mode` values**
+
+- `single` — reuse every populated dependency as-is; rebuild only what is strictly
+  missing to answer for the target concept. Cheapest.
+- `auto` (default) — reuse dependencies that are provably fresh, rebuild the stale
+  or unverifiable ones, and honour any frozen checkpoints.
+- `all` — rebuild everything reachable in the dependency chain and override
+  checkpoints. Most expensive; use as an escape hatch.
+
+<Note>
+`run_mode` replaces the older `force_rerun` boolean. For older clients, `force_rerun: true`
+maps to `all` and `force_rerun: false` maps to `single`; new integrations should send
+`run_mode`.
+</Note>
 
 ### Example
 

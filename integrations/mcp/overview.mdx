@@ -175,7 +175,7 @@ reconnect to the server to pick up the current one.
 | `list_concepts` | List all concepts in an ontology with their schema, population state, and folder | **`ontology_id`** |
 | `get_concept` | Return full detail for one concept, including its current definition | **`ontology_id`**, **`concept_name`** |
 | `search_similar_concepts` | Semantic search across all of your ontologies, to find reuse candidates | **`query`**, `exclude_ontology_id`, `top_k` |
-| `run_concept` | Execute a concept and its dependency chain through the reasoning engine | **`ontology_id`**, **`concept_name`**, `params`, `force_rerun`, `persist_outputs` |
+| `run_concept` | Execute a concept and its dependency chain through the reasoning engine | **`ontology_id`**, **`concept_name`**, `params`, `run_mode`, `persist_outputs` |
 | `fetch_concept` | Page through the rows of an already-populated concept without recomputing | **`ontology_id`**, **`concept_name`**, `page`, `page_size`, `params`, `column_filters`, `order_by` |
 | `query_concept` | Run one read-only SQL `SELECT` over a populated concept, for aggregates and `GROUP BY` | **`ontology_id`**, **`concept_name`**, **`sql`** |
 
@@ -306,7 +306,8 @@ list.
 <Tip>
 **Parameter defaults**
 
-On `run_concept`, both `force_rerun` and `persist_outputs` default to `true`.
+On `run_concept`, `run_mode` is one of `single`, `auto` (the default), or `all` — how
+much of the dependency chain to rebuild — and `persist_outputs` defaults to `true`.
 
 On `update_concept`, omitting `description`, `concept_config`, or `group` leaves
 that field unchanged — which is different from passing an empty value, since an
