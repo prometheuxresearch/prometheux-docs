@@ -152,6 +152,7 @@ Run a concept (an output predicate) and emit OpenLineage `START`/`COMPLETE`/`FAI
 | `-o, --ontology TEXT` | Limit the lookup to the named ontology(ies). Repeatable. |
 | `--param KEY=VALUE` | Run parameter (repeatable). |
 | `--persist` | Materialize the concept's outputs. |
+| `--run-mode [single\|auto\|all]` | How much of the dependency chain to rebuild (default `auto`). `single` reuses every populated dependency and rebuilds only what is missing; `auto` rebuilds stale dependencies while reusing fresh ones; `all` rebuilds everything. |
 | `--openlineage-file PATH` | Append events here (default `<workspace>/.px/openlineage.jsonl`). |
 | `--openlineage-url TEXT` | Also POST each event to this URL (e.g. a Marquez `/api/v1/lineage`). |
 | `--no-openlineage` | Do not emit events. |
@@ -159,6 +160,7 @@ Run a concept (an output predicate) and emit OpenLineage `START`/`COMPLETE`/`FAI
 ```bash
 px run risk_score
 px run risk_score --persist --param year=2025 -o "Credit Risk"
+px run risk_score --run-mode all   # force a full rebuild of the dependency chain
 ```
 
 ## `px show CONCEPT [PATH]`
