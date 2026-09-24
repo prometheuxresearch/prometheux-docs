@@ -12,10 +12,14 @@ AI-powered text processing using embeddings and large language models.
 Generate and compare vector embeddings for semantic similarity:
 
 ```prolog
-embeddings:vectorize(arg1: string, arg2: string, …) → array<double>
+embeddings:vectorize(text: string) → array<double>
+embeddings:vectorize(text: string, options: string) → array<double>
 similarity:cosine_sim_udf(left: array<double>, right: array<double>) → double
 similarity:cosine_sim(left: array<double>, right: array<double>) → double
 ```
+
+All embedding vectors are L2-normalized before they are returned, so cosine
+similarity behaves consistently across providers.
 
 <Note>
 The cosine similarity operators live in the `similarity:` namespace alongside the other [similarity operators](/vadalog/expressions/operators#similarity-operators). Embedding *generation* (`embeddings:vectorize`) remains in the `embeddings:` namespace.
@@ -32,6 +36,153 @@ customer_similarity(Name1, Name2, Similarity) <-
     Vec2 = embeddings:vectorize(Name2, Info2), 
     Similarity = similarity:cosine_sim(Vec1, Vec2).
 ```
+
+---
+
+### Embedding Providers
+
+`embeddings:vectorize` can generate embeddings with different backends. The
+optional **second argument** is a comma-separated options string (same
+convention as [`llm:generate`](#approach-1-llm-generate)) whose `provider` key
+selects the backend:
+
+| Provider | `provider=` | Auth | Notes |
+|----------|-------------|------|-------|
+| **Azure OpenAI** | `azure` (default) | API key | Used when no options / no `provider` are given. Unchanged default behaviour. |
+| **Google Gemini Developer API** | `gcp` | API key | [Google AI Studio](https://ai.google.dev) key. Simple REST endpoint. |
+| **Google Vertex AI** | `vertex` (alias `gcp_vertex`) | OAuth2 (ADC / service account / token) | Enterprise GCP. Works with zero config on a GCP VM. |
+
+<Note>
+When the second argument is **omitted**, or does not contain `=`, it is treated
+as additional text to embed and the provider defaults to **Azure**. Existing
+programs keep working unchanged.
+</Note>
+
+**Options**
+
+| Option | Providers | Default | Description |
+|--------|-----------|---------|-------------|
+| `provider` | all | `azure` | `azure`, `gcp`, or `vertex`. |
+| `endpoint` | `azure`, `gcp` | provider default | Override the service endpoint. |
+| `key` | `azure`, `gcp` | from env/props | API key. |
+| `model` | all | provider default | Embedding model / Azure deployment name. |
+| `project` | `vertex` | auto-detected | GCP project id. |
+| `location` | `vertex` | `us-central1` | Vertex AI region. |
+| `task_type` | `vertex` | `SEMANTIC_SIMILARITY` | Vertex embedding [task type](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/task-types). |
+| `output_dimensionality` | `vertex` | model default | Truncate the vector to this size. |
+| `credentials` | `vertex` | ADC | Path to a service-account JSON file. |
+| `access_token` | `vertex` | — | Pre-minted OAuth2 access token. |
+
+<Warning>
+When comparing vectors with `similarity:cosine_sim`, **both** sides must use the
+same `provider`, `model`, `task_type`, and `output_dimensionality` — otherwise
+the vectors are not comparable.
+</Warning>
+
+#### Azure OpenAI (default)
+
+The default provider. Configure it with environment variables or engine
+properties:
+
+| Environment variable | Property | Default |
+|----------------------|----------|---------|
+| `AZURE_EMBEDDINGS_ENDPOINT` | `azure.embeddingsEndpoint` | — |
+| `AZURE_EMBEDDINGS_KEY` | `azure.embeddingsKey` | — |
+| — | `model` option | `text-embedding-3-large` |
+
+```prolog
+% Uses Azure by default — no options needed
+sim(A, B, S) <-
+    doc(A, TextA), doc(B, TextB),
+    S = similarity:cosine_sim(
+        embeddings:vectorize(TextA),
+        embeddings:vectorize(TextB)
+    ).
+```
+
+#### Google Gemini Developer API (`provider=gcp`)
+
+Uses an API key from [Google AI Studio](https://ai.google.dev). Endpoint and
+model have sensible defaults.
+
+| Environment variable | Property | Default |
+|----------------------|----------|---------|
+| `GCP_EMBEDDINGS_ENDPOINT` | `gcp.embeddingsEndpoint` | `https://generativelanguage.googleapis.com` |
+| `GCP_EMBEDDINGS_KEY` | `gcp.embeddingsKey` | — |
+| `GCP_EMBEDDINGS_MODEL` | `gcp.embeddingsModel` | `gemini-embedding-001` |
+
+```prolog
+% Inline key/model
+V = embeddings:vectorize(Text, "provider=gcp,key=AIza...,model=gemini-embedding-001").
+
+% Or rely on GCP_EMBEDDINGS_KEY / gcp.embeddingsKey from the environment
+V = embeddings:vectorize(Text, "provider=gcp").
+```
+
+#### Google Vertex AI (`provider=vertex`)
+
+Uses Vertex AI's `:predict` endpoint with OAuth2 authentication. This is the
+option to use when the engine runs inside Google Cloud.
+
+**Authentication** is resolved in this order:
+
+1. `access_token=` option → `GCP_ACCESS_TOKEN` / `gcp.gcpAccessToken`
+2. `credentials=` option (service-account JSON path) → `GOOGLE_APPLICATION_CREDENTIALS` / `gcp.credentialsFile`
+3. **Application Default Credentials (ADC)** — automatic on a GCP VM via the attached service account
+
+**Project** is resolved from `project=` → `GCP_BILLING_PROJECT` / `GOOGLE_CLOUD_PROJECT` / `gcp.projectId` → the **GCE metadata server**.
+
+| Setting | Option | Env / Property | Default |
+|---------|--------|----------------|---------|
+| Project | `project` | `GCP_BILLING_PROJECT`, `GOOGLE_CLOUD_PROJECT`, `gcp.projectId` | metadata server |
+| Location | `location` | `VERTEX_LOCATION`, `gcp.location` | `us-central1` |
+| Model | `model` | `VERTEX_EMBEDDINGS_MODEL`, `vertex.embeddingsModel` | `gemini-embedding-001` |
+| Task type | `task_type` | `VERTEX_EMBEDDINGS_TASK_TYPE`, `vertex.embeddingsTaskType` | `SEMANTIC_SIMILARITY` |
+| Output size | `output_dimensionality` | `VERTEX_EMBEDDINGS_OUTPUT_DIM`, `vertex.embeddingsOutputDimensionality` | model default |
+| Credentials | `credentials` | `GOOGLE_APPLICATION_CREDENTIALS`, `gcp.credentialsFile` | ADC |
+| Access token | `access_token` | `GCP_ACCESS_TOKEN`, `gcp.gcpAccessToken` | — |
+
+<Tip>
+**Running on a GCP VM?** You do **not** need any credential environment
+variables. The engine authenticates through the VM's attached service account
+(ADC) and auto-detects the project from the metadata server, so the minimal
+usage is just `provider=vertex`. Make sure the VM's service account has the
+`roles/aiplatform.user` role and the `cloud-platform` access scope.
+</Tip>
+
+```prolog
+% Minimal — on a GCP VM, credentials and project are automatic
+V = embeddings:vectorize(Text, "provider=vertex").
+
+% Explicit project / region / dimensionality
+V = embeddings:vectorize(
+    Text,
+    "provider=vertex,project=my-gcp-project,location=us-central1,model=gemini-embedding-001,task_type=SEMANTIC_SIMILARITY,output_dimensionality=768"
+).
+
+% Off-GCP: point to a service-account key file
+V = embeddings:vectorize(
+    Text,
+    "provider=vertex,project=my-gcp-project,credentials=/secrets/sa.json"
+).
+```
+
+**End-to-end similarity with Vertex AI:**
+
+```prolog
+brand_similarity(A, B, S) <-
+    brand(A), brand(B), A != B,
+    S = similarity:cosine_sim(
+        embeddings:vectorize(A, "provider=vertex,project=my-gcp-project,output_dimensionality=768"),
+        embeddings:vectorize(B, "provider=vertex,project=my-gcp-project,output_dimensionality=768")
+    ).
+```
+
+<Note>
+The Vertex AI call includes a short automatic retry with backoff on quota
+(HTTP 429) and transient server errors (HTTP 5xx), so occasional rate-limit
+spikes do not fail the run.
+</Note>
 
 ---
 
