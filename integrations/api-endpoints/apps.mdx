@@ -72,9 +72,10 @@ GET /apps/{ontology_id}/{app_id}
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
 | `app_id` | path | yes | — | The app ID. |
+| `variant` | query | no | `draft` | `draft` serves the editable draft. `published` serves the [published snapshot](#publish-an-app), falling back to the draft when there isn't one. |
 
 ```bash
-curl "$BASE_URL/apps/$PROJECT_ID/a1b2c3d4-..." \
+curl "$BASE_URL/apps/$PROJECT_ID/a1b2c3d4-...?variant=published" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -131,6 +132,63 @@ curl -X POST "$BASE_URL/apps/$PROJECT_ID/save" \
 ```
 
 Every successful save also appends a version checkpoint (see below).
+
+## Publish an app
+
+Freeze the app's current draft as the **published** snapshot. Viewers are served
+that snapshot — and keep being served it while you carry on editing the draft —
+until the next publish replaces it.
+
+```
+POST /apps/{ontology_id}/{app_id}/publish
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | path | yes | — | The ontology ID. |
+| `app_id` | path | yes | — | The app ID. |
+
+```bash
+curl -X POST "$BASE_URL/apps/$PROJECT_ID/a1b2c3d4-.../publish" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "App published successfully",
+  "data": { /* the published snapshot */ }
+}
+```
+
+Read the snapshot back with [`GET /apps/{ontology_id}/{app_id}?variant=published`](#get-an-app).
+
+## Unpublish an app
+
+Remove the published snapshot. The app goes back to draft-only and viewers lose
+access to the published version; the draft itself is untouched.
+
+```
+POST /apps/{ontology_id}/{app_id}/unpublish
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | path | yes | — | The ontology ID. |
+| `app_id` | path | yes | — | The app ID. |
+
+```bash
+curl -X POST "$BASE_URL/apps/$PROJECT_ID/a1b2c3d4-.../unpublish" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "App unpublished successfully",
+  "data": null
+}
+```
 
 ## Delete an app
 

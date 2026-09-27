@@ -123,6 +123,59 @@ curl -X POST "$BASE_URL/data/list-sheets" \
 }
 ```
 
+### Browse a connection
+
+Walk a warehouse connection's hierarchy without connecting anything yet:
+catalogs, then the schemas in one, then the tables in one. This is how a
+connect form fills its dropdowns, and how you discover the table names to pass
+to [`/data/connect`](#connect-a-data-source).
+
+```
+POST /data/list-catalogs
+POST /data/list-schemas
+POST /data/list-tables
+```
+
+All three take the same shape: a `database` connection descriptor in the body,
+narrowed by the level you are asking about. Each returns its own key —
+`catalogs`, `schemas`, or `tables`.
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `database` | body | yes | — | Connection descriptor. Include `catalog` when listing schemas, and `catalog` plus `schema` when listing tables. |
+
+```bash
+curl -X POST "$BASE_URL/data/list-tables" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "database": {
+      "databaseType": "postgresql",
+      "host": "db.example.com",
+      "port": 5432,
+      "database": "analytics",
+      "username": "reader",
+      "password": "…",
+      "schema": "public"
+    }
+  }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Success",
+  "data": { "tables": ["customers", "orders", "suppliers"] }
+}
+```
+
+<Note>
+Not every connector supports discovery. One that does not returns `400` with a
+message saying so — distinct from a `500`, which means the connection itself
+failed. A connector with no catalog concept (most single-database engines)
+answers `/list-schemas` and `/list-tables` but not `/list-catalogs`.
+</Note>
+
 ### Demo sources
 
 Return the pre-built demo data sources shown during onboarding. Each preset includes its full `database` connection payload so the frontend can pre-populate the connect form.
@@ -496,6 +549,128 @@ curl -X POST "$BASE_URL/data/files/move" \
     "destination": "datasets/customers.csv"
   }
 }
+```
+
+### Download a folder as a zip
+
+Bundle one or more folders and files into a single `.zip`. Repeat the `path`
+parameter to select several. Each selected folder is nested under its own name
+inside the archive; a selected file sits at the archive root.
+
+```
+GET /data/files/download-archive
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | query | yes | — | Folder or file path relative to `disk/`. Repeat for multiple selections. |
+
+```bash
+curl -G "$BASE_URL/data/files/download-archive" \
+  --data-urlencode "path=datasets" \
+  --data-urlencode "path=notes/readme.md" \
+  -H "Authorization: Bearer $TOKEN" \
+  --output export.zip
+```
+
+The response is the raw zip, not the envelope. An empty selection returns `400`.
+When a single folder is selected the download is named after it; otherwise it is
+`prometheux-download.zip`.
+
+<Note>
+This covers your own files. Folders that someone else shared *with* you are not
+included — download those individually with
+[`/data/files/download`](#download-file).
+</Note>
+
+### Upload a zipped folder
+
+Upload a `.zip` and extract it into `disk/`, recreating the folder structure
+inside.
+
+```
+POST /data/files/upload-archive
+```
+
+Send as `multipart/form-data`:
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `file` | form | yes | — | A `.zip` archive. Any other extension is rejected. |
+| `path` | form | no | `""` | Target subdirectory within `disk/`. |
+
+```bash
+curl -X POST "$BASE_URL/data/files/upload-archive" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@datasets.zip" \
+  -F "path=imports"
+```
+
+<Note>
+The whole archive is validated before anything is written — file extensions,
+entry count, path traversal, and your storage quota against the *uncompressed*
+size. A rejected archive therefore leaves no partial upload behind, so a `400`
+here means nothing changed on disk.
+</Note>
+
+## File sharing
+
+Share an individual file or folder with another user, independently of
+[ontology sharing](/integrations/api-endpoints/sharing). The recipient is
+granted access on the underlying storage and receives an `abfss://` location
+they connect as a data source of their own.
+
+These endpoints apply to cloud (ADLS) storage.
+
+### Share a file or folder
+
+```
+POST /data/files/share
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | body | yes | — | File or folder path to share. |
+| `share_role` | body | yes | — | `viewer` or `editor`. |
+| `is_dir` | body | no | — | Whether the path is a folder. |
+| `recipient` | body | yes | — | Who to share with: `{ "sub": … }`, `{ "email": … }`, or `{ "username": …, "organization": … }`. |
+
+```bash
+curl -X POST "$BASE_URL/data/files/share" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "datasets/suppliers",
+    "share_role": "viewer",
+    "is_dir": true,
+    "recipient": { "email": "analyst@example.com" }
+  }'
+```
+
+`data` carries the `abfss://` location to hand to the recipient, along with the
+`share_id` you need to revoke it later.
+
+<Note>
+File sharing requires a subscription that includes it. Without one the endpoint
+returns a feature-access error rather than creating the share.
+</Note>
+
+### List and revoke shares
+
+```
+GET  /data/files/shares
+POST /data/files/share/revoke
+```
+
+`GET /data/files/shares` lists the shares you created — active ones only, unless
+you pass `include_revoked=true`. `POST /data/files/share/revoke` takes a
+`share_id` in the body and removes the recipient's access.
+
+```bash
+curl -X POST "$BASE_URL/data/files/share/revoke" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "share_id": "fs_8f2a…" }'
 ```
 
 ## Other operations

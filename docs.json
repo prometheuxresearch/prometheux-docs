@@ -166,6 +166,7 @@
               "integrations/api-endpoints/schedules",
               "integrations/api-endpoints/context-layer",
               "integrations/api-endpoints/agent",
+              "integrations/api-endpoints/assistant",
               "integrations/api-endpoints/chat-history",
               "integrations/api-endpoints/alerts",
               "integrations/api-endpoints/compute"

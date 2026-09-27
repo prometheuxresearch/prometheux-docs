@@ -282,6 +282,93 @@ curl -X POST "$BASE_URL/ontologies/import-ontology" \
 }
 ```
 
+## Ontology as files
+
+`export-ontology` and `import-ontology` above move an ontology as one opaque
+payload. The three endpoints here move it as a **file tree** instead — a
+manifest, one file per concept, the data source specs, the schema graph and the
+apps — which is what you want when the ontology lives in version control.
+
+This is the API behind the CLI's `px pull`, `px plan` and `px apply`; if you are
+working from a terminal, use [the CLI](/integrations/cli/command-reference)
+rather than these endpoints directly.
+
+### Export a tree
+
+```
+POST /ontologies/export-tree
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | body | yes | — | The ontology to export. |
+| `slug` | body | no | — | Directory name for the tree. Defaults to a slug of the ontology name. |
+| `format` | query | no | `json` | `json` for a list of files, `zip` for the tree as an archive. |
+
+```bash
+curl -X POST "$BASE_URL/ontologies/export-tree?format=zip" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "ontology_id": "'$PROJECT_ID'" }' \
+  --output ontology.zip
+```
+
+With `format=zip` the response is the raw archive rather than the envelope.
+
+<Note>
+A tree never carries credentials. Data sources are exported as specs — type,
+host, database, table — so a tree is safe to commit, and applying one to an
+account that lacks a named data source reports it rather than inventing it.
+</Note>
+
+### Plan a tree
+
+Diffs a tree against what is live and writes nothing. Run this before applying,
+and show a user the result: it is the only point at which the consequences of an
+apply are visible in advance.
+
+```
+POST /ontologies/plan-tree
+```
+
+Accepts either JSON — `{"files": [{"path": "...", "content": "..."}, …]}` — or a
+`multipart/form-data` upload with a `file` field holding the tree as a zip.
+
+```bash
+curl -X POST "$BASE_URL/ontologies/plan-tree" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@ontology.zip"
+```
+
+For each ontology in the tree, `data` classifies every concept as **create**,
+**update**, **delete** or **unchanged**, lists the data source, app and schema
+changes, and — importantly — names the **downstream concepts a changed
+definition forces to re-run**. A one-line edit near the top of a chain can mean
+rebuilding most of the project, and this is where you find that out.
+
+### Apply a tree
+
+Reconciles live state to the tree. Concepts are written dependencies-first, and
+an ontology the tree names but your account does not have is created.
+
+```
+POST /ontologies/apply-tree
+```
+
+Takes the same two encodings as `/plan-tree`, plus:
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `prune` | body/form | no | `false` | Also delete concepts and apps that are absent from the tree. |
+| `snapshot` | body/form | no | `true` | Snapshot each ontology before writing. |
+
+<Warning>
+`prune: true` makes the tree authoritative — anything not in it is deleted,
+including concepts a colleague added through the UI since you pulled. Leave
+`snapshot` on: it is what makes a bad apply recoverable, via
+[Restore a snapshot](#restore-a-snapshot).
+</Warning>
+
 ## Export workspace
 
 Export every ontology in the workspace — and all workspace-level tables — in a
@@ -527,6 +614,30 @@ curl -X POST "$BASE_URL/ontologies/snapshots/delete" \
   "data": null
 }
 ```
+
+### Read a snapshot's concepts
+
+Return the concept definitions held by one snapshot, or by the live ontology.
+This is what a diff view reads on both sides — pass a snapshot ID for one side
+and `current` for the other.
+
+```
+GET /ontologies/snapshots/concepts
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | query | yes | — | The ontology the snapshot belongs to. |
+| `source` | query | yes | — | A snapshot ID, or the literal `current` for live state. |
+
+```bash
+curl -G "$BASE_URL/ontologies/snapshots/concepts" \
+  --data-urlencode "ontology_id=$PROJECT_ID" \
+  --data-urlencode "source=snap_a1b2c3" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Read-only, and available whether or not versioning is enabled for the ontology.
 
 ## Other operations
 

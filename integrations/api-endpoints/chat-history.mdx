@@ -156,3 +156,28 @@ curl -X DELETE "$BASE_URL/chat-history/sessions/sess_a1b2..." \
 ```
 
 Returns `404` if the session does not exist.
+
+## Delete one exchange
+
+Delete a single exchange from a session: the user message at `turn_index` and
+the assistant's reply to it. The rest of the conversation is left intact.
+
+```
+DELETE /chat-history/sessions/{session_id}/turns/{turn_index}
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `session_id` | path | yes | — | The session ID. |
+| `turn_index` | path | yes | — | Zero-based index of the user message in the session. |
+
+```bash
+curl -X DELETE "$BASE_URL/chat-history/sessions/sess_a1b2.../turns/3" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+<Note>
+`turn_index` counts **user messages**, not messages — turn 3 is the fourth thing
+the user said, together with the reply it drew. Deleting a turn renumbers the
+ones after it, so when removing several, delete from the highest index down.
+</Note>
