@@ -77,7 +77,7 @@ curl "$BASE_URL/concepts/$PROJECT_ID/load-ontology-schema" \
 }
 ```
 
-## Set a concept's schema type
+## Set the schema type of a concept
 
 Assign a schema role to a single concept: mark it as a graph `node`, as an
 `edge` (which requires `edge_source` and `edge_target`), or reset it to the
@@ -193,5 +193,5 @@ curl -X POST "$BASE_URL/concepts/$PROJECT_ID/import-owl" \
 <Tip>
 To turn an OWL ontology directly into an executable Vadalog program (with
 `@bind` annotations and optional Parquet output) rather than editor JSON, use
-[OWL → Vadalog](/integrations/api-endpoints/vadalingo#owl-vadalog) instead.
+[OWL → Vadalog](/integrations/api-endpoints/vadalingo#owl-to-vadalog) instead.
 </Tip>

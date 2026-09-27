@@ -264,7 +264,7 @@ curl -X POST "$BASE_URL/knowledge/context/search?scope=ontology&scope_id=$ONTOLO
 
 ### Ingest a file as context
 
-Parse and chunk an already-uploaded file into context notes. The file must first be uploaded via [`POST /data/files/upload`](/integrations/api-endpoints/data#upload-a-file), which returns a `disk/<name>` path to pass here.
+Parse and chunk an already-uploaded file into context notes. The file must first be uploaded via [`POST /data/files/upload`](/integrations/api-endpoints/data#upload-file), which returns a `disk/<name>` path to pass here.
 
 The ingestion pipeline extracts text, splits it into chunks, embeds each chunk, and persists them as `document_chunk` notes tied back to a shared `document_id`. If the embedding service is unavailable the file is still stored as a single un-vectorized note.
 
