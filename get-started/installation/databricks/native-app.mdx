@@ -1,193 +1,130 @@
 ---
 title: "Databricks Native App"
-description: "For teams already on Databricks — deploy Prometheux as a native application in your workspace."
+description: "Deploy Prometheux as a native app in your workspace — your data and compute stay in Databricks."
 ---
 
-> For teams already on Databricks — deploy Prometheux as a native application
-> in your workspace.
+> Deploy Prometheux as a native application in your Databricks workspace, on AWS,
+> Azure, or GCP.
 
 ## Overview
 
-Prometheux can be deployed as a Databricks native application that runs inside
-your workspace on AWS, Azure, or GCP. The app bundles a React frontend,
-FastAPI backend, and Java services behind a single-port Node.js proxy, with
-persistent storage via Lakebase (Databricks managed PostgreSQL).
+The Prometheux Databricks App is a **lightweight frontend** (a React UI served by
+a small Node.js proxy) that installs directly into your workspace.
 
-## Prerequisites
+<Card title="Prometheux Databricks App repository" icon="github" href="https://github.com/prometheuxresearch/prometheux-databricks-3p-app">
+  github.com/prometheuxresearch/prometheux-databricks-3p-app
+</Card>
 
-- Databricks workspace (AWS, Azure, or GCP)
-- Databricks CLI installed and configured (`databricks configure`)
-- AWS credentials for Java services — contact Prometheux to obtain
+<Note>
+**Your data and compute never leave Databricks.** Your tables stay in Unity
+Catalog under your governance, and all processing runs on your own Spark
+clusters. Prometheux Cloud only handles orchestration, the structure and
+definitions of your projects, and sign-in — it never stores your table data.
+</Note>
 
-## Quick Start
+## How it works
 
-### 1. Clone the Repository
+| What | Where it runs | What it does |
+| --- | --- | --- |
+| **Your data** | Unity Catalog (your workspace) | Stays put, governed by Unity Catalog. |
+| **Processing** | Your Databricks Spark clusters | The Prometheux Engine runs Vadalog **next to your data** as a cluster library. |
+| **Orchestration** | Prometheux Cloud | Coordinates reasoning, stores the structure and definitions of your projects, manages sign-in. Never sees your raw tables. |
+| **Frontend** | Databricks App in your workspace | Stateless UI — nothing persistent is stored in the app. |
 
-```bash
-git clone https://github.com/prometheuxresearch/prometheux-databricks-app.git
-cd prometheux-databricks-app
+```
+                 Browser (analysts & engineers)
+                              |
++-------------------------------------------------------------+
+|                 YOUR DATABRICKS WORKSPACE                   |
+|                                                             |
+|   Prometheux App  (React UI + Node.js proxy, stateless)     |
+|                                                             |
+|   Unity Catalog  ............  your tables (never leave)    |
+|        ^                                                    |
+|        | read/write                                         |
+|   Spark Clusters  ...........  Prometheux Engine runs here  |
+|                                (PX ontology executes on your|
+|                                 compute, next to your data) |
++-------------------------------------------------------------+
+                              |  orchestration & sign-in only
+                              v
++-------------------------------------------------------------+
+|                      PROMETHEUX CLOUD                       |
+|   project structure & definitions · orchestration · auth    |
++-------------------------------------------------------------+
 ```
 
-### 2. Configure Environment Variables
+## Deployment
+
+### Deploy via Git (recommended)
+
+1. In your workspace, open **Compute → Apps → Create App**, choose **Custom**,
+   name it (e.g. `prometheux`), and wait until it is **Active**.
+2. Click **Deploy** → **From Git** and fill in:
+   - **Repository URL:** `https://github.com/prometheuxresearch/prometheux-databricks-3p-app`
+   - **Reference type:** Branch · **Git reference:** `main`
+   - **Source code path:** `src`
+3. Click **Deploy**.
+
+<Warning>
+**Source code path** must be `src` (the `app.yaml` manifest lives there). Leaving
+it empty causes *"No command to run and no Python file found"*.
+</Warning>
+
+Your app will be available at `https://prometheux-<workspace-id>.databricksapps.com`.
+To update, open the app and click **Deploy** again — Databricks pulls the latest
+commit on `main`.
+
+### Deploy via Databricks CLI (alternative)
+
+For environments that can't reach GitHub from the workspace:
 
 ```bash
-cp bundle-vars.example.yml bundle-vars.yml
-```
-
-Edit `bundle-vars.yml` and fill in the AWS credentials provided by Prometheux:
-
-```yaml
-# Data Manager (provided by Prometheux)
-data_manager_s3_bucket: "<provided-by-prometheux>"
-data_manager_s3_key: "<provided-by-prometheux>"
-data_manager_aws_access_key_id: "<provided-by-prometheux>"
-data_manager_aws_secret_access_key: "<provided-by-prometheux>"
-
-# Vadalog Parser (provided by Prometheux)
-vadalog_parser_s3_bucket: "<provided-by-prometheux>"
-vadalog_parser_s3_key: "<provided-by-prometheux>"
-vadalog_parser_aws_access_key_id: "<provided-by-prometheux>"
-vadalog_parser_aws_secret_access_key: "<provided-by-prometheux>"
-```
-
-<Info>
-Contact Prometheux to obtain these credentials (required for full
-functionality).
-</Info>
-
-### 3. Deploy & Run
-
-```bash
+git clone https://github.com/prometheuxresearch/prometheux-databricks-3p-app.git
+cd prometheux-databricks-3p-app
 ./deploy.sh
 ```
 
-The script will:
+## Authentication
 
-- Check if you have the Databricks CLI installed
-- Prompt you to set up Lakebase (recommended) or use SQLite
-- Deploy the app to your Databricks workspace
-- Ask if you want to start the app immediately
+The app runs with authentication enabled. On first open, Prometheux signs the
+user in automatically using their Databricks identity (zero-click) — no passwords.
+Each Databricks workspace becomes its own Prometheux organization. A Prometheux
+administrator approves the first access request per user.
 
-### 4. Access Your App
+## Processing engine
 
-Your app will be available at:
-
-```
-https://prometheux-<workspace-id>.databricksapps.com
-```
-
-## Services
-
-The app includes Java services that are downloaded automatically at runtime:
-
-| Service | Description |
-| --- | --- |
-| **Data Manager** | Advanced data processing and integration |
-| **Vadalog Parser** | Parses and validates Vadalog logic programs |
+Vadalog runs on **your** Spark clusters via the **Prometheux Engine**, installed
+as a cluster library, so compute happens next to your data. The app accesses your
+clusters and Unity Catalog tables through a **Service Principal** you configure in
+the app's Databricks settings.
 
 <Warning>
-The **Prometheux Engine** (the full reasoning engine for executing Vadalog
-programs) is NOT included in this app package. It is provided separately by
-Prometheux as a Databricks cluster library — contact Prometheux to request
-access and installation guidance.
+The Prometheux Engine is provisioned by Prometheux. If your workspace isn't yet
+enabled, request access from the app's **Installation** tab or at
+<support@prometheux.ai>.
 </Warning>
 
-## Configuration
+See [Installing PX on Databricks & Connectors](/get-started/installation/databricks/connectors)
+for engine installation and connecting to Unity Catalog.
 
-### Database Storage
+## Network egress
 
-The app uses Lakebase (Databricks managed PostgreSQL) for persistent data
-storage. The `./deploy.sh` script automatically handles Lakebase setup.
+The app contacts only three hosts at runtime:
 
-If you decline Lakebase during setup, the app falls back to SQLite (ephemeral —
-data is lost on restart).
-
-### Configuration Variables
-
-All configuration is in `bundle-vars.yml`:
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `run_mode` | `development` | `development` (no auth) or `production` |
-| `organization` | — | Your organization name |
-| `username` | — | Default username (development mode only) |
-
-## Management
-
-```bash
-./deploy.sh run      # Start the app
-./deploy.sh restart  # Restart (fast — processes auto-cleanup)
-./deploy.sh stop     # Stop compute (slow — takes minutes to restart)
-./deploy.sh status   # Check app status
-./deploy.sh logs     # View app logs
-./deploy.sh destroy  # Remove the app entirely
-```
-
-### Updating
-
-```bash
-cd prometheux-databricks-app
-git pull
-databricks bundle deploy --var-file bundle-vars.yml
-databricks bundle run prometheux
-```
-
-Your `bundle-vars.yml` configuration will be preserved.
-
-## Troubleshooting
-
-| Symptom | Solution |
+| Host | Purpose |
 | --- | --- |
-| App won't start | Check that all S3 credentials in `bundle-vars.yml` are correct |
-| 404 errors | Wait for the app to finish starting (can take 2–3 minutes) |
-| Java services not running | Verify that JAR files exist in S3 at the specified paths |
+| `<your-workspace>` (`*.cloud.databricks.com` / `*.azuredatabricks.net` / `*.gcp.databricks.com`) | Your workspace API (SCIM, Clusters, Libraries, Jobs) |
+| `auth.prometheux.ai` | Sign-in (zero-click SSO) |
+| `api.prometheux.ai` | Reasoning orchestration |
 
-Check status and logs:
-
-```bash
-databricks apps get prometheux
-databricks apps logs prometheux
-```
-
-## Architecture
-
-```
-+----------------------------------------------------------------------+
-|                    PROMETHEUX DATABRICKS APP                         |
-|                  (Databricks Apps Container)                         |
-+----------------------------------------------------------------------+
-|                                                                      |
-|  Browser --> Node.js Proxy (Port 8000)                               |
-|                    |                                                 |
-|                    +-- /api/*  --> FastAPI Backend                   |
-|                    |                   +-> Data Manager (Java)       |
-|                    |                   +-> Vadalog Parser (Java)     |
-|                    |                   +-> Lakebase (PostgreSQL)     |
-|                    |                                                 |
-|                    +-- /*      --> React Frontend (static files)     |
-|                                                                      |
-+----------------------------------------------------------------------+
-                                  |
-                                  v
-+----------------------------------------------------------------------+
-|                DATABRICKS WORKSPACE ENVIRONMENT                      |
-+----------------------------------------------------------------------+
-|  Spark Clusters                                                      |
-|    +- Prometheux Engine (PX JAR) -- installed via Libraries API      |
-|                                                                      |
-|  Unity Catalog                                                       |
-|    +- Volumes (JARs) + Tables (Input/Output)                        |
-+----------------------------------------------------------------------+
-```
-
-**Authentication**: The backend authenticates with Databricks using Bearer
-Token (U2M), OAuth2 M2M, Personal Access Token (PAT), or default App
-credentials. Vadalog jobs are submitted to the engine on the cluster and
-results are retrieved via Spark Connect API.
+If your workspace restricts outbound traffic (e.g. a Serverless Egress Gateway),
+allowlist the two `prometheux.ai` hosts. No analytics, ad networks, CDN scripts,
+or external secret stores are contacted.
 
 ## Next Steps
 
 - [Installing PX on Databricks & Connectors](/get-started/installation/databricks/connectors) —
-  Connect Prometheux to Databricks via JDBC
+  Install the engine and connect to Unity Catalog
 - [Concepts](/platform/concepts-and-lineage) — Understand the core building blocks
 - [Python SDK](/integrations/python-sdk) — Connect to Prometheux programmatically
