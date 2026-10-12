@@ -69,9 +69,9 @@
               {
                 "group": "On-Premises",
                 "pages": [
-                  "get-started/installation/on-premises/overview",
-                  "get-started/installation/on-premises/single-node",
-                  "get-started/installation/on-premises/cluster"
+                  "get-started/installation/on-premises/cloud-premises",
+                  "get-started/installation/on-premises/single-vm",
+                  "get-started/installation/on-premises/physical-premises"
                 ]
               },
               {

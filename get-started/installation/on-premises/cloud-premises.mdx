@@ -1,0 +1,207 @@
+---
+title: On (Cloud) Premises
+description: Bring Your Own Cloud — install the complete Prometheux platform into your own AWS, Azure, or Google Cloud account, or on your own hardware, and operate it yourself.
+---
+
+> Run the **complete Prometheux platform** inside infrastructure you own and
+> control — your AWS, Azure, or Google Cloud account, or your own data centre.
+> Your data never leaves your environment.
+
+## Bring Your Own Cloud (BYOC)
+
+With **BYOC**, Prometheux is installed **into your own cloud account** (or your
+own hardware) and **operated by you**. Starting from an empty account, a guided
+installer stands up the full platform — the frontend, notebooks, the compute
+engine, and the orchestration layer — on infrastructure that stays entirely
+under your ownership.
+
+- **Your account, your data** — all compute and storage live in your tenancy.
+  Nothing is sent to Prometheux; there is no shared control plane in the middle.
+- **Images from Prometheux** — every container image is pulled from Prometheux's
+  private registry using a read-only token we provide. You get signed,
+  supported builds without having to manage source.
+- **Self-operated** — once installed, you own the lifecycle: upgrades, scaling,
+  backups, and teardown are all driven from tooling that runs in your
+  environment.
+
+<Info>
+BYOC is the right choice when you need **data sovereignty**, want to run inside
+an existing cloud landing zone, or must stay within a private or air-gapped
+network. For a zero-infrastructure start, use
+[Prometheux Cloud](/get-started/installation/cloud) instead.
+</Info>
+
+## Choose your deployment mode
+
+| Mode | Best for | Infrastructure | Effort |
+| --- | --- | --- | --- |
+| [**Single VM**](/get-started/installation/on-premises/single-vm) | A fast, self-contained install on one machine | Docker on a single Linux VM | Low |
+| **Managed Kubernetes** (this page) | Production, multi-user, elastic scale | EKS, AKS, or GKE in your account | Medium |
+| [**Physical Premises**](/get-started/installation/on-premises/physical-premises) | Private data centre / air-gapped, your own hardware | Self-managed Kubernetes + on-prem storage | Medium–High |
+
+This page covers the **managed-Kubernetes** path on the three major clouds —
+**AWS (EKS)**, **Azure (AKS)**, and **Google Cloud (GKE)**. The architecture is
+identical across clouds; only the underlying managed services differ.
+
+## Architecture
+
+A BYOC deployment is organised into three layers. The **management plane** is
+provisioned once and persists; **workload clusters** are where the platform and
+your tenants actually run.
+
+```
+  OUTSIDE THE CLUSTER                      INSIDE YOUR WORKLOAD CLUSTER  (EKS · AKS · GKE)
+  ──────────────────                       ──────────────────────────────────────────────
+
+  ┌──────────────────────┐  pull images    ┌────────────────────────────────────────────┐
+  │ Prometheux registry  │ ───────────────►│  Ingress  +  WAF  +  TLS         (edge)     │
+  └──────────────────────┘                 └──────────────────────┬─────────────────────┘
+                                                                  ▼
+  ┌──────────────────────┐  manages the    ┌────────────────────────────────────────────┐
+  │ Management plane     │  cluster via    │  System node pool  (always-on)             │
+  │  "control room"      │  the K8s API    │   frontend · MCP server                     │
+  │  • orchestrator      │ ───────────────►├────────────────────────────────────────────┤
+  │  • console UI        │                 │  Tenant node pools (one per user, scale→0) │
+  │  • auth + metadata   │                 │   backend · parser · compute engine ·       │
+  └──────────────────────┘                 │   notebooks                                 │
+    runs on a small VM,                    └──────────────────────┬─────────────────────┘
+    outside every cluster                                         ▼
+                                           ┌────────────────────────────────────────────┐
+                                           │  Storage — your cloud's managed services   │
+                                           │   shared files · block scratch · objects    │
+                                           │   (see the per-cloud table below)           │
+                                           └────────────────────────────────────────────┘
+```
+
+### Layer 1 — Infrastructure (Terraform)
+
+A single `terraform apply` builds the static foundation in your account: the
+network, the managed Kubernetes cluster, shared and scratch storage, the
+internet-facing edge with a WAF and TLS, keyless workload identity, object
+storage for the data warehouse, plus observability and backup. This layer only
+creates **static infrastructure** — anything per-user is created at runtime by
+the orchestrator.
+
+### Layer 2 — Management plane ("control room")
+
+The **control room** is a small, cloud-agnostic stack — the **orchestrator**,
+the **console UI**, and an **authentication + metadata store** (users, roles,
+app metadata). It runs **once, outside every workload cluster** (on a small VM or
+an operator laptop), so tearing down a workload deployment never touches it. From
+here you register and manage **any number** of EKS/AKS/GKE clusters through
+per-cluster keyless roles.
+
+### Layer 3 — Tenants
+
+You create tenants (per user or per team) dynamically from the console UI or the
+orchestrator API. Each tenant gets its own **backend**, **parser**, **compute
+engine**, and **notebooks**, scheduled onto **dedicated node pools that scale
+from zero** — so idle tenants cost nothing and busy tenants get dedicated compute
+on demand.
+
+## Cloud services by provider
+
+The platform maps onto each cloud's native managed services. Whichever you
+choose, the deployment keeps keyless identity (no static cloud keys baked into
+pods), a WAF at the edge, and a shared file volume plus fast block scratch for
+the compute engine's Spark spill/shuffle.
+
+| Capability | AWS (EKS) | Azure (AKS) | Google Cloud (GKE) |
+| --- | --- | --- | --- |
+| Managed Kubernetes | EKS | AKS | GKE |
+| Shared lab volume (`/lab`) | EFS (NFS) | Azure Files (NFS, Premium) | Filestore (NFS) |
+| Engine scratch (Spark spill/shuffle) | EBS gp3 | Managed Disk (Premium SSD) | Persistent Disk (SSD) |
+| Object / warehouse storage | S3 (Iceberg) | ADLS Gen2 | Cloud Storage (GCS) |
+| Edge & ingress | ALB + AWS Load Balancer Controller | Application Gateway WAF_v2 → ingress-nginx | Cloud Load Balancing → ingress-nginx |
+| Web application firewall | AWS WAFv2 (rate limits + managed rules) | App Gateway WAF_v2 (OWASP 3.2) | Cloud Armor |
+| TLS certificate | ACM | Key Vault certificate | Google-managed certificate |
+| Keyless workload identity | IRSA / EKS Pod Identity | Microsoft Entra Workload Identity | GKE Workload Identity |
+| Secret store | AWS Secrets Manager | Azure Key Vault | Secret Manager |
+| Node autoscaling | Cluster Autoscaler (in-cluster) | AKS managed autoscaler | GKE cluster autoscaler |
+| Observability | CloudWatch | Azure Monitor / Log Analytics | Cloud Logging / Monitoring |
+| Backup | AWS Backup | Azure Backup | Backup for GKE |
+
+<Note>
+The system node pool hosts the always-on components (frontend, MCP server,
+ingress). Tenant workloads land on **separate, autoscaling node pools** the
+orchestrator creates per request — so platform availability is never affected by
+tenants scaling up and down.
+</Note>
+
+## The guided installer
+
+BYOC is driven by a **local installer** you run as a container in your own
+context. It never stores your cloud credentials on disk and it does everything
+from inside your network.
+
+```bash
+docker compose up --build
+# then open the installer UI in your browser
+```
+
+The installer walks you through five steps:
+
+<Steps>
+  <Step title="Connect">
+    Choose your cloud (AWS, Azure, Google Cloud, or On-Prem) and connect with
+    credentials you paste into the UI. They are held **in memory only** for the
+    life of the container — never written to disk, never logged.
+  </Step>
+  <Step title="Preflight audit">
+    A gating check board verifies identity and permissions, quota headroom
+    (network, load balancers, cluster, storage), CIDR/name collisions, and DNS.
+    It also verifies that every Prometheux platform image is pullable. You can't
+    continue until every blocking check is green.
+  </Step>
+  <Step title="Configure">
+    Pick sizing, networking, WAF/backup, observability, and LLM options. The
+    installer renders the exact Terraform variables and Helm values for your
+    choices, plus a configuration-aware cost estimate.
+  </Step>
+  <Step title="Provision & deploy">
+    The installer executes the ordered spin-up against your account with **live
+    streamed logs** — infrastructure first, then the control plane. A **dry run**
+    (plan only) lets you validate everything before anything billable is created;
+    **execute** is guarded by a typed confirmation. Teardown runs the same
+    sequence in reverse.
+  </Step>
+  <Step title="Verify & handoff">
+    Confirm the platform is healthy and hand off the running environment. From
+    here you create tenants and operate the deployment yourself.
+  </Step>
+</Steps>
+
+<Tip>
+**Multiple clusters, one control room.** Each provisioned cluster registers
+itself with the management plane. A single control room can manage many
+EKS/AKS/GKE clusters side by side — add capacity by provisioning another cluster
+and registering it.
+</Tip>
+
+## Prerequisites
+
+- An **AWS, Azure, or Google Cloud** account where you can create infrastructure
+  (admin-equivalent credentials, or the scoped installer policy we provide).
+- **Docker** and **Docker Compose** on the machine running the installer and the
+  control room.
+- A **pull token** for Prometheux's image registry (provided by the Prometheux
+  team).
+- Optionally, a **domain name** for a public HTTPS endpoint (the installer also
+  supports a certificate you bring yourself).
+
+<Tip>
+**Guided setup.** The Prometheux team will provision your registry access and
+walk you through your first install.
+[Book a call](https://calendly.com/prometheux/prometheux-intro?utm_source=docs)
+to get started.
+</Tip>
+
+## Next Steps
+
+- [Single VM](/get-started/installation/on-premises/single-vm) — the fastest
+  self-contained install on one machine
+- [Physical Premises](/get-started/installation/on-premises/physical-premises) — run
+  entirely on your own hardware, including air-gapped networks
+- [Compute](/platform/compute) — how reasoning jobs are scheduled and scaled
+- [REST API](/integrations/rest-api) · [Python SDK](/integrations/python-sdk) —
+  build on the platform programmatically

@@ -1,0 +1,245 @@
+---
+title: "Single VM"
+description: "Deploy the complete Prometheux platform on a single Linux machine — physical server or cloud VM — using Docker Compose."
+---
+
+> Deploy the complete Prometheux platform on a single Linux machine — a physical
+> server in your data centre or a VM on AWS, Azure, or GCP — using Docker Compose.
+
+## Overview
+
+The single-VM deployment runs the full Prometheux platform on one machine using
+Docker Compose. It takes minutes to set up and is the easiest way to run
+Prometheux on infrastructure you control. All images are pulled from Prometheux's
+private registry with a token we provide, so you always run signed, supported
+builds.
+
+Everything you need lives in the deployment repository:
+
+<Card title="prometheuxresearch/prometheux-deploy" icon="github" href="https://github.com/prometheuxresearch/prometheux-deploy">
+  Docker Compose files, startup scripts, and configuration templates for the
+  on-premise single-VM deployment.
+</Card>
+
+The deployment is composed of **two independent stacks**:
+
+- **Router** (`router/`) — a reverse proxy that routes each authenticated user to
+  their dedicated tenant backend, with JWT validation, circuit-breaker, and
+  health checks.
+- **Tenant** (`tenant/`) — a full per-user stack: the backend, compute engine,
+  language service, data manager, vector database, and notebooks. The folder is a
+  **template** you copy once per user, so a single machine can host several
+  isolated tenants.
+
+```
+┌─────────────────────────────────────────────┐
+│                  Router                      │
+│   (reverse proxy, host network, port 8000)   │
+│   Routes alice → localhost:8001              │
+│   Routes bob   → localhost:8002  …           │
+└──────────────────────┬───────────────────────┘
+                       │
+         ┌─────────────▼─────────────┐
+         │    Tenant stack (× user)   │
+         │  backend          :8001    │
+         │  compute engine            │
+         │  language service          │
+         │  data manager              │
+         │  vector database           │
+         │  notebooks        :8888    │
+         └────────────────────────────┘
+```
+
+<Note>
+The single-VM mode is ideal for a POC, a dedicated team workspace, or a small
+production footprint. When you need elastic, multi-node scale with dedicated
+compute per tenant, move to the
+[managed-Kubernetes](/get-started/installation/on-premises/cloud-premises) or
+[physical-premises](/get-started/installation/on-premises/physical-premises) deployment —
+the platform experience is identical.
+</Note>
+
+## What You Need
+
+- A Linux machine (physical server or cloud VM) with **Docker** and
+  **Docker Compose** installed. It runs on any distribution Docker supports —
+  Ubuntu, Debian, Fedora, RHEL/CentOS, Rocky, AlmaLinux.
+- Minimum recommended hardware: **4 vCPUs, 16 GB RAM, 50 GB disk**. Size the disk
+  generously (or attach a separate, resizable data volume) to account for your
+  data growth over time.
+- The credentials below, all **provided by the Prometheux team**:
+
+| Secret | Where it's used |
+| --- | --- |
+| `PROMETHEUX_PULL_IMAGE_TOKEN` | Authenticates against the Prometheux image registry to pull images (used by the startup scripts in both `router/` and `tenant/`) |
+| `SECRET_KEY` | JWT secret the router uses to validate tokens issued by the Prometheux UI (`router/.env`) |
+| `SESSION_SECRET_KEY` | Seals the MCP OAuth session tokens used by the Claude connector — a stable random secret (`router/.env`) |
+| `OAUTH_ISSUER` | The router's public HTTPS URL, advertised in OAuth discovery metadata (`router/.env`) |
+| `CUSTOMER` | Customer name that selects the correct compute-engine image tag (`tenant/.env`) |
+
+<Tip>
+**Guided setup.** The Prometheux team provides your registry token and
+credentials and will walk you through the first install.
+[Book a call](https://calendly.com/prometheux/prometheux-intro?utm_source=docs)
+to get started.
+</Tip>
+
+## Provisioning a cloud VM (optional)
+
+Skip this if you're deploying on a physical Linux server — the steps are
+identical once Docker is installed. On a cloud provider, provision a Linux VM
+(**Ubuntu 22.04 LTS** or later) first:
+
+| Cloud | Recommended instance | Open ports |
+| --- | --- | --- |
+| **AWS — EC2** | `m5.xlarge` (4 vCPU, 16 GB) or larger | 22 (SSH), 8000, 8001, 8888 |
+| **Azure — Virtual Machine** | `Standard_D4s_v3` (4 vCPU, 16 GB) or larger | 22 (SSH), 8000, 8001, 8888 |
+| **GCP — Compute Engine** | `e2-standard-4` (4 vCPU, 16 GB) or larger | 22 (SSH), 8000, 8001, 8888 |
+
+Set the root/boot disk to at least **50 GB**, restrict the application ports to
+your desired CIDR range, then connect over SSH and install Docker.
+
+## Setup
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone git@github.com:prometheuxresearch/prometheux-deploy.git
+    cd prometheux-deploy
+
+    chmod +x router/docker-compose-up.sh router/docker-compose-down.sh
+    chmod +x tenant/docker-compose-up.sh tenant/docker-compose-down.sh
+    ```
+  </Step>
+  <Step title="Add your image pull token">
+    Write the `PROMETHEUX_PULL_IMAGE_TOKEN` into the token file in **both**
+    stacks — the startup scripts use it to log in to the registry before pulling.
+    ```bash
+    echo "<your-token>" > router/prometheux-image-pull-token.txt
+    echo "<your-token>" > tenant/prometheux-image-pull-token.txt
+    ```
+  </Step>
+  <Step title="Configure the router">
+    ```bash
+    cp router/.env.example router/.env
+    ```
+    Set `SECRET_KEY`, `SESSION_SECRET_KEY`, and `OAUTH_ISSUER` in `router/.env`,
+    then map each username to their tenant's backend in
+    `router/config.yaml`:
+    ```yaml
+    users:
+      alice: "http://localhost:8001"
+      bob:   "http://localhost:8002"
+    ```
+  </Step>
+  <Step title="Configure a tenant">
+    The `tenant/` folder is a **template** — copy it once per user and configure
+    its `.env`:
+    ```bash
+    cp -r tenant alice
+    cp alice/.env.example alice/.env
+    ```
+    Set `USERNAME`, `ORGANIZATION`, `CUSTOMER`, `JARVISPY_PORT` (must match
+    `router/config.yaml`), `JUPYTERLAB_PORT`, and `JUPYTERLAB_TOKEN` in
+    `alice/.env`. Tune the compute engine via
+    `alice/vadalog-parallel/pmtx.properties` and `spark-defaults.conf` if needed.
+  </Step>
+  <Step title="Start the router">
+    ```bash
+    cd router
+    ./docker-compose-up.sh
+    ```
+    This logs in to the registry, pulls `router-on-premise`, and starts it on
+    host port 8000.
+  </Step>
+  <Step title="Start the tenant stack">
+    Run the per-user copy you created (not the `tenant/` template). Repeat for
+    each user's folder.
+    ```bash
+    cd alice
+    ./docker-compose-up.sh
+    ```
+    This creates the local state directories, pulls all images, and starts the
+    full tenant stack in detached mode.
+  </Step>
+</Steps>
+
+<Tip>
+**Onboarding more users.** Copy `tenant` to a new folder (`cp -r tenant bob`),
+give it a **unique** `USERNAME`, `JARVISPY_PORT`, and `JUPYTERLAB_PORT`, add the
+matching entry in `router/config.yaml`, and start it. Each tenant runs in its own
+Docker network, fully isolated from the others on the same machine.
+</Tip>
+
+## What Gets Deployed
+
+### Router
+
+| Service | Port | Description |
+| --- | --- | --- |
+| Router | 8000 | Reverse proxy that routes each authenticated user to their tenant's backend. Runs in host-network mode. |
+
+### Tenant (per user)
+
+| Service | Port | Description |
+| --- | --- | --- |
+| Backend | 8001 (`JARVISPY_PORT`) | The per-user API the frontend talks to |
+| Compute engine | internal | Parses Vadalog and runs distributed reasoning on Apache Spark |
+| Language service | internal | Natural-language-to-Vadalog translation |
+| Data manager | internal | Data-source management and persistence |
+| Vector database | internal | PostgreSQL + pgvector for semantic storage |
+| Notebooks | 8888 (`JUPYTERLAB_PORT`) | JupyterLab with Python and engine kernels (`pip install --upgrade prometheux_chain`) |
+
+All services share a `shared/disk` volume for seamless file exchange within a
+tenant, and are set to `restart: unless-stopped` so they come back after a
+reboot.
+
+## Management
+
+```bash
+# Stop the router
+cd router && ./docker-compose-down.sh
+
+# Stop a tenant (from that user's folder)
+cd alice && ./docker-compose-down.sh
+
+# View logs
+docker compose logs -f
+```
+
+Updating to a new version is just as simple — the startup scripts always pull the
+latest images, so stop, re-run `./docker-compose-up.sh`, and you're current.
+
+## Persistent state & migration
+
+All persistent state lives in plain host directories (not Docker volumes), which
+makes migration straightforward — especially if those paths live on a separate,
+resizable data volume (AWS EBS, Azure Managed Disk, or GCP Persistent Disk).
+
+| Path | Contents |
+| --- | --- |
+| `<tenant>/shared/disk` | Files shared across the tenant's services |
+| `<tenant>/postgres-data` | pgvector database |
+| `<tenant>/vadalog-parallel/{localCheckpoints,tmp,log}` | Compute engine runtime state |
+| `<tenant>/.env`, `router/.env` | Configuration values |
+| `*/prometheux-image-pull-token.txt` | Registry credentials |
+
+To move to another machine: stop the services, remount the data volume on the new
+host, re-clone the repository, and restart. No image layers or database data need
+to be re-imported.
+
+## Configuration
+
+The compute engine's configuration is mounted from the host at
+`<tenant>/vadalog-parallel/pmtx.properties` and `spark-defaults.conf`, making it
+easy to adjust. For the full list of available properties, see the
+[Configuration Reference](/get-started/installation/on-premises/physical-premises#configuration-reference).
+
+## Next Steps
+
+- [REST API](/integrations/rest-api) — Interact with the engine programmatically
+- [Python SDK](/integrations/python-sdk) — Use `prometheux_chain` from notebooks or scripts
+- [On (Cloud) Premises](/get-started/installation/on-premises/cloud-premises) — Scale to
+  managed Kubernetes on AWS, Azure, or GCP
+- [Physical Premises](/get-started/installation/on-premises/physical-premises) — Run on your
+  own hardware / air-gapped network

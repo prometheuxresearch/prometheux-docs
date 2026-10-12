@@ -1,0 +1,73 @@
+---
+title: "Physical Premises"
+description: "Run the complete Prometheux platform on your own hardware — self-managed Kubernetes and on-prem storage, including private and air-gapped networks."
+---
+
+> Run the complete Prometheux platform entirely on your own hardware — a
+> self-managed Kubernetes cluster and on-prem storage, including fully private
+> and air-gapped networks.
+
+## Overview
+
+The **Physical Premises** deployment brings the same BYOC architecture as the
+[managed-Kubernetes](/get-started/installation/on-premises/cloud-premises) path to
+infrastructure you own end to end: **Kubernetes on-prem, disk on-prem**. Nothing
+depends on a cloud provider — the platform runs on your servers, your network,
+and your storage, which makes it the right fit for private data centres,
+regulated environments, and air-gapped sites.
+
+The deployment keeps the exact same shape as the cloud path — a persistent
+**management plane** that orchestrates one or more **workload clusters**, with
+tenants scheduled dynamically — but every managed cloud service is replaced by
+an on-prem equivalent that you run.
+
+<Warning>
+This is an advanced deployment path. We recommend
+[contacting the Prometheux team](mailto:support@prometheux.co.uk) for guidance
+before proceeding — especially for air-gapped installs.
+</Warning>
+
+## Architecture
+
+```
+  OUTSIDE THE CLUSTER                      INSIDE YOUR DATA CENTRE
+  ──────────────────                       ───────────────────────
+
+  ┌──────────────────────┐  mirror images  ┌────────────────────────────────────────────┐
+  │ Prometheux registry  │ ───────────────►│  Private registry (your mirror)            │
+  └──────────────────────┘   (at release)  └──────────────────────┬─────────────────────┘
+                                                                  │ pull
+  ┌──────────────────────┐  manages the    ┌───────────────────────▼────────────────────┐
+  │ Management plane     │  cluster via    │  Self-managed Kubernetes                   │
+  │  "control room"      │  the K8s API    │   (kubeadm · k3s · RKE2 · OpenShift)       │
+  │  • orchestrator      │ ───────────────►│ ┌────────────────────────────────────────┐ │
+  │  • console UI        │                 │ │ System nodes   frontend · MCP server   │ │
+  │  • auth + metadata   │                 │ ├────────────────────────────────────────┤ │
+  └──────────────────────┘                 │ │ Tenant nodes   backend · parser ·      │ │
+                                           │ │                compute engine · notebooks│ │
+    ingress-nginx +                        │ └────────────────────────────────────────┘ │
+    MetalLB / HW LB + your TLS             └──────────────────────┬─────────────────────┘
+                                                                  ▼
+                                           ┌────────────────────────────────────────────┐
+                                           │  On-prem storage                           │
+                                           │   NFS / CephFS · local SSD · MinIO (objects)│
+                                           └────────────────────────────────────────────┘
+```
+
+### On-prem equivalents
+
+Every cloud building block maps to a component you run yourself:
+
+| Capability | Cloud (EKS / AKS / GKE) | Physical Premises |
+| --- | --- | --- |
+| Kubernetes | EKS / AKS / GKE | Self-managed distro — `kubeadm`, k3s, RKE2, OpenShift, Rancher |
+| Shared lab volume (`/lab`) | EFS / Azure Files / Filestore | NFS server or CephFS via a CSI driver |
+| Engine scratch (Spark spill/shuffle) | EBS / Managed Disk / PD | Local SSD or block CSI (Ceph RBD, Longhorn, vSphere) |
+| Object / warehouse storage | S3 / ADLS / GCS | S3-compatible store — MinIO or Ceph RGW |
+| Edge & ingress | Cloud load balancer | MetalLB or a hardware load balancer → ingress-nginx |
+| Web application firewall | AWS WAF / App Gateway / Cloud Armor | ModSecurity / your edge WAF (optional) |
+| TLS certificate | ACM / Key Vault / Google-managed | Your internal PKI / CA certificate |
+| Keyless identity | IRSA / Workload Identity | Kubernetes ServiceAccounts (+ Vault or a K8s Secret) |
+| Node autoscaling | Managed autoscaler | Fixed pools, or Cluster Autoscaler for your provider |
+| Observability | CloudWatch / Azure Monitor / Cloud Ops | Your Prometheus / Grafana / Loki stack |
+| Backup | AWS Backup / Azure Backup / Backup for GKE | Velero (+ your storage snapshots) |

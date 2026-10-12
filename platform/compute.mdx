@@ -4,8 +4,8 @@ description: "How Prometheux runs reasoning workloads across Databricks, self-ma
 ---
 
 Prometheux executes Vadalog reasoning on a configurable compute layer. Depending on
-your deployment, workloads can run on Databricks, on a self-managed Yarn or
-Kubernetes cluster, or locally in a single JVM for development and testing.
+your deployment, workloads can run on Databricks, on a self-managed Kubernetes
+cluster, or locally in a single JVM for development and testing.
 
 Under the hood, the engine converts its primitives (project, select, join) into
 map, filter, reduce, and shuffle transformations executed in parallel on
@@ -16,7 +16,7 @@ Apache Spark.
 | Option | Best for | Reference |
 | --- | --- | --- |
 | **Databricks** | Teams already on Databricks | [Databricks installation](/get-started/installation/databricks/overview) |
-| **Self-managed cluster (Yarn / Kubernetes)** | Full control over compute, networking, and storage | [Cluster installation](/get-started/installation/on-premises/cluster) |
+| **Self-managed Kubernetes cluster** | Full control over compute, networking, and storage | [Physical Premises installation](/get-started/installation/on-premises/physical-premises) |
 | **Local mode** | Development and testing | See below |
 
 ## Databricks
@@ -43,9 +43,6 @@ before proceeding.
 
 ### Supported cluster managers
 
-- **Yarn** — supports both *client mode* (the driver resides on the client
-  machine and submits the program to the Yarn Resource Manager) and *cluster
-  mode* (the driver runs inside the cluster on the application master node).
 - **Kubernetes** — supports *client mode* (the driver runs outside the cluster
   and schedules executor pods via the API Server) and *cluster mode* (the driver
   runs inside a pod on a worker node).
@@ -54,7 +51,7 @@ before proceeding.
 
 For full prerequisites and the complete configuration reference (Spark settings,
 database properties, GPU acceleration, and the Livy REST service), see the
-[Cluster installation guide](/get-started/installation/on-premises/cluster).
+[Physical Premises installation guide](/get-started/installation/on-premises/physical-premises).
 
 ## Tuning Spark resources
 
@@ -63,7 +60,7 @@ common properties:
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `spark.master` | `local[*]` | Master URL (`local[*]`, `spark://HOST:PORT`, `yarn`) |
+| `spark.master` | `local[*]` | Master URL (`local[*]`, `spark://HOST:PORT`, `k8s://…`) |
 | `spark.submit.deployMode` | `client` | `client` or `cluster` |
 | `spark.driver.memory` | `4g` | Driver memory |
 | `spark.executor.memory` | `4g` | Executor memory |
@@ -73,4 +70,4 @@ common properties:
 | `computeAcceleratorPreference` | `cpu` | `cpu` or `gpu` (GPU-enabled environments only) |
 
 For the full set of Spark, database, GPU (Spark-RAPIDS), and Livy properties, see
-the [Cluster installation guide](/get-started/installation/on-premises/cluster).
+the [Physical Premises installation guide](/get-started/installation/on-premises/physical-premises).
