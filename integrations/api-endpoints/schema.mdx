@@ -77,7 +77,7 @@ curl "$BASE_URL/concepts/$PROJECT_ID/load-ontology-schema" \
 }
 ```
 
-## Set a concept's schema type
+## Set the schema type of a concept
 
 Assign a schema role to a single concept: mark it as a graph `node`, as an
 `edge` (which requires `edge_source` and `edge_target`), or reset it to the
@@ -149,6 +149,30 @@ curl -X POST "$BASE_URL/concepts/$PROJECT_ID/add-to-lineage" \
 }
 ```
 
+## Rebuild the schema from lineage
+
+Regenerate the whole schema graph from the concepts' current lineage, as if it
+had never been drawn. This backs the Document view's refresh action.
+
+```
+POST /concepts/{ontology_id}/generate-ontology-schema-from-lineage
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | path | yes | — | The ontology ID. |
+
+```bash
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/generate-ontology-schema-from-lineage" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+<Warning>
+This **overwrites** the existing schema graph. Manual edits — node positions,
+labels, anything not derivable from lineage — are lost. Use
+[Add to lineage](#add-to-lineage) to extend a schema you want to keep.
+</Warning>
+
 ## Import an OWL ontology
 
 Convert an OWL file into the schema editor's JSON format (nodes and edges).
@@ -193,5 +217,5 @@ curl -X POST "$BASE_URL/concepts/$PROJECT_ID/import-owl" \
 <Tip>
 To turn an OWL ontology directly into an executable Vadalog program (with
 `@bind` annotations and optional Parquet output) rather than editor JSON, use
-[OWL → Vadalog](/integrations/api-endpoints/vadalingo#owl-vadalog) instead.
+[OWL → Vadalog](/integrations/api-endpoints/vadalingo#owl-to-vadalog) instead.
 </Tip>

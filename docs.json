@@ -41,7 +41,7 @@
         {
           "anchor": "Community (Coming Soon)",
           "icon": "discord",
-          "href": "https://docs.prometheux.ai/community/resources",
+          "href": "https://docs.prometheux.ai/resources/community",
           "color": {
             "light": "#ffee16",
             "dark": "#ffee16"
@@ -166,6 +166,7 @@
               "integrations/api-endpoints/schedules",
               "integrations/api-endpoints/context-layer",
               "integrations/api-endpoints/agent",
+              "integrations/api-endpoints/assistant",
               "integrations/api-endpoints/chat-history",
               "integrations/api-endpoints/alerts",
               "integrations/api-endpoints/compute"

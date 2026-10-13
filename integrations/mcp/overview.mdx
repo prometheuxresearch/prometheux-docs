@@ -168,6 +168,27 @@ reconnect to the server to pick up the current one.
 | `connect_file_as_datasource` | Register a tabular file already on disk as a queryable data source | **`file_path`** |
 | `delete_data_source` | Permanently disconnect a data source from the workspace | **`bind_annotation`** |
 
+### Workspace files
+
+These tools work on the workspace disk — the `disk/` directory behind **Data →
+Files** — which is where a file lives before `connect_file_as_datasource` turns it
+into a data source.
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_disk_files` | Browse one directory at a time, paged | `path`, `offset`, `limit` |
+| `find_disk_files` | Search the whole disk by filename and get exact paths | **`query`**, `limit` |
+| `read_disk_file` | Read a file's contents; text is returned inline | **`path`** |
+| `create_disk_folder` | Create a folder, including any missing parents | **`path`** |
+| `move_disk_file` | Move a file or folder, or rename it in place | **`source`**, **`destination`** |
+| `save_file_to_disk` | Copy a file into a durable location under `disk/` | **`source`**, `destination_dir`, `new_name`, `overwrite` |
+| `delete_disk_files` | Permanently delete files or folders | **`paths`**, `recursive` |
+
+`find_disk_files` is the one to reach for when the user names a file without a
+path; `list_disk_files` is for browsing. A non-empty folder is only removed when
+`delete_disk_files` is called with `recursive: true`. `save_file_to_disk` exists
+because a file attached in chat is temporary and otherwise swept.
+
 ### Concepts — read and run
 
 | Tool | Description | Parameters |
@@ -186,7 +207,22 @@ reconnect to the server to pick up the current one.
 | `validate_concept` | Check a concept body before saving it, at no LLM cost | **`definition`**, `concept_type`, `concept_name`, `ontology_id`, `concept_config` |
 | `create_concept` | Save a new concept of any of the six kinds | **`ontology_id`**, `definition`, `concept_type`, `concept_name`, `description`, `concept_config`, `group`, `confirm_new` |
 | `update_concept` | Overwrite an existing concept's definition | **`ontology_id`**, **`concept_name`**, `definition`, `concept_type`, `description`, `concept_config`, `group` |
+| `set_refresh_mode` | Freeze a concept so no run rebuilds it, or unfreeze it | **`ontology_id`**, **`concept_name`**, **`refresh_mode`** |
 | `delete_concept` | Permanently delete a concept | **`ontology_id`**, **`concept_name`** |
+
+<Note>
+**Freezing a concept**
+
+`set_refresh_mode` takes `checkpoint` to freeze or `default` to unfreeze. A frozen
+concept keeps whatever output it last produced: nothing re-derives it while it is
+reached as a *dependency* of something else, so the concepts below it in the chain
+are not rebuilt either. Running the frozen concept directly still builds it, and a
+`run_mode: "all"` run overrides the freeze.
+
+Use it for a concept whose inputs are gone or unreliable, one expensive enough
+that its consumers should reuse the last result, or one holding a result that must
+not move while work continues around it.
+</Note>
 
 <Note>
 **Writing a concept**
@@ -278,6 +314,43 @@ Here `scope` is the note's own reach — `global` or `project`. `kind` is
 Note the two different identifiers: `machine_id` is a catalogue id, used only by
 `start_machine`, while `user_machine_id` identifies a machine already on your
 list.
+
+### Databricks compute
+
+An alternative to a Prometheux machine: point the workspace at a Databricks
+cluster and concepts run there instead. See
+[Databricks compute](/platform/compute) for the concepts behind this.
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `get_databricks_compute` | Report the current configuration and which fields are still missing | — |
+| `set_databricks_compute` | Set or update the configuration; fields merge across calls | `host`, `auth_mode`, `token`, `client_id`, `client_secret`, `cluster_id`, `catalog`, `schema`, `volume`, `jar_file_name` |
+| `verify_databricks_compute` | Check the cluster is running and the Prometheux JAR is installed | — |
+| `clear_databricks_compute` | Forget the configuration and go back to running on a machine | — |
+| `list_databricks_clusters` | List the workspace's clusters with id, name, and state | — |
+| `start_databricks_cluster` | Start the cluster | `cluster_id` |
+| `stop_databricks_cluster` | Terminate the cluster so it stops costing money | `cluster_id` |
+| `list_databricks_catalogs` | List Unity Catalog catalogs, flagged with whether each holds the JAR volume | — |
+| `list_databricks_schemas` | List the schemas in a catalog | `catalog` |
+| `list_databricks_volumes` | List the volumes in a catalog and schema | `catalog`, `schema` |
+| `create_databricks_volume` | Create a volume, creating the catalog and schema if needed | `catalog`, `schema`, `name`, `comment` |
+| `install_prometheux_on_cluster` | Stage the Prometheux engine JAR and install it on the cluster | **`catalog`**, **`schema`**, **`volume`**, `cluster_id` |
+| `uninstall_prometheux_from_cluster` | Detach Prometheux from the cluster | `cluster_id` |
+
+Call `get_databricks_compute` first — it reports what is already configured, so
+only the missing fields need asking for. `auth_mode` picks between a personal
+access token (`token`) and a service principal (`client_id` + `client_secret`),
+which is what a shared or production workspace usually issues.
+
+### Waiting
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `wait` | Pause, then carry on without another prompt | **`seconds`**, **`reason`** |
+
+This exists so an agent can sit out the gap when something it started needs time
+— a cluster coming up, a machine booting, a long run finishing — instead of
+either polling in a tight loop or handing the turn back to you.
 
 ### Scheduled runs
 

@@ -50,6 +50,62 @@ curl -X POST "$BASE_URL/vadalog/analyze" \
 }
 ```
 
+## Validate a concept
+
+Check a concept body and return a verdict, without saving anything and without
+running the engine. Use it before [saving a concept](/integrations/api-endpoints/concepts#save-a-concept)
+to surface errors early.
+
+What gets checked depends on `concept_type`: `logic` compiles the Vadalog
+program, `sql` and `cypher` are converted to a Vadalog rule, `python` is parsed
+for syntax errors, and `llm` and `context` — which have no compilable body — have
+their `concept_config` checked structurally instead.
+
+```
+POST /vadalog/validate
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `definition` | body | conditional | — | The concept body. Not used by `context` concepts, which are configured entirely through `concept_config`. |
+| `concept_type` | body | no | `"logic"` | One of `logic`, `sql`, `cypher`, `python`, `context`, or `llm`. |
+| `concept_name` | body | conditional | `""` | Required for every type except `logic`. |
+| `concept_config` | body | conditional | — | Required for `context` and `llm` concepts. |
+| `ontology_id` | body | no | — | Supply it for `llm` and `context` concepts so prompt references and pinned note IDs are resolved against the real project. |
+
+<Note>
+This differs from [`/vadalog/analyze`](#analyze-a-program), which reports a
+program's predicate structure rather than a pass/fail verdict.
+</Note>
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/vadalog/validate" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "definition": "@output(\"location\").\nlocation(L) <- company(_, L).",
+    "concept_type": "logic"
+  }'
+```
+
+`data.valid` is always present, so a caller gets an explicit verdict. Note that a
+failed validation is still an HTTP `200` with `status: "success"` — read
+`data.valid`, not the status code:
+
+```jsonc
+{
+  "status": "success",
+  "message": "Validation failed",
+  "data": {
+    "valid": false,
+    "concept_type": "logic",
+    "error": "..."
+  }
+}
+```
+
 ## Parse binds
 
 Parse `@bind` and `@qbind` annotations from a Vadalog program and separate the rule code from the datasource bindings.
@@ -173,6 +229,43 @@ curl -X POST "$BASE_URL/vadalog/build-bind" \
 }
 ```
 
+## Search the Vadalog docs
+
+Search the Vadalog documentation and return a ready-to-use code example for the
+query. It answers with code, not prose — it is built for a coding assistant that
+needs a worked example of a language feature, and it backs the
+[`search_vadalog_docs` MCP tool](/integrations/mcp/overview).
+
+```
+POST /vadalog/search-docs
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `query` | body | yes | — | What to look up, in natural language. |
+
+```bash
+curl -X POST "$BASE_URL/vadalog/search-docs" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "query": "how do I aggregate with msum" }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Documentation examples retrieved",
+  "data": {
+    "vadalog_code": "@output(\"running_total\").\nrunning_total(K, msum(V)) <- sales(K, V).",
+    "total_examples": 4
+  }
+}
+```
+
+`data.vadalog_code` is the best-matching example; `total_examples` says how many
+were found. A query that matches nothing returns `404` rather than an empty
+example.
+
 ## Engine status
 
 Return whether the Vadalog engine is idle or processing an evaluation. Use this to gate new submissions or display engine state in a UI.
@@ -218,4 +311,6 @@ The response body is whatever the engine returns on acknowledgement of the stop 
 
 <Note>
 The `/vadalog/spark-ui/*` and `/vadalog/actuator/*` proxy endpoints exist for operational monitoring of the underlying engine (Spark job tracking, JVM metrics, log tailing). They are outside the scope of external integration and are not documented here.
+
+`POST /vadalog/evaluateWithParams` is likewise a transparent proxy: it takes the engine's own form-encoded signature and returns the engine's raw response, so that a client written against the [Engine API](/vadalog/engine-api) can be pointed at the platform without changing. New integrations should use [`/vadalog/evaluate`](#evaluate-a-program), which takes JSON and returns the standard envelope.
 </Note>

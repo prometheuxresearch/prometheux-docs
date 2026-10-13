@@ -1,0 +1,110 @@
+---
+title: "Assistant"
+description: "Read the skills the assistant works from — step-by-step playbooks for multi-step tasks — and search the Prometheux knowledge base."
+---
+
+The [AI assistant](/platform/ai-assistant) does not carry every procedure it
+knows in its prompt. Long, multi-step procedures live in **skills**: playbooks it
+loads on demand when a request matches one. These endpoints expose the same
+registry over REST, so a client building its own assistant experience can show
+the user which playbooks exist, or follow one itself.
+
+They are stateless lookups — no ontology, no session, no side effects.
+
+All paths are relative to the [base URL](/integrations/rest-api#base-url) and
+require [authentication](/integrations/api-endpoints/authentication). All
+responses use the standard [envelope](/integrations/rest-api#response-envelope).
+
+## List skills
+
+Returns metadata for every available skill. Bodies are omitted — the point of a
+skill is that its body is only loaded when it is needed.
+
+```
+GET /assistant/skills
+```
+
+```bash
+curl "$BASE_URL/assistant/skills" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Skills listed",
+  "data": {
+    "count": 2,
+    "skills": [
+      {
+        "id": "build-an-app",
+        "name": "Build an app",
+        "description": "Turn a set of concepts into a dashboard app.",
+        "when_to_use": "The user asks for an app, dashboard, or UI over their data."
+      }
+    ]
+  }
+}
+```
+
+`when_to_use` is the trigger condition — it is what the assistant matches a
+request against when deciding whether to load the playbook.
+
+## Get a skill
+
+Returns the full playbook for one skill.
+
+```
+GET /assistant/skills/{skill_id}
+```
+
+| Parameter | In | Required | Description |
+|---|---|---|---|
+| `skill_id` | path | yes | The skill's ID, as returned by `GET /assistant/skills`. |
+
+```bash
+curl "$BASE_URL/assistant/skills/build-an-app" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Skill retrieved",
+  "data": {
+    "id": "build-an-app",
+    "name": "Build an app",
+    "body": "## Build an app\n\n1. List the concepts in the ontology…"
+  }
+}
+```
+
+An unknown ID returns `404`, and its `data.available_skills` lists the IDs that
+do exist — so a client that guessed wrong can recover without a second call.
+
+## Company knowledge
+
+Searches the Prometheux knowledge base and returns the sections relevant to a
+query. This is what lets the assistant answer questions about Prometheux itself
+— what it is, how it is licensed, how it compares to other systems — rather than
+about the user's data.
+
+```
+GET /assistant/company-info
+```
+
+| Parameter | In | Required | Description |
+|---|---|---|---|
+| `query` | query | yes | What to look up. An empty query returns `400`. |
+
+```bash
+curl -G "$BASE_URL/assistant/company-info" \
+  --data-urlencode "query=what is reasoning used for" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+<Note>
+This searches Prometheux's own knowledge base, not your ontologies or your
+notes. To search what *you* have written, use the
+[context layer](/integrations/api-endpoints/context-layer) endpoints.
+</Note>

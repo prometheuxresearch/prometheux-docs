@@ -85,6 +85,53 @@ Render `thinking` chunks live (e.g. a collapsible "thinking…" panel) so users 
 On the free tier the agent is capped (default 150 messages/month). Over the cap the endpoint returns HTTP `402` with a JSON body `{ "code": "AGENT_MESSAGE_LIMIT_REACHED", "used", "limit", "resets_at" }` instead of a stream. Handle it as a distinct "limit reached" state.
 </Warning>
 
+## Message Usage
+
+Report how much of the monthly agent-message allowance the caller has used. Read
+it before a session, or after a `402`, to show the user where they stand instead
+of letting the next message fail.
+
+**HTTP Request:**
+
+```
+GET /api/v1/agent/message-usage
+```
+
+This endpoint takes no parameters — it reports on the authenticated caller.
+
+**Example:**
+
+```bash
+curl -X GET "https://api.prometheux.ai/jarvispy/my-org/my-user/api/v1/agent/message-usage" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `is_freemium` | bool | Whether the monthly cap applies to this account. |
+| `used` | int | Messages used this calendar month. |
+| `limit` | int | The monthly cap for freemium accounts. |
+| `remaining` | int \| null | Messages left this month — `null` when unlimited. |
+| `resets_at` | string | ISO timestamp at which the quota resets. |
+| `unlimited` | bool | `true` for paid accounts, which have no cap. |
+
+```json
+{
+  "data": {
+    "is_freemium": true,
+    "used": 27,
+    "limit": 150,
+    "remaining": 123,
+    "resets_at": "2026-10-01T00:00:00+00:00",
+    "unlimited": false
+  },
+  "message": "Message usage retrieved",
+  "status": "success"
+}
+```
+
 ## Reset Session
 
 Clear the conversation history for a session.
