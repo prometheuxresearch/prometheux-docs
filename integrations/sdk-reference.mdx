@@ -223,6 +223,7 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `analyze_program(...)` | [`POST /vadalog/analyze`](/integrations/api-endpoints/vadalog#analyze-a-program) | Inspect a program's predicate structure. |
 | `parse_binds(...)` | [`POST /vadalog/parse-binds`](/integrations/api-endpoints/vadalog#parse-binds) | Separate rules from bind annotations. |
 | `build_bind(...)` | [`POST /vadalog/build-bind`](/integrations/api-endpoints/vadalog#build-a-bind) | Rewrite a bind for a new predicate. |
+| `generate_program(...)` | [`POST /vadalog/program`](/integrations/api-endpoints/vadalog#generate-a-program-from-a-question) | Write a Vadalog program from a natural-language question. |
 | `evaluate_program(...)` | [`POST /vadalog/evaluate`](/integrations/api-endpoints/vadalog#evaluate-a-program) | Evaluate a Vadalog program directly. |
 | `validate_concept(...)` | [`POST /vadalog/validate`](/integrations/api-endpoints/vadalog#validate-a-concept) | Check a concept body before saving it. |
 
@@ -233,6 +234,18 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `translate_sql_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/sql-to-vadalog`](/integrations/api-endpoints/vadalingo#sql-to-vadalog) | Translate SQL to Vadalog. |
 | `translate_rdf_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/rdf-to-vadalog`](/integrations/api-endpoints/vadalingo#rdf-to-vadalog) | Translate RDF to Vadalog. |
 | `translate_owl_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/owl-to-vadalog`](/integrations/api-endpoints/vadalingo#owl-to-vadalog) | Translate OWL to Vadalog. |
+
+## Testing
+
+Unit tests for Vadalog programs: evaluate a program and compare each output predicate with
+the rows you expect. See [Unit-test a Vadalog program](/integrations/python-sdk#unit-test-a-vadalog-program).
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `check_program(program, expect=None, mode="exact", ...)` | [`POST /vadalog/evaluate`](/integrations/api-endpoints/vadalog#evaluate-a-program) | Evaluate a program and check its output predicates; returns a `CheckReport`. |
+| `check_question(question, expect=None, mode="exact", ...)` | [`POST /vadalog/program`](/integrations/api-endpoints/vadalog#generate-a-program-from-a-question), then `POST /vadalog/evaluate` | Generate a program from a question, then check it like `check_program`. |
+| `compare_rows(predicate, actual, expected, mode="exact")` | — | Compare two sets of rows locally; returns a `PredicateCheck`. |
+| `read_expected_csv(path, header=False)` | — | Read expected rows from a CSV file. |
 
 ## Account & configuration
 

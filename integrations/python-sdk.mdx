@@ -32,6 +32,57 @@ ontology_id = px.save_ontology(ontology_name="my_first_ontology")
 print(f"Created ontology: {ontology_id}")
 ```
 
+## Unit-test a Vadalog program
+
+`check_program` evaluates a program on the engine and compares each output predicate with
+the rows you expect, given as a CSV file or as a list of rows. It never raises for a failed
+check or an engine error: read `report.ok` and `report.summary()`, or call
+`report.assert_ok()`, which raises `AssertionError` with the summary. That makes it fit
+directly in a pytest suite:
+
+```python
+import prometheux_chain as px
+
+def test_transitive_closure():
+    program = open("programs/tc.vada").read()
+    px.check_program(program, expect={"tc": "expected/tc.csv"}).assert_ok()
+
+def test_reachability_includes_known_pairs():
+    program = open("programs/tc.vada").read()
+    report = px.check_program(program, expect={"tc": [[1, 4], [2, 4]]}, mode="contains")
+    assert report.ok, report.summary()
+```
+
+- **Modes.** `exact` (the default) passes when the predicate produces the same rows, the
+  same number of times. `contains` passes when every expected row is produced, whatever
+  else is.
+- **Values.** They are compared by meaning rather than spelling: `2`, `"2"` and `2.0` are
+  equal, and so are `True` and `"true"`. Expected CSVs have no header unless you pass
+  `header=True`.
+- **Inputs.** `params` and `compute` are passed to the evaluation as in `evaluate_program`.
+
+`check_question` does the same for a program the natural-language translator writes from
+a question. The generated program is kept on the report, so a failure shows what was run:
+
+```python
+report = px.check_question(
+    "Edges 1->2, 2->3 and 3->4. Compute every pair (X,Y) where Y is reachable from X. Output as tc.",
+    expect="expected/tc.csv",
+)
+print(report.program)
+report.assert_ok()
+```
+
+When `expect` is a single CSV or list of rows, it is checked against `expect_predicate`,
+or the generated program's last `@output` when that is not given. Each call counts as one
+program generation in your usage.
+
+<Note>
+Both functions evaluate on your compute, so a machine must be running. The
+[`px test`](/integrations/cli/command-reference#px-test-target) command runs the same checks
+from files, and writes a JUnit report for CI.
+</Note>
+
 ## Install into Jupyter
 
 To manually install the library in your Jupyter Lab or Jupyter Notebook follow these steps:

@@ -1,6 +1,6 @@
 ---
 title: "Command reference"
-description: "Every px command and flag: init, validate, login, pull, list, plan, apply, run, show, query, search, status, snapshot, policy, template, datasource, app, context, playbook, compute, delete, skill."
+description: "Every px command and flag: init, validate, login, pull, list, plan, apply, run, show, query, test, search, status, snapshot, policy, template, datasource, app, context, playbook, compute, delete, skill."
 ---
 
 `px --help` lists all commands; `px <command> --help` shows a command's options.
@@ -191,6 +191,83 @@ Run a read-only SQL `SELECT`/`WITH` over one populated concept (aggregates, `DIS
 ```bash
 px query 1d22942b9a0 tx "SELECT country, count(*) FROM tx GROUP BY country"
 ```
+
+## `px test [TARGET]`
+
+Unit-test Vadalog programs. Each program runs on the platform engine, and the rows of every
+expected output predicate are compared with the rows you say it must produce. No workspace
+is needed, and nothing is saved to an ontology.
+
+`TARGET` is one of:
+
+- a `.vada` program, with one `--expect PRED=CSV` per predicate to check;
+- a `*.test.yaml` [test case](#test-case-files);
+- a folder, searched recursively for `*.test.yaml` cases.
+
+With `--question` there is no `TARGET`: the natural-language translator writes the program,
+and `--expect-csv` gives the rows it must produce.
+
+| Option | Meaning |
+|---|---|
+| `--expect PRED=CSV` | Rows `PRED` must produce, as a CSV file. Repeatable. For a program `TARGET`. |
+| `-q, --question TEXT` | Ask the translator for the program instead of reading `TARGET`. |
+| `--context TEXT` | Extra context for the translator (with `--question`). |
+| `--expect-csv FILE` | Rows the generated program must produce (with `--question`). |
+| `--expect-pred TEXT` | Predicate `--expect-csv` applies to (default: the program's last `@output`). |
+| `--mode [exact\|contains]` | `exact` (default): the same rows, the same number of times. `contains`: every expected row is produced; other rows are allowed. |
+| `--header` | Expected CSVs start with a header line to skip. |
+| `--param KEY=VALUE` | Program parameter (repeatable). |
+| `--save-vada FILE` | Write the generated program to this file (with `--question`). |
+| `--json` | Print the full reports as JSON, including the rows each predicate produced. |
+| `--junit-xml FILE` | Also write a JUnit XML report, for CI. |
+
+**How rows are compared:**
+
+- An expected CSV has one row per line and no header unless you pass `--header`. Blank
+  lines are skipped.
+- Values are compared by meaning rather than spelling: `2`, `"2"` and `2.0` are equal, and
+  so are `true`, `True` and `"true"`. Surrounding whitespace is ignored.
+- A failure lists the rows that are missing and, in `exact` mode, the rows the program
+  produced but you did not expect, with the values as you wrote them.
+
+```bash
+px test tc.vada --expect tc=tc.csv
+px test tc.vada --expect tc=tc.csv --expect reachable=reachable.csv --mode contains
+px test --question "Transitive closure of edge(X,Y). Output as tc." --expect-csv tc.csv
+px test tests/ --junit-xml report.xml
+```
+
+```text
+FAIL  tc.vada
+  tc: FAIL :: count actual=6 expected=5 (MISMATCH) | containment OK | extra=[[1, 4]]
+FAIL: 1 of 1 test(s) failed.
+```
+
+<Note>
+`px test` evaluates on your compute, so a machine must be running (`px compute start`).
+Each `--question` asks the translator for one program, and is counted in your usage as one
+program generation.
+</Note>
+
+### Test case files
+
+A `*.test.yaml` file names one program, or one question, and the rows each predicate must
+produce. Paths are relative to the case file, and the case is named after the file.
+
+```yaml
+# tests/tc.test.yaml
+program: ../programs/tc.vada   # or  question: "Transitive closure of edge. Output as tc."
+mode: exact                    # optional: exact (default) or contains
+header: false                  # optional: expected CSVs start with a header line
+params: {}                     # optional: program parameters
+expect:
+  tc: ./expected/tc.csv        # a CSV file...
+  reachable: [[1, 4], [2, 4]]  # ...or the rows inline
+```
+
+A `question` case may also set `context`, and may give `expect` as a single CSV or list of
+rows. Those rows are checked against `expect_predicate`, or the generated program's last
+`@output` when it is not set.
 
 ## `px search <concepts\|company>`
 
@@ -384,6 +461,7 @@ px skill install -t cursor --dir .     # Cursor rule in this repo
 |---|---|
 | `validate` | `0` PASS, non-zero FAIL |
 | `apply` | `0` on success; non-zero if any concept was skipped (with a summary) or on a hard error |
+| `test` | `0` every check passed; `1` a check failed, including an engine error; `2` the tests could not start (not logged in, an unreadable case file, a bad option) |
 | `plan`, `status`, `list`, and other reads | `0` |
 
 ## State & idempotency

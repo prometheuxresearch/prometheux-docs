@@ -192,6 +192,51 @@ curl -X POST "$BASE_URL/vadalog/evaluate" \
 For concept-level execution (with dependency chaining, result persistence, and progress tracking), use [`POST /concepts/{ontology_id}/run/{concept_name}`](/integrations/api-endpoints/concepts#run-a-concept) instead. Use `/vadalog/evaluate` when you want to execute a program directly without a saved concept.
 </Tip>
 
+## Generate a program from a question
+
+Write a Vadalog program from a natural-language question. Nothing is evaluated or saved:
+pass the program to [`/vadalog/evaluate`](#evaluate-a-program) to run it. Each successful
+call is counted in your usage as one program generation.
+
+```
+POST /vadalog/program
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `query` | body | yes | — | The question, in natural language. |
+| `context` | body | no | — | Extra context for the translator, such as the predicates and columns available. |
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/vadalog/program" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Edges 1->2, 2->3 and 3->4. Compute every pair (X,Y) where Y is reachable from X. Output as tc."
+  }'
+```
+
+The response is the translator's answer as is, not the standard envelope. `code_examples`
+holds the program, and `response` the full answer in markdown:
+
+```jsonc
+{
+  "response": "...",
+  "code_examples": [
+    { "code": "edge(1,2).\nedge(2,3).\nedge(3,4).\ntc(X, Y) <- #TC(edge).\n@output(\"tc\")." }
+  ],
+  "metadata": { "provider": "...", "model": "..." },
+  "timestamp": "..."
+}
+```
+
+<Note>
+An error from the translator keeps its own HTTP status. A missing `query` returns `400`,
+and a translator that cannot be reached returns `503`.
+</Note>
+
 ## Build a bind
 
 Rewrite an existing `@bind` or `@qbind` annotation for a new predicate name. When `isOutput` is `true`, the output target (CSV filename or query name) is also updated to match the new predicate.
