@@ -61,7 +61,7 @@ keys). See [Config](/integrations/config) for the full list of keys.
 |---|---|---|
 | `create_share(...)` | [`POST /ontologies/share`](/integrations/api-endpoints/sharing#share-an-ontology) | Share an ontology as viewer/editor. |
 | `list_shares(...)` | [`GET /ontologies/share/list`](/integrations/api-endpoints/sharing#list-shares-outbox) | List shares you created (outbox). |
-| `update_share_role(...)` | [`POST /ontologies/share/update-role`](/integrations/api-endpoints/sharing#update-a-shares-role) | Change a share between viewer/editor. |
+| `update_share_role(...)` | [`POST /ontologies/share/update-role`](/integrations/api-endpoints/sharing#update-the-role-on-a-share) | Change a share between viewer/editor. |
 | `revoke_share(...)` | [`POST /ontologies/share/revoke`](/integrations/api-endpoints/sharing#revoke-a-share) | Revoke a share you granted. |
 | `list_inbox(...)` | [`GET /ontologies/share/inbox`](/integrations/api-endpoints/sharing#list-inbox) | List shares granted to you (inbox). |
 | `accept_share(...)` | [`POST /ontologies/share/accept`](/integrations/api-endpoints/sharing#accept-a-share) | Accept a pending share. |
@@ -78,8 +78,10 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `run_concept_stream(...)` <Icon icon="bolt" /> | `WS /concepts/{ontology_id}/run-stream/{concept_name}` | Run a concept, streaming progress frames. |
 | `rename_concept(...)` | [`POST /concepts/{ontology_id}/rename`](/integrations/api-endpoints/concepts#rename-a-concept) | Rename a concept and its dependents. |
 | `reorder_concepts(...)` | [`POST /concepts/{ontology_id}/reorder`](/integrations/api-endpoints/concepts#reorder-concepts) | Set concept display order. |
-| `fetch_results(...)` | [`GET /concepts/{ontology_id}/fetch`](/integrations/api-endpoints/concepts#fetch-concept-results) | Read persisted output rows (paginated). |
-| `search_results(...)` | [`POST /concepts/{ontology_id}/search`](/integrations/api-endpoints/concepts#search-concept-results) | Filter output rows by term/columns. |
+| `fetch_results(...)` | [`POST /concepts/{ontology_id}/fetch`](/integrations/api-endpoints/concepts#fetch-concept-results) | Read persisted output rows (paginated, filterable). |
+| `search_results(...)` | [`POST /concepts/{ontology_id}/fetch`](/integrations/api-endpoints/concepts#fetch-concept-results) | Convenience wrapper over `fetch_results` for term/column filtering. |
+| `query_concept(...)` | [`POST /concepts/{ontology_id}/query`](/integrations/api-endpoints/concepts#query-a-concept-with-sql) | Read-only SQL `SELECT` over a populated concept. |
+| `search_similar_concepts(...)` | [`GET /concepts/search-similar`](/integrations/api-endpoints/concepts#find-similar-concepts) | Semantic search for concepts across projects. |
 | `get_execution_status(...)` | [`GET /concepts/{ontology_id}/execution-status`](/integrations/api-endpoints/concepts#single-project) | Latest run status for one project. |
 | `get_execution_statuses(...)` | [`GET /concepts/execution-statuses`](/integrations/api-endpoints/concepts#all-projects-batch) | Run statuses across all projects. |
 | `generate_concept_description(...)` | [`POST /concepts/{ontology_id}/generate-description`](/integrations/api-endpoints/concepts#other-operations) | LLM-generate a concept description. |
@@ -103,7 +105,7 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `upload_file(...)` | [`POST /data/files/upload`](/integrations/api-endpoints/data#upload-file) | Upload a file to `disk/`. |
 | `list_files(...)` | [`GET /data/files/list`](/integrations/api-endpoints/data#list-files) | List files in `disk/`. |
 | `make_directory(...)` | [`POST /data/files/mkdir`](/integrations/api-endpoints/data#make-directory) | Create a directory in `disk/`. |
-| `move_file(...)` | [`POST /data/files/move`](/integrations/api-endpoints/data#move-rename-file) | Move/rename a file or directory. |
+| `move_file(...)` | [`POST /data/files/move`](/integrations/api-endpoints/data#move-or-rename-a-file) | Move/rename a file or directory. |
 | `delete_files(...)` | [`POST /data/files/delete`](/integrations/api-endpoints/data#delete-files) | Delete files/directories. |
 | `download_file(...)` | [`GET /data/files/download`](/integrations/api-endpoints/data#download-file) | Download a file from `disk/`. |
 | `cleanup_sources(...)` | [`POST /data/cleanup`](/integrations/api-endpoints/data#other-operations) | Remove data sources. |
@@ -114,7 +116,7 @@ keys). See [Config](/integrations/config) for the full list of keys.
 |---|---|---|
 | `save_ontology_schema(...)` | [`POST /concepts/{ontology_id}/save-ontology-schema`](/integrations/api-endpoints/schema#save-the-schema) | Persist an ontology's schema. |
 | `load_ontology_schema(...)` | [`GET /concepts/{ontology_id}/load-ontology-schema`](/integrations/api-endpoints/schema#load-the-schema) | Load an ontology's schema. |
-| `update_concept_ontology_schema_type(...)` | [`PATCH /concepts/{ontology_id}/concepts/{concept_name}/ontology-schema-type`](/integrations/api-endpoints/schema#set-a-concepts-schema-type) | Mark a concept as node/edge. |
+| `update_concept_ontology_schema_type(...)` | [`PATCH /concepts/{ontology_id}/concepts/{concept_name}/ontology-schema-type`](/integrations/api-endpoints/schema#set-the-schema-type-of-a-concept) | Mark a concept as node/edge. |
 | `add_to_lineage(...)` | [`POST /concepts/{ontology_id}/add-to-lineage`](/integrations/api-endpoints/schema#add-to-lineage) | Add a node/edge to the lineage. |
 | `import_owl(...)` | [`POST /concepts/{ontology_id}/import-owl`](/integrations/api-endpoints/schema#import-an-owl-ontology) | Import OWL into editor JSON. |
 
@@ -138,6 +140,7 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `delete_context_note(...)` | [`DELETE /knowledge/context/{note_id}`](/integrations/api-endpoints/context-layer#delete-a-note) | Delete a context note. |
 | `search_context_notes(...)` | [`POST /knowledge/context/search`](/integrations/api-endpoints/context-layer#semantic-search) | Semantic search over notes. |
 | `create_context_notes_from_file(...)` | [`POST /knowledge/context/from-file`](/integrations/api-endpoints/context-layer#ingest-a-file-as-context) | Ingest a file as context notes. |
+| `create_context_edge(...)` | `POST /knowledge/context/edges` | Link a note to a concept or ontology. |
 | `auto_seed(...)` <Icon icon="bolt" /> | [`POST /knowledge/auto-seed`](/integrations/api-endpoints/context-layer#auto-seed-from-data-sources) | Profile sources, stream observations. |
 | `ontology_text(...)` | [`GET /knowledge/ontology/{ontology_id}/text`](/integrations/api-endpoints/context-layer#render-project-document) | Render the ontology document. |
 | `interview_template(...)` | `GET /knowledge/interview/template` | Onboarding interview template. |
@@ -168,6 +171,8 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `list_apps(...)` | [`GET /apps/{ontology_id}/list`](/integrations/api-endpoints/apps#list-apps-in-a-project) | List apps in an ontology. |
 | `get_app(...)` | [`GET /apps/{ontology_id}/{app_id}`](/integrations/api-endpoints/apps#get-an-app) | Load an app. |
 | `save_app(...)` | [`POST /apps/{ontology_id}/save`](/integrations/api-endpoints/apps#save-an-app) | Create or update an app. |
+| `publish_app(...)` | [`POST /apps/{ontology_id}/{app_id}/publish`](/integrations/api-endpoints/apps#publish-an-app) | Publish a frozen snapshot of the draft. |
+| `unpublish_app(...)` | [`POST /apps/{ontology_id}/{app_id}/unpublish`](/integrations/api-endpoints/apps#unpublish-an-app) | Remove the published snapshot. |
 | `delete_app(...)` | [`DELETE /apps/{ontology_id}/{app_id}`](/integrations/api-endpoints/apps#delete-an-app) | Delete an app. |
 
 ## Schedules
@@ -194,6 +199,22 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | Function | Endpoint | Description |
 |---|---|---|
 | `check_compute_availability(...)` | [`POST /compute/availability`](/integrations/api-endpoints/compute#check-availability) | Check machine/Databricks availability. |
+| `list_machines_combined(...)` | `GET /machines/machines-combined` | The machine catalogue plus your own machines. |
+| `use_machine(...)` | `POST /machines/user-machines/use` | Add a catalogue machine to your list. Adding does not start it, so nothing is billed yet. |
+| `set_machine_active(...)` | `PATCH /machines/user-machines/toggle-active` | Start or stop a machine; starting opens a billable session. |
+| `get_machine_status(...)` | `GET /machines/user-machines/{user_machine_id}/status` | Real-time status of one machine. |
+| `delete_user_machine(...)` | `DELETE /machines/user-machines/{user_machine_id}` | Remove a machine from your list, keeping its usage history. |
+
+`machine_id` identifies a machine in the catalogue and is only used by
+`use_machine`; `user_machine_id` identifies one already on your list.
+
+## Assistant
+
+| Function | Endpoint | Description |
+|---|---|---|
+| `list_skills(...)` | `GET /assistant/skills` | List the assistant's skill playbooks (metadata only). |
+| `get_skill(...)` | `GET /assistant/skills/{skill_id}` | Fetch one skill's full playbook. |
+| `get_company_info(...)` | `GET /assistant/company-info` | Search the Prometheux company knowledge base. |
 
 ## Vadalog
 
@@ -203,15 +224,15 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `parse_binds(...)` | [`POST /vadalog/parse-binds`](/integrations/api-endpoints/vadalog#parse-binds) | Separate rules from bind annotations. |
 | `build_bind(...)` | [`POST /vadalog/build-bind`](/integrations/api-endpoints/vadalog#build-a-bind) | Rewrite a bind for a new predicate. |
 | `evaluate_program(...)` | [`POST /vadalog/evaluate`](/integrations/api-endpoints/vadalog#evaluate-a-program) | Evaluate a Vadalog program directly. |
+| `validate_concept(...)` | [`POST /vadalog/validate`](/integrations/api-endpoints/vadalog#validate-a-concept) | Check a concept body before saving it. |
 
 ## Vadalingo
 
 | Function | Endpoint | Description |
 |---|---|---|
-| `translate_nl_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/nl-to-vadalog`](/integrations/api-endpoints/vadalingo#natural-language-vadalog) | Translate natural language to Vadalog. |
-| `translate_sql_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/sql-to-vadalog`](/integrations/api-endpoints/vadalingo#sql-vadalog) | Translate SQL to Vadalog. |
-| `translate_rdf_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/rdf-to-vadalog`](/integrations/api-endpoints/vadalingo#rdf-vadalog) | Translate RDF to Vadalog. |
-| `translate_owl_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/owl-to-vadalog`](/integrations/api-endpoints/vadalingo#owl-vadalog) | Translate OWL to Vadalog. |
+| `translate_sql_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/sql-to-vadalog`](/integrations/api-endpoints/vadalingo#sql-to-vadalog) | Translate SQL to Vadalog. |
+| `translate_rdf_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/rdf-to-vadalog`](/integrations/api-endpoints/vadalingo#rdf-to-vadalog) | Translate RDF to Vadalog. |
+| `translate_owl_to_vadalog(...)` | [`POST /vadalingo/{ontology_id}/translate/owl-to-vadalog`](/integrations/api-endpoints/vadalingo#owl-to-vadalog) | Translate OWL to Vadalog. |
 
 ## Account & configuration
 

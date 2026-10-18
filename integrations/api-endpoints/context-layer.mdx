@@ -260,11 +260,171 @@ curl -X POST "$BASE_URL/knowledge/context/search?scope=ontology&scope_id=$ONTOLO
 }
 ```
 
+### Full-text search
+
+Match notes on their literal words rather than their meaning. Use it when you
+know the term you are looking for — a column name, an identifier, a piece of
+jargon — where semantic search would return things that are merely related.
+
+```
+GET /knowledge/context/fts
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `q` | query | yes | — | The query, in web-search syntax: quoted phrases, `OR`, and `-` to exclude. |
+| `scope` | query | yes | — | `global` or `ontology`. |
+| `scope_id` | query | no | — | The ontology ID. Required when `scope` is `ontology`. |
+| `kinds` | query | no | — | Comma-separated kind filter. |
+| `top_k` | query | no | `20` | Maximum results (1–100). |
+
+```bash
+curl -G "$BASE_URL/knowledge/context/fts" \
+  --data-urlencode 'q="sorcery family" -deprecated' \
+  --data-urlencode "scope=ontology" \
+  --data-urlencode "scope_id=$ONTOLOGY_ID" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Standing rules
+
+Rules are the subset of notes that the assistant is expected to honour on every
+request, rather than retrieve when relevant — "always filter out test accounts",
+"prefer the `orders_v2` table". This endpoint returns the ones in force.
+
+```
+GET /knowledge/context/rules
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | query | no | — | Include this ontology's rules alongside the global ones. Omit for global rules only. |
+
+```bash
+curl -G "$BASE_URL/knowledge/context/rules" \
+  --data-urlencode "ontology_id=$ONTOLOGY_ID" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "User rules retrieved",
+  "data": {
+    "count": 1,
+    "rules": [
+      {
+        "id": "note_9a1b...",
+        "scope": "ontology",
+        "activation": "always",
+        "title": "Exclude test accounts",
+        "text": "Never include accounts whose id starts with TEST_."
+      }
+    ]
+  }
+}
+```
+
+<Tip>
+If you are building your own assistant on top of Prometheux, fetch these once
+per session and apply them to every request — that is what the built-in
+assistant does. They are the user's standing instructions, so ignoring them is
+visible to the user as the assistant forgetting what it was told.
+</Tip>
+
+## Links between notes
+
+Notes can be linked to each other and to the things they describe — a concept,
+an ontology, a data source. A link is an **edge**: a typed, directed triple of
+source node, relation, and destination node. Edges are what makes a note about
+`customer_churn` show up on that concept's Context tab.
+
+Edges are created two ways: deliberately, through the endpoint below, or
+implicitly, by writing a `[[wikilink]]` in a note's text. The distinction is
+recorded in `created_by` — a wikilink edge is tied to its text anchor and
+disappears when the link text does, while a `user` edge lives on its own.
+
+### List edges
+
+```
+GET /knowledge/context/edges
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `node_type` | query | no | — | `note`, `concept`, `ontology`, or `datasource`. |
+| `node_id` | query | no | — | The node whose edges to list. |
+
+Returns edges in both directions, so backlinks are included. With no node
+filter it returns every edge in the workspace — which is how the notes page
+draws its graph view, and more than you want for anything else.
+
+### Create an edge
+
+```
+POST /knowledge/context/edges
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `src_type`, `src_id` | body | yes | — | The source node. |
+| `dst_type`, `dst_id` | body | yes | — | The destination node. |
+| `relation` | body | no | `relates_to` | The relation name. |
+| `created_by` | body | no | `user` | `user` or `wikilink`. |
+
+```bash
+curl -X POST "$BASE_URL/knowledge/context/edges" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "src_type": "note",
+    "src_id": "note_c3d4...",
+    "dst_type": "concept",
+    "dst_id": "28b8678395e:customer_churn",
+    "relation": "describes"
+  }'
+```
+
+Creating an edge that already exists is not an error — the existing edge is
+returned with `200`, so repeating the call is safe.
+
+<Note>
+A concept node's ID is `<ontology_id>:<predicate_name>`, not the concept's UUID.
+</Note>
+
+### Delete an edge
+
+```
+DELETE /knowledge/context/edges/{edge_id}
+```
+
+### Notes attached to something
+
+Returns the active notes linked to one non-note node, in either direction —
+everything the concept Context tab shows, in a single request rather than an
+edge listing followed by a fetch per note.
+
+```
+GET /knowledge/context/attached
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `node_type` | query | yes | — | `concept`, `ontology`, or `datasource`. |
+| `node_id` | query | yes | — | The node ID. Concepts use `<ontology_id>:<predicate_name>`. |
+
+```bash
+curl -G "$BASE_URL/knowledge/context/attached" \
+  --data-urlencode "node_type=concept" \
+  --data-urlencode "node_id=28b8678395e:customer_churn" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ## Ingestion
 
 ### Ingest a file as context
 
-Parse and chunk an already-uploaded file into context notes. The file must first be uploaded via [`POST /data/files/upload`](/integrations/api-endpoints/data#upload-a-file), which returns a `disk/<name>` path to pass here.
+Parse and chunk an already-uploaded file into context notes. The file must first be uploaded via [`POST /data/files/upload`](/integrations/api-endpoints/data#upload-file), which returns a `disk/<name>` path to pass here.
 
 The ingestion pipeline extracts text, splits it into chunks, embeds each chunk, and persists them as `document_chunk` notes tied back to a shared `document_id`. If the embedding service is unavailable the file is still stored as a single un-vectorized note.
 
@@ -350,6 +510,59 @@ Each NDJSON line follows this shape:
 // Error (stream remains open; partial results may have been written)
 { "type": "error", "data": { "error": "Connection to ds_bbb timed out" } }
 ```
+
+## From notes to concepts
+
+Two read-only endpoints that help turn written knowledge into Vadalog. Neither
+creates anything: both hand back the material for a concept, which you then
+author with [`POST /concepts/{ontology_id}/save`](/integrations/api-endpoints/concepts#save-a-concept).
+
+### Extract concept candidates from a document
+
+Runs an extraction pass over a document already ingested with
+[`/knowledge/context/from-file`](#ingest-a-file-as-context) and returns the
+concepts it suggests — each with a name, a description, and the snippet it came
+from — checked against the concepts the project already has.
+
+```
+POST /knowledge/context/extract-concepts
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `document_id` | body | yes | — | The `document_id` returned by the ingestion endpoint. |
+| `ontology_id` | body | no | — | The project to check existing concepts against. |
+
+```bash
+curl -X POST "$BASE_URL/knowledge/context/extract-concepts" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "document_id": "doc_e5f6...", "ontology_id": "28b8678395e" }'
+```
+
+<Note>
+The document must be ingested first — this endpoint works from stored chunks,
+not from a file path. Extraction is an LLM pass, so expect it to take seconds,
+not milliseconds.
+</Note>
+
+### Promote a note to a concept
+
+Returns one note's text alongside the project's existing predicates, so a
+concept can be written from it with the names it should join against already in
+hand.
+
+```
+POST /knowledge/context/{note_id}/promote
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `note_id` | path | yes | — | The note's UUID. |
+| `ontology_id` | body | yes | — | The project the concept would live in. |
+
+An unknown note ID returns `404`; a note that holds nothing a concept could be
+built from returns `400`.
 
 ## Project document
 

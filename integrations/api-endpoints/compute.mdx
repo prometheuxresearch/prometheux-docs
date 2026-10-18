@@ -1,23 +1,167 @@
 ---
 title: "Compute"
-description: "Check whether a compute backend — a managed machine or a Databricks cluster — is available and reachable before running concepts against it."
+description: "Manage the compute backends concepts run on — managed machines, Databricks clusters and Snowflake compute pools — and check that a target is reachable before you use it."
 ---
 
-The Compute API verifies that a [compute](/integrations/rest-api#compute) target
-is available before you run concepts against it. It supports two backend types:
-a managed **machine** and a **Databricks** cluster. Most integrations can rely on
-the workspace default and never call this endpoint — use it when you manage
-multiple compute backends and want to pre-flight one.
+Every concept execution runs on a [compute](/integrations/rest-api#compute)
+backend. Prometheux supports three: a managed **machine** (a pod Prometheux runs
+for you), a **Databricks** cluster in your own workspace, and a **Snowflake**
+compute pool when the platform is deployed inside Snowflake. This page covers
+the whole lifecycle — listing what exists, starting and stopping it, and
+checking that a target is ready.
+
+Most integrations never need any of this: the workspace has a default compute
+target and the concept endpoints use it automatically. Reach for these endpoints
+when you manage several backends, when you want to start a machine before a
+batch of runs, or when you are wiring Prometheux into your own Databricks
+workspace for the first time.
 
 All paths are relative to the [base URL](/integrations/rest-api#base-url) and
 require [authentication](/integrations/api-endpoints/authentication). All
 responses use the standard [envelope](/integrations/rest-api#response-envelope).
 
+## Managed machines
+
+A machine is a compute pod Prometheux provisions and bills per minute of
+uptime. The catalog lists the sizes available to your organization; your list is
+the subset you have adopted, each of which can be started ("active") or stopped.
+
+### List machines
+
+Returns the catalog of available machine types together with the machines you
+have already adopted, both enabled and disabled. This is the endpoint to call
+first — every other machine endpoint takes an ID that comes from here.
+
+```
+GET /machines/machines-combined
+```
+
+A lighter variant, `GET /machines/user-machines`, returns only your enabled
+machines. Use it for a status indicator that does not need the catalog.
+
+```bash
+curl "$BASE_URL/machines/machines-combined" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+<Note>
+Two different IDs appear in machine responses and they are not interchangeable.
+`machine_id` identifies a machine *type* in the catalog; `user_machine_id`
+identifies *your* instance of it. Adoption takes a `machine_id`; everything
+afterwards — starting, stopping, status, usage, removal — takes a
+`user_machine_id`.
+</Note>
+
+### Adopt a machine
+
+Adds a catalog machine to your list. If you previously removed this machine, its
+usage history is restored rather than started fresh.
+
+```
+POST /machines/user-machines/use
+```
+
+| Parameter | In | Required | Description |
+|---|---|---|---|
+| `machine_id` | body | yes | Catalog machine ID to adopt. |
+| `machine_name` | body | no | Label for your own reference. |
+
+```bash
+curl -X POST "$BASE_URL/machines/user-machines/use" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "machine_id": "machine-uuid-123", "machine_name": "batch runs" }'
+```
+
+### Start or stop a machine
+
+Starting a machine boots the pod; stopping it shuts the pod down and stops the
+billing clock. Concepts can only run against an active machine.
+
+```
+PATCH /machines/user-machines/toggle-active
+```
+
+| Parameter | In | Required | Description |
+|---|---|---|---|
+| `user_machine_id` | body | yes | Your machine instance ID. |
+| `is_active` | body | yes | `true` to start, `false` to stop. |
+| `autotermination_minutes` | body | no | Stop the machine automatically after this many idle minutes. |
+
+```bash
+curl -X PATCH "$BASE_URL/machines/user-machines/toggle-active" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "user_machine_id": "um-uuid-456", "is_active": true, "autotermination_minutes": 30 }'
+```
+
+<Warning>
+Starting a machine consumes paid compute. If your plan does not cover it, this
+endpoint returns `402 Payment Required` rather than starting the pod. Set
+`autotermination_minutes` when you start a machine from an automated job — a
+machine nobody stops keeps billing.
+</Warning>
+
+### Check machine status
+
+Returns the live pod status for one of your machines. Starting is not
+instantaneous, so poll this after a toggle until the status settles.
+
+```
+GET /machines/user-machines/{user_machine_id}/status
+```
+
+A machine reaches a terminal status of `started`, `stopped` or `crashed`;
+anything else means the transition is still in flight.
+
+```bash
+curl "$BASE_URL/machines/user-machines/um-uuid-456/status" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Stream machine status
+
+For a UI that shows a machine booting, polling is wasteful. This WebSocket
+pushes status updates as they happen and closes once the machine reaches a
+terminal status.
+
+
+```
+WS /machines/user-machines/{user_machine_id}/status/ws
+```
+
+Authentication is by query parameter, since browsers cannot set headers on a
+WebSocket handshake: pass your Prometheux token as `token`, and, when your
+deployment uses Supabase auth, the Supabase JWT as `x_supabase_token`.
+
+```
+wss://$HOST/api/v1/machines/user-machines/um-uuid-456/status/ws?token=$TOKEN
+```
+
+### Machine usage and cost
+
+Returns total uptime minutes, the current session if the machine is running, and
+recent sessions — the basis of what you are billed for this machine.
+
+```
+GET /machines/user-machines/{user_machine_id}/usage
+```
+
+### Remove a machine
+
+Removes a machine from your list. The removal is soft: the machine is marked
+disabled and its usage history is preserved, so adopting it again later picks up
+where you left off.
+
+```
+DELETE /machines/user-machines/{user_machine_id}
+```
+
 ## Check availability
 
-Check a single compute target. Provide exactly one of `machine_configs` or
-`databricks_configs` inside the `compute` object — supplying neither returns a
-`400`.
+Check that a single compute target is ready before running concepts against it.
+Provide exactly one of `machine_configs` or `databricks_configs` inside the
+`compute` object — supplying neither returns a `400`.
 
 ```
 POST /compute/availability
@@ -106,3 +250,231 @@ the message names the unmet condition (cluster not running, or Prometheux not
 installed). An unavailable machine target returns `400`; an unreachable
 Databricks target returns `503`.
 </Note>
+
+## Databricks compute session
+
+Passing full `databricks_configs` on every request gets tedious, and the
+[AI assistant](/platform/ai-assistant) and [MCP tools](/integrations/mcp/overview)
+cannot see a config that only lives in your browser. The session endpoints store
+one Databricks config server-side for your user, which every later call then
+uses by default.
+
+The config is held in memory only — nothing is written to disk, and it is gone
+when the backend process restarts.
+
+
+### Set the session config
+
+Replaces the stored config wholesale. Any field you omit is cleared, which is
+what you want when the caller (the settings page) holds the complete truth.
+
+```
+POST /compute/databricks/session
+```
+
+| Field (inside `databricks_configs`) | Required | Description |
+|---|---|---|
+| `host` | yes | Workspace hostname or URL. |
+| `auth_mode` | yes | `"token"` or `"oauth2"`. |
+| `token` | conditional | Personal access token — for `token` auth. |
+| `client_id`, `client_secret` | conditional | For `oauth2` auth. |
+| `cluster_id` | no | Cluster concepts run on. Required before anything can actually execute. |
+| `catalog`, `schema`, `volume` | no | Unity Catalog location of the Prometheux JAR. |
+| `jar_file_name` | no | JAR file name within that volume. |
+
+```bash
+curl -X POST "$BASE_URL/compute/databricks/session" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "databricks_configs": {
+      "host": "dbc-12345678.cloud.databricks.com",
+      "auth_mode": "token",
+      "token": "dapi...",
+      "cluster_id": "0712-...-abcd"
+    }
+  }'
+```
+
+The response echoes the stored config with credentials masked, plus
+`is_complete` and a `missing_fields` list naming what still has to be supplied
+before concepts can run.
+
+### Update credentials only
+
+Merges credential fields into the stored config instead of replacing it. This is
+what the assistant's secure credential form submits: it knows the credential and
+nothing else, so a submission must not wipe the cluster or JAR location already
+configured. Only `auth_mode`, `token`, `client_id`, `client_secret` and `host`
+are accepted; anything else in the body is ignored.
+
+```
+POST /compute/databricks/session/credentials
+```
+
+At least one of `token`, `client_id` or `client_secret` is required. If you omit
+`auth_mode`, it is inferred from which credential you sent.
+
+<Note>
+Credentials sent here never enter the conversation, the model's context, or the
+chat history — that is the reason this endpoint exists separately from the chat
+API.
+</Note>
+
+### Read or clear the session config
+
+```
+GET /compute/databricks/session
+DELETE /compute/databricks/session
+```
+
+`GET` returns the config you stored, along with `is_configured`, `is_complete`
+and `missing_fields`, so a settings page can restore its own state. `DELETE`
+forgets the config and reports whether there was one to forget.
+
+<Warning>
+Unlike the two `POST` responses, which mask them, the `GET` response contains
+your Databricks credentials as you supplied them. Treat it as a secret: do not
+log it, cache it in a browser, or pass it on to anywhere the rest of your
+credentials would not go.
+</Warning>
+
+## Databricks workspace
+
+These endpoints operate on your Databricks workspace itself — they are what the
+compute settings page calls while you set up a cluster. Each accepts the same
+authentication fields (`host`, `auth_mode`, and either `token` or
+`client_id`/`client_secret`); when a Databricks compute session is stored, they
+fall back to it.
+
+### Clusters
+
+```
+GET    /databricks/clusters
+GET    /databricks/clusters/{cluster_id}
+POST   /databricks/clusters/start
+POST   /databricks/clusters/stop
+POST   /databricks/clusters/restart
+```
+
+Listing and detail take the authentication fields as query parameters. The
+lifecycle endpoints take a JSON body with `clusterId` plus the authentication
+fields.
+
+```bash
+curl "$BASE_URL/databricks/clusters?host=dbc-12345678.cloud.databricks.com&auth_mode=token&token=dapi..." \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```bash
+curl -X POST "$BASE_URL/databricks/clusters/start" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clusterId": "0712-...-abcd",
+    "host": "dbc-12345678.cloud.databricks.com",
+    "auth_mode": "token",
+    "token": "dapi..."
+  }'
+```
+
+Two further read-only endpoints, `GET /databricks/clusters/node-types` and
+`GET /databricks/clusters/spark-versions`, list what the workspace offers when
+you create a cluster, and `GET /databricks/clusters/{cluster_id}/libraries`
+lists what is installed on one.
+
+### Unity Catalog
+
+Prometheux stores its reasoner JAR in a Unity Catalog volume, so these endpoints
+exist to create that location if it does not already exist.
+
+```
+GET    /databricks/catalogs
+POST   /databricks/catalogs
+GET    /databricks/catalogs/{catalog_name}/schemas
+POST   /databricks/catalogs/{catalog_name}/schemas
+GET    /databricks/catalogs/{catalog_name}/schemas/{schema_name}/tables
+GET    /databricks/volumes
+POST   /databricks/volumes
+```
+
+`GET /databricks/volumes` requires `catalog_name` and `schema_name` query
+parameters. `POST /databricks/volumes` takes `catalogName`, `schemaName` and
+`name` in the body, and will create the catalog and schema for you if they are
+missing.
+
+### Install Prometheux on a cluster
+
+Stages the Prometheux reasoner JAR into a Unity Catalog volume and installs it
+as a cluster library. A cluster cannot run concepts until this succeeds.
+
+```
+POST /databricks/install-prometheux
+POST /databricks/uninstall-prometheux
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `cluster_id` | body | yes | — | Target cluster. |
+| `host` | body | yes | — | Workspace hostname. |
+| `auth_mode` | body | no | `token` | `"token"` or `"oauth2"`. |
+| `token` | body | conditional | — | Required for `token` auth. |
+| `client_id`, `client_secret` | body | conditional | — | Required for `oauth2` auth. |
+| `catalog` | body | no | `prometheux_workspace` | Catalog holding the JAR volume. |
+| `schema` | body | no | `default` | Schema holding the JAR volume. |
+| `volume` | body | no | `spark_jars` | Volume the JAR is staged into. |
+
+```bash
+curl -X POST "$BASE_URL/databricks/install-prometheux" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cluster_id": "0712-...-abcd",
+    "host": "dbc-12345678.cloud.databricks.com",
+    "auth_mode": "token",
+    "token": "dapi..."
+  }'
+```
+
+
+<Note>
+Installing a library restarts the cluster, and the install is only complete once
+the cluster is running again. Poll
+[`POST /compute/availability`](#check-availability) until it reports the cluster
+running with Prometheux installed.
+</Note>
+
+## Snowflake compute pools
+
+When Prometheux is deployed as a Snowflake Native App, compute is a Snowpark
+Container Services compute pool. These endpoints are only available in that
+deployment — everywhere else they return `403`.
+
+```
+GET    /snowflake/compute/pools
+POST   /snowflake/compute/pools
+POST   /snowflake/compute/pools/resume
+POST   /snowflake/compute/pools/suspend
+DELETE /snowflake/compute/pools/{pool_name}
+GET    /snowflake/compute/pools/{pool_name}/status
+POST   /snowflake/compute/switch
+```
+
+Creating a pool takes `instance_family` in the body; resume, suspend and switch
+take `pool_name`.
+
+```bash
+curl -X POST "$BASE_URL/snowflake/compute/pools/resume" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "pool_name": "prometheux_pool_m" }'
+```
+
+<Warning>
+`POST /snowflake/compute/switch` repoints the platform at a different pool and
+restarts the service — expect the connection to drop and clients to reconnect.
+
+Pool operations need privileges the application itself may not hold. When one
+does not, the response is a `403` whose `data` carries the SQL an `ACCOUNTADMIN`
+has to run to grant it, rather than an opaque failure.
+</Warning>

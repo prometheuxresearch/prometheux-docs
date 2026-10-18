@@ -1,53 +1,18 @@
 ---
 title: "Vadalingo"
-description: "Translate natural language, SQL, RDF, and OWL ontologies into Vadalog programs."
+description: "Translate SQL queries, RDF data, and OWL ontologies into Vadalog programs."
 ---
 
-Vadalingo is the translation layer that converts natural language descriptions, SQL queries, RDF data, and OWL ontologies into executable Vadalog rules. All paths are relative to the [base URL](/integrations/rest-api#base-url) and require [authentication](/integrations/api-endpoints/authentication). All responses use the standard [envelope](/integrations/rest-api#response-envelope).
+Vadalingo is the translation layer that converts SQL queries, RDF data, and OWL ontologies into executable Vadalog rules. All paths are relative to the [base URL](/integrations/rest-api#base-url) and require [authentication](/integrations/api-endpoints/authentication). All responses use the standard [envelope](/integrations/rest-api#response-envelope).
 
-## Natural language → Vadalog
+<Note>
+Vadalingo is **deterministic**: each endpoint is a structural translation of a
+formal input. There is no natural-language endpoint — free-text descriptions are
+turned into Vadalog by the [AI agent](/integrations/api-endpoints/agent), which
+authors the concept inline and checks it with `validate_concept`.
+</Note>
 
-Translate a free-text description into a Vadalog program. The endpoint automatically loads every concept schema in the project to guide translation. Tag specific concepts with `@concept_name` in `domain_knowledge` to restrict context to only those schemas.
-
-```
-POST /vadalingo/{ontology_id}/translate/nl-to-vadalog
-```
-
-| Parameter | In | Required | Default | Description |
-|---|---|---|---|---|
-| `ontology_id` | path | yes | — | The ontology ID. |
-| `domain_knowledge` | body | yes | — | Natural language description to translate. Reference a specific concept's schema with `@concept_name` (e.g. `"find all @owner records"`). |
-
-### Example
-
-```bash
-curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/nl-to-vadalog" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "domain_knowledge": "find all companies and their @owner for each location"
-  }'
-```
-
-```jsonc
-{
-  "status": "success",
-  "message": "Natural language to Vadalog translation completed successfully",
-  "data": {
-    "domain_knowledge": "find all companies and their @owner for each location",
-    "vadalog_program": "@output(\"result\").\nresult(C, O, L) :- company(C, L), owner(C, O).",
-    "project_id": "proj_123",
-    "concepts_used": ["owner"],
-    "concepts_source": "tagged"
-  }
-}
-```
-
-<Tip>
-If no `@` tags are present, all concept schemas in the project are passed as context. Tag specific concepts when you want to constrain the translation or when the project has many concepts and precision matters.
-</Tip>
-
-## SQL → Vadalog
+## SQL to Vadalog
 
 Translate a SQL query into an equivalent Vadalog program.
 
@@ -83,7 +48,7 @@ curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/sql-to-vadalog" \
 }
 ```
 
-## RDF → Vadalog
+## RDF to Vadalog
 
 Translate RDF triples into Vadalog rules.
 
@@ -119,7 +84,7 @@ curl -X POST "$BASE_URL/vadalingo/$PROJECT_ID/translate/rdf-to-vadalog" \
 }
 ```
 
-## OWL → Vadalog
+## OWL to Vadalog
 
 Translate an OWL ontology into Vadalog rules. Accepts RDF/XML, Turtle, N3, and N-Triples serializations. When `data_base_path` is provided, Parquet datasets are written under `disk/` and `@bind` annotations are injected into the output program. When `add_concepts` is `true`, the resulting program is saved as a new concept named `owl_to_vadalog` in the project (overwriting any existing concept with that name).
 

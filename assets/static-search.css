@@ -18,7 +18,11 @@
 
 .px-search-panel {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(680px, calc(100vw - 32px));
+  max-height: 82vh;
+  max-height: 82dvh;
   margin: 9vh auto 0;
   background: #ffffff;
   color: inherit;
@@ -70,4 +74,30 @@ html[data-theme='dark'] .pagefind-ui {
 
 .pagefind-ui__result-link {
   color: var(--px-search-primary);
+}
+
+/* Results scroll inside the panel. The page behind is scroll-locked while the
+   modal is open, so without this the result list simply grows past the bottom
+   of the screen and everything below the fold is unreachable.
+   Pagefind's own stylesheet is appended to <head> after this file, and its rules
+   are class+class (0,2,0) — these have to be id-scoped to win. */
+#px-search-modal #px-search-host,
+#px-search-modal .pagefind-ui,
+#px-search-modal .pagefind-ui__form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#px-search-modal .pagefind-ui__search-input {
+  flex: 0 0 auto;
+}
+
+#px-search-modal .pagefind-ui__drawer {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }

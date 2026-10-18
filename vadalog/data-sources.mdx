@@ -105,7 +105,7 @@ Prometheux supports CSV files as data source, both for reading and writing.
 
 The default CSV binding (`"csv"`) is thus suitable for processing big CSV files.
 It does not make a guess about the input schema. Therefore, if no schema
-([@mapping](/vadalog/annotations#mapping)) is provided, all fields are treated as
+([@mapping](/vadalog/annotations#@mapping)) is provided, all fields are treated as
 strings. Values `\N` are treated as `null` values and interpreted as [Labelled
 Nulls](/vadalog/language-primitives#labelled-nulls) while reading the CSV file.
 
@@ -1465,7 +1465,7 @@ For a Cypher pattern to line up with relational tables / files, name things as f
 | Relationship type `[:KNOWS]` | a table `knows` (lower-cased) with `src` and `dst` columns |
 | Node or relationship property `p.age` | a column `age` by the same name |
 
-The field names used in Cypher must match a CSV header or a table column — if there is no corresponding name, the query errors with `column not found`. Use [`@mapping`](/vadalog/annotations#mapping) to alias source columns into this layout when the underlying schema does not match.
+The field names used in Cypher must match a CSV header or a table column — if there is no corresponding name, the query errors with `column not found`. Use [`@mapping`](/vadalog/annotations#@mapping) to alias source columns into this layout when the underlying schema does not match.
 
 #### A representative example
 
@@ -3093,7 +3093,7 @@ In the default distributed mode each part file is a **complete, standalone docum
 
 ### Row-to-RDF modes
 
-How each row becomes triples is driven by the [`@model`](/vadalog/annotations#model) annotation and the `mode` option:
+How each row becomes triples is driven by the [`@model`](/vadalog/annotations#@model) annotation and the `mode` option:
 
 - **`entity`** (default) — each row is one subject. The subject IRI is minted from the primary-key column; the writer emits an `rdf:type` triple to the concept's class plus one triple per non-null column (`<base><predicate>`), typed with the appropriate `xsd:` datatype. Declared superclasses become `rdfs:subClassOf` and the `@model` description becomes an `rdfs:comment`.
 - **`triple`** — each row is one relationship triple `<from> <predicate> <to>`. The subject and object classes and the source/target id columns come from a **triple `@model`** (see below). This mode is selected **automatically** when the `@model` declares a triple; set `mode='triple'` explicitly only to override.

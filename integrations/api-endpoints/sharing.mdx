@@ -83,7 +83,7 @@ curl "$BASE_URL/ontologies/share/list" \
 `data` is an array of share objects (`share_id`, `project_id`, `share_role`,
 `status`, recipient identity, and timestamps).
 
-### Update a share's role
+### Update the role on a share
 
 Change a share between `viewer` and `editor` in place — the recipient is not
 forced to re-accept. Updating to the role it already has is a no-op that returns
@@ -251,3 +251,68 @@ curl -X POST "$BASE_URL/ontologies/share/sync" \
   "data": { "pruned": 1, "active": 3 }
 }
 ```
+
+## Warehouse tables
+
+Sharing an ontology shares the concepts. These endpoints share the **stored
+tables** underneath — a directory or table in your own warehouse area — with
+another user, by granting them access on the storage itself.
+
+Reach for this when someone needs to read your materialized output directly
+from their own tools, rather than through your ontology. For sharing individual
+uploaded files instead, see
+[file sharing](/integrations/api-endpoints/data#file-sharing).
+
+### Share a table
+
+```
+POST /warehouse/share
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | body | yes | — | Path relative to your own warehouse area (e.g. `revenue_by_region`). |
+| `grantee` | body | yes | — | `{ "username": …, "organization": … }`. |
+| `permissions` | body | no | `r-x` | `r-x` for read, `rwx` for read and write. |
+
+```bash
+curl -X POST "$BASE_URL/warehouse/share" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "revenue_by_region",
+    "grantee": { "username": "analyst", "organization": "acme" },
+    "permissions": "r-x"
+  }'
+```
+
+### Unshare a table
+
+Takes `path` and `grantee` and removes that grantee's access.
+
+```
+POST /warehouse/unshare
+```
+
+### Inspect access
+
+Returns the access list currently in force on a path.
+
+```
+GET /warehouse/acl
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | query | no | `""` | Path relative to your warehouse area. Empty means its root. |
+
+```bash
+curl -G "$BASE_URL/warehouse/acl" \
+  --data-urlencode "path=revenue_by_region" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+<Note>
+All three resolve `path` under **your own** area, so you cannot share, revoke,
+or inspect data you do not own — the authenticated caller is always the owner.
+</Note>

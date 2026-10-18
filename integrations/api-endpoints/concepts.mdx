@@ -76,6 +76,28 @@ curl "$BASE_URL/concepts/$PROJECT_ID/list" \
 `data` is an array of concept objects (name, type, definition, binds,
 output predicate, description, group, and position).
 
+## Get one concept
+
+Return the same enriched object as `/list`, for a single concept. Use it when
+you already know the name and do not want to pull the whole project.
+
+```
+GET /concepts/{ontology_id}/concept
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | path | yes | — | The ontology ID. |
+| `concept_name` | query | yes | — | Predicate name of the concept. |
+
+```bash
+curl -G "$BASE_URL/concepts/$PROJECT_ID/concept" \
+  --data-urlencode "concept_name=transitive_suppliers" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+A name that does not exist in the project returns `404`.
+
 ## Run a concept
 
 Execute a concept and its dependency chain. The engine runs at most one job at
@@ -137,26 +159,173 @@ WebSocket variant, `/concepts/{ontology_id}/run-stream/{concept_name}`, streams
 per-concept progress frames if you need live updates.
 </Tip>
 
-## Fetch concept results
+## Freeze a concept
 
-Read the persisted rows of an output predicate, with pagination.
+Freeze a concept so no run rebuilds it, or unfreeze it again. A frozen concept
+keeps whatever output it last produced: nothing re-derives it while it is
+reached as a dependency of something else, so the concepts below it are not
+rebuilt either. Running it directly still builds it — freezing says "do not
+rebuild this on the way to something else", not "never build this".
+
+Use it for a concept whose inputs are gone or unreliable, one expensive enough
+that its consumers should reuse the last result, or one holding a result that
+must not move while work continues around it.
 
 ```
-GET /concepts/{ontology_id}/fetch
+POST /concepts/{ontology_id}/refresh-mode
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
-| `output_predicate` | query | yes | — | The predicate to read. |
-| `params` | query | no | `{}` | JSON string of parameter values. |
-| `page` | query | no | `1` | [Page](/integrations/rest-api#pagination) number. |
-| `page_size` | query | no | `30` | Rows per page (max `1000`). |
-| `order_by` | query | no | — | e.g. `0:asc,2:desc`. |
+| `concept_name` | body | yes | — | The concept to freeze or unfreeze. |
+| `refresh_mode` | body | yes | — | `"checkpoint"` to freeze, `"default"` to unfreeze. |
 
 ```bash
-curl "$BASE_URL/concepts/$PROJECT_ID/fetch?output_predicate=location&page=1&page_size=30" \
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/refresh-mode" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "concept_name": "supplier_snapshot", "refresh_mode": "checkpoint" }'
+```
+
+This endpoint sets only the freeze flag — the definition, the populated flag and
+everything else are left alone. A freeze is honoured by `run_mode: "auto"` and
+overridden by `run_mode: "all"`.
+
+<Note>
+A freeze holds against the world moving underneath a concept, not against the
+concept itself changing. Editing the definition, or running with different
+`params`, breaks it: the stored table would otherwise be served in place of one
+it is not a substitute for.
+</Note>
+
+## Check freshness
+
+Ask whether each concept's stored output still reflects its sources — judged
+against the sources **as they are right now**, not against what was last
+recorded. It answers "would a run rebuild this?" without paying for the run.
+
+```
+GET /concepts/{ontology_id}/freshness/check
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | path | yes | — | The ontology ID. |
+| `concept_name` | query | no | all | Check only this concept and its own chain. |
+| `params` | query | no | — | JSON object of run parameters to judge against (see below). |
+| `run_mode` | query | no | — | The run mode you intend to use: `single`, `auto`, or `all`. |
+
+```bash
+curl -G "$BASE_URL/concepts/$PROJECT_ID/freshness/check" \
+  --data-urlencode "concept_name=transitive_suppliers" \
+  --data-urlencode 'params={"min_tier":2}' \
   -H "Authorization: Bearer $TOKEN"
+```
+
+`data` is a map keyed by concept name:
+
+```jsonc
+{
+  "status": "success",
+  "message": "Freshness checked successfully",
+  "data": {
+    "transitive_suppliers": {
+      "state": "stale",
+      "reason": "source_moved",
+      "tier": "exact",
+      "last_run_at": "2026-09-20T11:04:00+00:00",
+      "fingerprint": "…"
+    }
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `state` | `fresh`, `stale`, or `unknown`. |
+| `reason` | Why: `matches`, `never_run`, `interrupted`, `source_moved`, `logic_changed`, `params_changed`, `upstream_changed`, `output_moved`, `non_deterministic`, `weak_evidence`, or `not_observed`. |
+| `tier` | How trustworthy the evidence is: `exact`, `heuristic`, or `unknown`. The weakest input governs the verdict. |
+
+<Note>
+`unknown` is an honest answer, not a failure: the output matches what was
+recorded, but at least one source cannot be trusted to have noticed a change.
+
+Supplying `params` changes the question. Without it, each concept is judged
+under the arguments its *own last run* used — which describes the stored
+artifact. With it, each is judged under *these* arguments — which is what a run
+would decide. For a parametric concept only the second form is meaningful: rows
+built at one threshold are not an answer about another.
+</Note>
+
+<Warning>
+Unlike `/list`, this endpoint contacts your data sources — one batched metadata
+call per project, or per chain when `concept_name` is given. It writes nothing,
+so it is safe to call, but do not put it on a poll loop the way you would
+`/list`.
+</Warning>
+
+The two companion endpoints, `POST /concepts/{ontology_id}/freshness/record` and
+`POST /concepts/{ontology_id}/freshness/invalidate`, exist for one caller: a
+recipient of a filesystem share, whose run computes on its own compute but
+writes the owning project's tables. They bracket such a write so the owner's
+record does not describe rows a recipient overwrote. Ordinary integrations never
+call them — a normal run keeps its own record.
+
+## Fetch concept results
+
+Read the persisted rows of an output predicate. This is the single endpoint for
+all reads: paging, ordering, free-text search, and per-column filtering are all
+optional and combine in one request. It reads already-materialized results and
+never recomputes — run the concept first.
+
+```
+POST /concepts/{ontology_id}/fetch
+```
+
+`output_predicate` is a query parameter; everything else goes in the JSON body.
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | path | yes | — | The ontology ID. |
+| `output_predicate` | query | yes | — | The predicate to read. |
+| `params` | body | no | `{}` | Object of exact-match `column: value` pairs. |
+| `search_term` | body | no | — | Free-text term OR-matched across all columns. |
+| `column_filters` | body | no | — | Array of column filters, AND-combined. See below. |
+| `page` | body | no | `1` | [Page](/integrations/rest-api#pagination) number. |
+| `page_size` | body | no | `30` | Rows per page, `1`–`1000`. |
+| `order_by` | body | no | — | String, e.g. `"0:asc,2:desc"`. |
+| `total_count` | body | no | — | A row count you already know, to skip the `COUNT(*)`. Ignored on any filtered read. |
+| `compute` | body | no | — | [Compute](/integrations/rest-api#compute) target. |
+
+**Column filters**
+
+Each entry is `{ "position": <0-based column index>, "operator": <operator>,
+"value": <string or array of strings> }`. `operator` defaults to `contains`:
+
+| Operator | Matches |
+|---|---|
+| `contains`, `starts_with`, `ends_with` | Case-insensitive substring / prefix / suffix. |
+| `equals`, `not_equals` | Exact equality. `in` and `not_in` are accepted as aliases. |
+| `greater_than`, `less_than`, `greater_than_or_equal`, `less_than_or_equal` | Ordered comparison — numeric for numeric values, lexicographic otherwise. |
+| `is_null`, `is_not_null` | Null checks. These take no `value`. |
+
+Filters are AND-combined. To OR several values on one column, pass an **array**
+as `value` (`"any of"`) rather than repeating the filter.
+
+### Example
+
+```bash
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/fetch?output_predicate=location" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "search_term": "CA",
+    "column_filters": [{ "position": 0, "operator": "starts_with", "value": ["Mountain", "Redmond"] }],
+    "page": 1,
+    "page_size": 30,
+    "order_by": "0:asc"
+  }'
 ```
 
 ```jsonc
@@ -172,30 +341,62 @@ curl "$BASE_URL/concepts/$PROJECT_ID/fetch?output_predicate=location&page=1&page
 }
 ```
 
-## Search concept results
+<Note>
+`/fetch` used to be a `GET` with query-string parameters, alongside a separate
+`POST /concepts/{ontology_id}/search` for filtered reads. Both were replaced by
+this single `POST`. Move `page`, `page_size`, `order_by`, and `params` out of the
+query string and into the JSON body; `output_predicate` stays in the query string.
+</Note>
 
-Filter the rows of an output predicate by a search term and/or per-column
-filters. Same pagination as [`/fetch`](#fetch-concept-results).
+## Query a concept with SQL
+
+Run a single read-only SQL `SELECT` over one populated concept — for aggregates,
+`GROUP BY`, and joins against the concept's own rows that `/fetch` cannot express.
+Reference the concept by name in `FROM`. A row cap is always enforced, and the
+concept must already exist and be populated.
 
 ```
-POST /concepts/{ontology_id}/search
+POST /concepts/{ontology_id}/query
 ```
 
 | Parameter | In | Required | Default | Description |
 |---|---|---|---|---|
 | `ontology_id` | path | yes | — | The ontology ID. |
-| `output_predicate` | query | yes | — | The predicate to search. |
-| `search_term` | body | no | — | Free-text term matched across columns. |
-| `column_filters` | body | no | — | Array of `{ "position": <col index>, "value": <string> }`. |
+| `concept_name` | body | yes | — | The concept to query. |
+| `sql` | body | yes | — | A single read-only `SELECT` or `WITH` statement. |
+| `compute` | body | no | — | [Compute](/integrations/rest-api#compute) target. |
 
 ```bash
-curl -X POST "$BASE_URL/concepts/$PROJECT_ID/search?output_predicate=location" \
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/query" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "search_term": "CA", "column_filters": [{ "position": 0, "value": "Mountain" }] }'
+  -d '{
+    "concept_name": "location",
+    "sql": "SELECT state, COUNT(*) AS n FROM location GROUP BY state ORDER BY n DESC"
+  }'
 ```
 
-The response shape matches [`/fetch`](#fetch-concept-results).
+## Find similar concepts
+
+Semantic search across every concept in every project you can access — used to
+find reuse candidates before authoring something new.
+
+```
+GET /concepts/search-similar
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `query` | query | yes | — | Free-text description of the concept you are looking for. |
+| `top_k` | query | no | server default | Maximum number of matches. |
+| `exclude_project_id` | query | no | — | A project to leave out of the search. |
+
+```bash
+curl "$BASE_URL/concepts/search-similar?query=supplier%20risk%20score" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+`data` is `{ "count": <n>, "matches": [ ... ] }`.
 
 ## Rename a concept
 
@@ -317,3 +518,4 @@ its last run succeeded).
 | Ask a question over predicate data | `POST /concepts/{ontology_id}/llm` | Body: `predicate_names`/`predicate_data`, `question`. Returns `{ "response": "..." }`. |
 | Export results to CSV / download a file | `GET /concepts/{ontology_id}/download` | Query: `path`, `export_csv`, `concept_name`. Returns the raw file, not the envelope. |
 | Delete concepts | `POST /concepts/{ontology_id}/cleanup` | Body: `concept_names` (omit to delete all). |
+| Check whether a share grants filesystem access | `GET /concepts/{ontology_id}/share-warehouse` | Returns `{ "filesystem_shared": bool }` for the calling recipient. Read by the [share](/integrations/api-endpoints/sharing) layer; `false` when you are not a live recipient of the project. |
