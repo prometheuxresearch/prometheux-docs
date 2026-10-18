@@ -220,6 +220,10 @@ and `--expect-csv` gives the rows it must produce.
 | `--save-vada FILE` | Write the generated program to this file (with `--question`). |
 | `--json` | Print the full reports as JSON, including the rows each predicate produced. |
 | `--junit-xml FILE` | Also write a JUnit XML report, for CI. |
+| `-j, --jobs N` | Cases to run at the same time. Default 1, or one more than `--replicas`. Results are still printed in case order. |
+| `--replicas N\|auto` | Run `N` [engine workers](#running-a-suite-in-parallel) beside your machine while the suite runs, and remove them afterwards. `auto` picks one per 10 cases, up to your limit. |
+| `--replicas-timeout SECONDS` | How long to wait for the workers to be ready (default 600). A new worker often needs a new node, which takes a few minutes. |
+| `--keep-replicas` | Leave the workers running, and billed, after the suite. They are removed after 10 minutes without work (sooner if your machine's auto-termination is shorter), or when the machine stops. |
 
 **How rows are compared:**
 
@@ -237,6 +241,7 @@ px test tc.vada --expect tc=tc.csv
 px test tc.vada --expect tc=tc.csv --expect reachable=reachable.csv --mode contains
 px test --question "Transitive closure of edge(X,Y). Output as tc." --expect-csv tc.csv
 px test tests/ --junit-xml report.xml
+px test tests/ --replicas 2
 ```
 
 ```text
@@ -270,6 +275,29 @@ expect:
 A `question` case may also set `context`, and may give `expect` as a single CSV or list of
 rows. Those rows are checked against `expect_predicate`, or the generated program's last
 `@output` when it is not set.
+
+### Running a suite in parallel
+
+`--jobs` sends several cases to your machine at once. `--replicas` goes further: it starts
+**engine workers**, extra copies of the reasoning engine next to your running machine, and
+the platform sends each case to whichever engine is least busy, your machine included.
+When the suite ends (or fails, or you press Ctrl-C) the workers are removed.
+
+```bash
+px test tests/ --replicas 2            # 2 workers, 3 cases at a time
+px test tests/ --replicas auto -j 8    # workers picked from the number of cases
+```
+
+- Workers take time to start: up to a few minutes when they need new nodes, and their
+  first evaluations are slower while the engine warms up. For a small suite,
+  `--jobs` alone is usually faster.
+- Workers only run test evaluations. Concept runs, apps and everything else stay on your
+  machine.
+- You can run up to 4 workers. Each worker is a node the size of your machine and is
+  billed at your machine's hourly rate, from when `px test` asks for it until it is
+  removed. Worker time appears on your invoice under your machine. `px test` prints the
+  hourly cost when the workers start. Free minutes don't apply to workers.
+- If the workers aren't ready within `--replicas-timeout`, `px test` exits with code 2.
 
 ## `px search <concepts\|company>`
 
