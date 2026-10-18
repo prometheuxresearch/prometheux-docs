@@ -57,7 +57,7 @@ def test_reachability_includes_known_pairs():
   same number of times. `contains` passes when every expected row is produced, whatever
   else is.
 - **Values.** They are compared by meaning rather than spelling: `2`, `"2"` and `2.0` are
-  equal, and so are `True` and `"true"`. Expected CSVs have no header unless you pass
+  equal, and so are `True`, `"true"` and Vadalog's `#T`. Expected CSVs have no header unless you pass
   `header=True`.
 - **Inputs.** `params` and `compute` are passed to the evaluation as in `evaluate_program`.
 
