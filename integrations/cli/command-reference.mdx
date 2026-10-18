@@ -223,7 +223,7 @@ and `--expect-csv` gives the rows it must produce.
 | `-j, --jobs N` | Cases to run at the same time. Default 1, or one more than `--replicas`. Results are still printed in case order. |
 | `--replicas N\|auto` | Run `N` [engine workers](#running-a-suite-in-parallel) beside your machine while the suite runs, and remove them afterwards. `auto` picks one per 10 cases, up to your limit. |
 | `--replicas-timeout SECONDS` | How long to wait for the workers to be ready (default 600). A new worker often needs a new node, which takes a few minutes. |
-| `--keep-replicas` | Leave the workers running after the suite. They are removed after 10 minutes without work, or when the machine stops. |
+| `--keep-replicas` | Leave the workers running, and billed, after the suite. They are removed after 10 minutes without work (sooner if your machine's auto-termination is shorter), or when the machine stops. |
 
 **How rows are compared:**
 
@@ -293,7 +293,10 @@ px test tests/ --replicas auto -j 8    # workers picked from the number of cases
   `--jobs` alone is usually faster.
 - Workers only run test evaluations. Concept runs, apps and everything else stay on your
   machine.
-- You can run up to 4 workers. They are not billed separately at the moment.
+- You can run up to 4 workers. Each worker is a node the size of your machine and is
+  billed at your machine's hourly rate, from when `px test` asks for it until it is
+  removed. Worker time appears on your invoice under your machine. `px test` prints the
+  hourly cost when the workers start. Free minutes don't apply to workers.
 - If the workers aren't ready within `--replicas-timeout`, `px test` exits with code 2.
 
 ## `px search <concepts\|company>`

@@ -204,8 +204,8 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `set_machine_active(...)` | `PATCH /machines/user-machines/toggle-active` | Start or stop a machine; starting opens a billable session. |
 | `get_machine_status(...)` | `GET /machines/user-machines/{user_machine_id}/status` | Real-time status of one machine. |
 | `delete_user_machine(...)` | `DELETE /machines/user-machines/{user_machine_id}` | Remove a machine from your list, keeping its usage history. |
-| `set_engine_workers(replicas, idle_minutes=None)` | `PUT /machines/workers` | Run `replicas` engine workers beside the running machine (0 removes them). Up to 4; removed after `idle_minutes` (default 10) without work. |
-| `get_engine_workers()` | `GET /machines/workers` | How many workers are wanted and ready, and how evaluations are spread across the engines. |
+| `set_engine_workers(replicas, idle_minutes=None)` | `PUT /machines/workers` | Run `replicas` engine workers beside the running machine (0 removes them). Up to 4, each billed at the machine's hourly rate; removed after `idle_minutes` (default 10, never longer than the machine's auto-termination) without work. |
+| `get_engine_workers()` | `GET /machines/workers` | How many workers are wanted and ready, how evaluations are spread across the engines, and what the workers cost (`billing`). |
 | `wait_for_engine_workers(replicas, timeout=600)` | `GET /machines/workers` | Wait until `replicas` workers are ready; raises `TimeoutError` otherwise. |
 | `engine_workers(replicas, ...)` | — | Context manager: start the workers, wait for them, and remove them on exit. |
 
@@ -226,6 +226,11 @@ with px.engine_workers(2):
 ```
 
 Workers only take evaluations; concept runs and everything else stay on the machine.
+
+Each worker is a node the size of your machine and is billed at your machine's hourly
+rate, from when you ask for it until it is removed. Worker time appears on your invoice
+under your machine, and free minutes don't apply to it. Adding workers to a paid machine
+needs a payment method, just like starting the machine.
 
 ## Assistant
 

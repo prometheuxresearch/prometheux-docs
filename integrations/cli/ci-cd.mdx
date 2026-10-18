@@ -86,7 +86,7 @@ For a large suite, add `--replicas 2` (or `--replicas auto`) to the `px test` st
 starts [engine workers](/integrations/cli/command-reference#running-a-suite-in-parallel)
 beside the machine for the length of the run and removes them at the end, even when the
 job is cancelled. Give the step a few extra minutes the first time, while the workers
-start.
+start. Each worker is billed at the machine's hourly rate while it runs.
 
 ## Apply on merge to main
 
