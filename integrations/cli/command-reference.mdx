@@ -226,7 +226,9 @@ and `--expect-csv` gives the rows it must produce.
 - An expected CSV has one row per line and no header unless you pass `--header`. Blank
   lines are skipped.
 - Values are compared by meaning rather than spelling: `2`, `"2"` and `2.0` are equal, and
-  so are `true`, `True` and `"true"`. Surrounding whitespace is ignored.
+  so are `true`, `True` and Vadalog's `#T`. Surrounding whitespace is ignored.
+- A declared `@output` that derives no rows counts as empty, so an empty CSV checks that a
+  predicate produces nothing.
 - A failure lists the rows that are missing and, in `exact` mode, the rows the program
   produced but you did not expect, with the values as you wrote them.
 
