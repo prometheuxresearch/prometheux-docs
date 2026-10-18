@@ -204,9 +204,28 @@ keys). See [Config](/integrations/config) for the full list of keys.
 | `set_machine_active(...)` | `PATCH /machines/user-machines/toggle-active` | Start or stop a machine; starting opens a billable session. |
 | `get_machine_status(...)` | `GET /machines/user-machines/{user_machine_id}/status` | Real-time status of one machine. |
 | `delete_user_machine(...)` | `DELETE /machines/user-machines/{user_machine_id}` | Remove a machine from your list, keeping its usage history. |
+| `set_engine_workers(replicas, idle_minutes=None)` | `PUT /machines/workers` | Run `replicas` engine workers beside the running machine (0 removes them). Up to 4; removed after `idle_minutes` (default 10) without work. |
+| `get_engine_workers()` | `GET /machines/workers` | How many workers are wanted and ready, and how evaluations are spread across the engines. |
+| `wait_for_engine_workers(replicas, timeout=600)` | `GET /machines/workers` | Wait until `replicas` workers are ready; raises `TimeoutError` otherwise. |
+| `engine_workers(replicas, ...)` | — | Context manager: start the workers, wait for them, and remove them on exit. |
 
 `machine_id` identifies a machine in the catalogue and is only used by
 `use_machine`; `user_machine_id` identifies one already on your list.
+
+Engine workers are extra copies of the engine next to your machine. Each
+`evaluate_program` / `check_program` call goes to the least busy engine, so a test suite
+that sends evaluations in parallel finishes sooner:
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+import prometheux_chain as px
+
+with px.engine_workers(2):
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        reports = list(pool.map(lambda p: px.check_program(p, expect=expected[p]), programs))
+```
+
+Workers only take evaluations; concept runs and everything else stay on the machine.
 
 ## Assistant
 
