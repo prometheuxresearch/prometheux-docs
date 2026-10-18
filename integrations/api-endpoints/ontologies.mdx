@@ -203,8 +203,13 @@ connectors need to be reconfigured before running concepts.
 ## Export an ontology
 
 Serialize a single ontology — its concepts (structure only, not cached output
-rows), data source binds, schema, and metadata — into a portable JSON payload.
-Use `import-ontology` to restore it.
+rows), data source binds, schema, and metadata — into a JSON payload.
+
+<Note>
+To move an ontology to another account or workspace, export it as a file tree
+with [`export-tree`](#export-a-tree) instead. The app no longer imports this JSON
+payload, and [`import-ontology`](#import-an-ontology) is deprecated.
+</Note>
 
 ```
 POST /ontologies/export-ontology
@@ -243,6 +248,11 @@ must be re-run after import.
 </Note>
 
 ## Import an ontology
+
+<Warning>
+Deprecated, and will be removed in a future release. Import an ontology as a file
+tree with [`plan-tree`](#plan-a-tree) and [`apply-tree`](#apply-a-tree) instead.
+</Warning>
 
 Restore an ontology from a payload previously produced by `export-ontology`. A new
 ontology ID is assigned; data source connections are validated after import and
@@ -371,6 +381,11 @@ including concepts a colleague added through the UI since you pulled. Leave
 
 ## Export workspace
 
+<Warning>
+Deprecated, and will be removed in a future release. Export each ontology as a
+file tree with [`export-tree`](#export-a-tree) instead.
+</Warning>
+
 Export every ontology in the workspace — and all workspace-level tables — in a
 single payload. Equivalent to calling `export-ontology` for each ontology plus the
 workspace-level tables in one request. No parameters required.
@@ -403,6 +418,11 @@ curl -X POST "$BASE_URL/ontologies/export-workspace" \
 ```
 
 ## Import workspace
+
+<Warning>
+Deprecated, and will be removed in a future release. Import each ontology as a
+file tree with [`plan-tree`](#plan-a-tree) and [`apply-tree`](#apply-a-tree) instead.
+</Warning>
 
 Restore a full workspace from a payload produced by `export-workspace`. Each
 ontology is imported in turn; partial failures are tracked per-ontology in the
