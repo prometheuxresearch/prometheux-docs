@@ -43,6 +43,45 @@ jobs:
 `--strict` turns warnings into failures so a PR can't merge with, for example, a
 concept-less ontology.
 
+## Test logic on pull requests
+
+[`px test`](/integrations/cli/command-reference#px-test-target) runs Vadalog programs on the
+engine and checks the rows they produce, so a PR that changes a rule's results fails before
+it merges. Keep the programs, their `*.test.yaml` cases and the expected CSVs in the repo,
+and publish the JUnit report so the CI system shows each case:
+
+```yaml
+# .github/workflows/prometheux-test.yml
+name: Test Vadalog programs
+on:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pipx install prometheux
+      - run: px test tests/ --junit-xml reports/px-test.xml
+        env:
+          JARVISPY_URL: ${{ secrets.JARVISPY_URL }}
+          PMTX_TOKEN: ${{ secrets.PMTX_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: px-test-report
+          path: reports/px-test.xml
+```
+
+<Note>
+Unlike `validate`, `px test` needs the platform and a running compute machine. Either keep
+a machine running for CI, or start one in the job with `px compute start` and stop it in a
+final step that runs `if: always()`. A machine takes a short while to accept work after it
+starts.
+</Note>
+
 ## Apply on merge to main
 
 ```yaml
@@ -107,6 +146,7 @@ jobs:
 CI can gate on exit codes directly (see the [command reference](/integrations/cli/command-reference#exit-codes)):
 
 - `px validate` → `0` PASS, non-zero FAIL.
+- `px test` → `0` every check passed, `1` a check failed, `2` the tests could not start.
 - `px apply` → `0` on success; **non-zero if any concept was skipped** (with a summary) or
   on a hard error — so a partial apply fails the job.
 - `px plan`, `px status` → `0`.
