@@ -7,55 +7,75 @@ Connect [Genie Code](https://www.databricks.com/blog/introducing-genie-code) to 
 
 By registering Prometheux as an external MCP server, Genie Code gains the ability to list concepts, run reasoning, and query knowledge graphs — directly within the Databricks environment.
 
+Databricks registers external MCP servers as **MCP services**: Unity Catalog objects addressed as `<catalog>.<schema>.<name>`, each backed by an HTTP connection that holds the server URL and OAuth settings. See the Databricks guide to [registering external MCP servers](https://docs.databricks.com/aws/en/ai-gateway/register-mcp-service).
+
 ## Prerequisites
 
-- **Databricks workspace** with access to Genie Code
+- **Databricks workspace** with Unity Catalog and access to Genie Code
+- **Unity Catalog permissions** on the schema you register into: `USE CATALOG` on the catalog, `USE SCHEMA`, `CREATE SERVICE` and `CREATE CONNECTION` on the schema
 - **Prometheux credentials** (username, organization, API token)
 
 ## Setup
 
-Navigate to **Agents > MCPs > Register MCP Server > Register External MCP Server** in your Databricks workspace.
+In your Databricks workspace, open **MCPs**, click **+ MCP**, and choose **Connect an existing MCP server**.
 
-### Step 1 — Connection Basics
-
-| Field | Value |
-|-------|-------|
-| **Connection type** | HTTP |
-| **Auth type** | OAuth User-to-Machine Per User |
-| **OAuth provider** | Manual Configuration |
-
-### Step 2 — Authentication
+### Step 1 — Name
 
 | Field | Value |
 |-------|-------|
-| **Host** | `https://api.prometheux.ai` |
-| **Port** | `443` |
+| **Catalog** | A catalog you can create services in |
+| **Schema** | A schema in that catalog, e.g. `default` |
+| **Name** | e.g. `prometheux` — cannot be changed after creation |
+
+### Step 2 — Connection
+
+Click **Create new connection** and fill in:
+
+| Field | Value |
+|-------|-------|
+| **Server URL** | `https://api.prometheux.ai/px-remote-mcp-server/mcp` |
+| **Authentication** | OAuth U2M per-user |
+| **OAuth provider** | Manual configuration |
+| **Authorization endpoint** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/authorize` |
+| **Token endpoint** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/token` |
 | **Client ID** | `prometheux` |
 | **Client secret** | Any value (e.g. `secret`) |
-| **Authorization endpoint** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/authorize` |
 | **OAuth scope** | `openid profile` |
+| **Credential exchange method** | Body only |
 
-### Step 3 — Connection Details
+The form asks you to add `https://<your-workspace>/login/oauth/http.html` to your OAuth app's allowed redirect URLs. No action is needed: the Prometheux server already accepts redirects to any Databricks workspace domain.
 
-| Field | Value |
-|-------|-------|
-| **Base path** | `/px-remote-mcp-server` |
-| **OAuth credential exchange method** | Body Only |
-| **Token endpoint** | `https://api.prometheux.ai/px-remote-mcp-server/oauth/token` |
+<Warning>
+The **Server URL** must include the `/px-remote-mcp-server/mcp` path. With only `https://api.prometheux.ai`, tool loading fails with a `405 Not Allowed` HTML response.
+</Warning>
 
-### Finalize
+### Step 3 — Sign in and load tools
 
-1. Click **"Create Connection"**
-2. Click **"Login"**
-3. In the browser tab that opens with the Prometheux login form, enter:
+1. Click **Create & load tools**. This saves the connection.
+2. Under **Tools**, click **Login**. In the browser tab that opens with the Prometheux login form, enter:
    - **Username:** Your Prometheux username
    - **Organization:** Your Prometheux organization
    - **API Token:** Your Prometheux authentication token
-4. Submit the form — Databricks will receive your session token automatically
+3. Submit the form — Databricks receives your session token and lists the Prometheux tools.
+4. Choose the tools to expose, or leave all of them selected.
+
+### Step 4 — Create the MCP service
+
+Click **Create MCP Service**.
+
+<Warning>
+Loading tools in Step 3 only saves the connection. The MCP is not registered — and does not appear in the MCPs list or in Genie Code — until you click **Create MCP Service**.
+</Warning>
 
 ## Usage
 
-Once connected, Genie Code can use the Prometheux MCP tools in your agent workflows.
+Once the MCP service is created, Genie Code can use the Prometheux MCP tools in your agent workflows. Other agents refer to it by its full name, `<catalog>.<schema>.<name>`; clients that need a URL use:
+
+```text
+https://<your-workspace>/ai-gateway/mcp-services/<catalog>.<schema>.<name>
+```
+
+To let other users invoke it, grant them `EXECUTE` on the MCP service. They do not need `USE CONNECTION` on the underlying connection, but each user signs in with their own Prometheux credentials.
 
 <Tip>
 **Available Tools**
@@ -63,7 +83,27 @@ Once connected, Genie Code can use the Prometheux MCP tools in your agent workfl
 See the [MCP overview page](/integrations/mcp/overview#available-tools) for the complete list of tools exposed to Genie Code.
 </Tip>
 
+## Session expiry
+
+The connection stays signed in until your Prometheux API token expires — Databricks shows this as the connection's **Access token expiration**. After that, create a new API token and click **Login** on the connection again.
+
 ## Troubleshooting
+
+### "405 Not Allowed" or "unexpected non-JSON (HTML) response"
+
+The connection's Server URL is missing the server path, so requests reach the Prometheux front proxy instead of the MCP server.
+
+**Solution:**
+- Edit the connection and set **Server URL** to `https://api.prometheux.ai/px-remote-mcp-server/mcp`
+- Click **Login** again and reload the tools
+
+### MCP does not appear in the MCPs list
+
+The connection was created but the MCP service was not. In Catalog Explorer, the schema shows the connection under **Connections** but **Services** is 0.
+
+**Solution:**
+- Start again from **+ MCP > Connect an existing MCP server**, choose the same catalog and schema, select the existing connection, and click **Create MCP Service**
+- If creation fails, ask a workspace admin for `CREATE SERVICE` on the schema, or register into a schema where you already have it
 
 ### Login tab doesn't open
 
@@ -71,18 +111,11 @@ See the [MCP overview page](/integrations/mcp/overview#available-tools) for the 
 - Check your browser's popup blocker settings for the Databricks domain
 - Try the connection flow in an incognito/private window
 
-### "Connection failed" error
-
-**Solution:**
-- Verify all fields match the values in the tables above
-- Ensure **OAuth credential exchange method** is set to **Body Only**
-- Check that the host, port, and base path are correct
-
 ### Tools not appearing in Genie Code
 
 **Solution:**
-- Ensure the login step completed successfully
-- Try disconnecting and re-creating the connection
+- Ensure the login step completed successfully and the MCP service exists in the MCPs list
+- Check that the tools you need were selected when creating the MCP service
 - Verify your Prometheux credentials are valid
 
 For general troubleshooting, see the [Remote MCP Server troubleshooting](/integrations/mcp/remote#troubleshooting) section.
