@@ -37,6 +37,7 @@ The Prometheux remote MCP server is deployed at:
 | Property | Value |
 |----------|-------|
 | **Base URL** | `https://api.prometheux.ai/px-remote-mcp-server` |
+| **MCP endpoint** (for clients that ask for a single server URL) | `https://api.prometheux.ai/px-remote-mcp-server/mcp` |
 | **Host** | `https://api.prometheux.ai` |
 | **Port** | `443` |
 | **Base path** | `/px-remote-mcp-server` |
@@ -113,6 +114,13 @@ The client can't reach the remote MCP server.
 - Check if your Prometheux credentials are valid
 - Ensure the remote MCP server is running and accessible
 - Try refreshing and reconnecting
+
+### "405 Not Allowed" HTML response
+
+The client is sending MCP requests to `https://api.prometheux.ai` without the server path, so they reach the front proxy instead of the MCP server.
+
+**Solution:**
+- Set the server URL to `https://api.prometheux.ai/px-remote-mcp-server/mcp`, or, for clients with separate host and base path fields, set the base path to `/px-remote-mcp-server`
 
 ### OAuth login page doesn't load
 
