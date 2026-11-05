@@ -81,7 +81,8 @@
                   "get-started/installation/databricks/native-app",
                   "get-started/installation/databricks/connectors"
                 ]
-              }
+              },
+              "get-started/installation/palantir"
             ]
           }
         ]

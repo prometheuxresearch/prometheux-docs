@@ -1,0 +1,184 @@
+---
+title: "Palantir Foundry"
+description: "For teams on Palantir Foundry — run the Prometheux engine inside your enrollment as a Compute Module, callable from OSDK/TypeScript, Workshop, and Ontology Actions."
+---
+
+> For teams already on Palantir Foundry — deploy the Prometheux engine as a
+> Compute Module that runs entirely within your enrollment, with full data
+> sovereignty.
+
+## Overview
+
+Prometheux runs **natively inside Palantir Foundry** as a
+[Compute Module](https://www.palantir.com/docs/foundry/compute-modules/overview/).
+The full engine is replicated in each Foundry pod and exposed as callable
+**Functions**, so your OSDK/TypeScript code, Workshop, and Ontology Actions can
+invoke live Vadalog reasoning — recursion, transitive closure, incremental
+updates, graph analytics — without any data leaving your environment.
+
+Unlike a batch container transform, the engine stays **warm and in-process**:
+each call reuses the running engine for low-latency, per-query reasoning, and
+predicates bound to Foundry datasets run directly against Iceberg-backed storage.
+
+Key advantages:
+
+- **Data sovereignty** — the engine runs inside your enrollment; data never leaves Foundry
+- **Foundry-native security** — invoked through Functions, Workshop, and Ontology Actions
+- **Warm, in-process reasoning** — per-query latency, not batch job startup
+- **Build anything on one primitive** — every capability is a Vadalog program passed to a single function
+
+## How it works
+
+Everything is built on one primitive: **`evaluateWithParams`**. You hand it a
+Vadalog program (plus optional runtime params) and it returns the result set as
+JSON. Any higher-level capability — a reachability query, an ontology-backed
+lookup, an incremental update — is just a Vadalog program passed to this one
+function. You build what you want on top of it.
+
+Around that primitive, Prometheux already exposes a small **function pool** to
+manage live runs, so you don't have to build run orchestration yourself:
+
+| Function | Role |
+|---|---|
+| `evaluateWithParams` | **Base function** — run any Vadalog program, get the result set as JSON. |
+| `stopEvaluation` | Stop a single in-flight run by id. |
+| `stopAllEvaluations` | Stop all in-flight runs. |
+| `listRuns` | List active runs in the pool. |
+| `lastActivity` | Report the engine's last activity timestamp. |
+
+All inputs and outputs are **strings** (payloads are JSON strings) for maximum
+compatibility with the Foundry Functions type system.
+
+```text
+        Foundry enrollment
+ ┌────────────────────────────────────────────────┐
+ │  OSDK / TypeScript    Workshop    Ontology     │
+ │     Functions           app       Actions      │
+ │            \           |           /           │
+ │              \         |         /             │
+ │                v       v       v               │
+ │        ┌──────────────────────────────┐        │
+ │        │      Compute Module          │        │
+ │        │      (Functions mode)        │        │
+ │        │  ┌────────────────────────┐  │        │
+ │        │  │  Prometheux engine     │  │        │
+ │        │  │  (warm, in-process)    │  │        │
+ │        │  │                        │  │        │
+ │        │  │  function pool:        │  │        │
+ │        │  │   • evaluateWithParams │  │        │
+ │        │  │   • stop / list / ...  │  │        │
+ │        │  └────────────────────────┘  │        │
+ │        └──────────────┬───────────────┘        │
+ │                       v                        │
+ │        Iceberg-backed Foundry datasets         │
+ └────────────────────────────────────────────────┘
+```
+
+<Note>
+The engine image is distributed privately. Your Prometheux contact provisions a
+short-lived **pull token** for the Prometheux registry. Nothing is published
+publicly, and once the image lives in your Foundry Artifacts repository the
+engine runs entirely within your environment.
+</Note>
+
+## Deploy
+
+<Steps>
+
+<Step title="Get the engine image">
+
+Your Prometheux contact provides a registry host, image name, and a short-lived
+pull token. Log in and pull the image:
+
+```bash
+echo "$PROMETHEUX_PULL_TOKEN" | docker login -u "$PROMETHEUX_REGISTRY_USER" \
+  --password-stdin registry.prometheux.ai
+docker pull registry.prometheux.ai/prometheux-reasoner:<version>
+```
+
+The image is built for `linux/amd64`, runs as a **numeric non-root user**, and
+exposes ports in the allowed range — the three requirements Foundry enforces on
+container images.
+
+</Step>
+
+<Step title="Push it into your Foundry Artifacts repository">
+
+In Foundry, create an **Artifacts repository** (Docker) in your project and open
+**Publish to Docker** to read your repository RID and a push token. Re-tag the
+image for your stack's registry and push with a tag **other than `latest`**:
+
+```bash
+export REPOSITORY=ri.artifacts.main.repository.<your-repo-rid>
+export TOKEN=<foundry-push-token>
+
+docker tag registry.prometheux.ai/prometheux-reasoner:<version> \
+  <your-stack>-container-registry.palantirfoundry.com/prometheux:<version>
+
+echo "$TOKEN" | docker login -u "$REPOSITORY" --password-stdin \
+  <your-stack>-container-registry.palantirfoundry.com
+docker push <your-stack>-container-registry.palantirfoundry.com/prometheux:<version>
+```
+
+The artifact appears in your repository within about a minute.
+
+</Step>
+
+<Step title="Create the Compute Module">
+
+Create a Compute Module in **Functions** execution mode and add a container
+pointing at the image you just pushed. A typical sizing is **4–8 CPU** and
+**8 GB** memory; set **minimum replicas to 1** to keep the engine warm. Start
+the module and confirm from the logs that the engine banner appears, followed by
+the function poller starting.
+
+</Step>
+
+<Step title="Register the functions">
+
+Under **Define functions**, choose **Detect with SDK at runtime**. Once the
+module is active, the five functions above are discovered automatically — no
+manual schema declaration needed. Give `evaluateWithParams` an API name (for
+example `runPX`) to make it callable from pro-code contexts.
+
+</Step>
+
+<Step title="Call it from OSDK / TypeScript">
+
+Import the query function into a TypeScript Functions repository via the
+**Resource Imports** sidebar, then call it through the generated SDK:
+
+```typescript
+import { Client } from "@osdk/client";
+import { runPX } from "@ontology/sdk";
+
+async function reachability(client: Client): Promise<string> {
+  const program = [
+    "@lightMode.",
+    'edge("a","b").', 'edge("b","c").', 'edge("c","d").', 'edge("e","f").',
+    "reach(X,Y) <- edge(X,Y).",
+    "reach(X,Y) <- edge(X,Z), reach(Z,Y).",
+    '@output("reach").',
+  ].join("\n");
+
+  // Returns a JSON string: data.resultSet.reach = [["a","b"], ...]
+  return client(runPX).executeFunction({
+    program, params: "", measureElapsedTime: "true", liteMode: "", parallelism: "", id: "",
+  });
+}
+
+export default reachability;
+```
+
+From here the engine is a super-efficient reasoning backend for your Ontology:
+wire it into Workshop, back an Ontology Action with it, or call it from any
+pro-code Function.
+
+</Step>
+
+</Steps>
+
+<Note>
+Prefer a managed option? The same engine is also available as a cloud deployment
+and on-premises install — see [Installation](/get-started/installation/overview).
+</Note>
