@@ -22,7 +22,16 @@ can version, review and test your programs like the rest of your code.
 npm install @pmtx/chain
 ```
 
-The SDK requires Node.js 22 or newer. It ships both ESM and CommonJS builds, with type definitions included.
+The SDK runs in Node.js 22 or newer and in browsers. It ships ESM and CommonJS builds for Node.js
+and an ESM build for browsers, with type definitions included. Browser bundlers such as Vite, webpack
+and esbuild pick the browser build automatically.
+
+<Note>
+In a browser, pass `token` and `baseUrl` to the client explicitly, because there are no environment
+variables. `fileFromPath()` and `saveTo()` use the file system and work in Node.js only. In a browser,
+upload a `File` from an `<input type="file">` and read downloads with `.blob()` or `.text()`.
+Browser support needs `@pmtx/chain` 0.1.2 or newer.
+</Note>
 
 ## Configuration
 
