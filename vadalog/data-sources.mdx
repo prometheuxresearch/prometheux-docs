@@ -1,6 +1,6 @@
 ---
 title: "Data Sources"
-description: "Connecting Vadalog to CSV, Parquet, Iceberg, Excel, JSON, COBOL, PostgreSQL, Neo4j, DynamoDB, Qdrant, S3, HDFS, REST APIs, and many more data sources."
+description: "Connecting Vadalog to CSV, Parquet, Iceberg, Excel, JSON, COBOL, PostgreSQL, Neo4j, DynamoDB, Qdrant, RDF triple stores, S3, HDFS, REST APIs, and many more data sources."
 ---
 
 With connectors available for databases and support for data sources, Prometheux can be used to seamlessly integrate and migrate data across various platforms. Moreover, it supports cloud and distributed file systems like **S3** and **HDFS**, providing the flexibility needed for modern data lake and data migration scenarios.
@@ -66,6 +66,7 @@ Supported `datasource_type` values:
 | `databricks` | Databricks |
 | `dynamodb` | Amazon DynamoDB |
 | `qdrant` | Qdrant vector database |
+| `rdf` | RDF serializations (N-Triples / N-Quads / Turtle / RDF/XML / JSON-LD) for RDF triple stores |
 | `api` | Consuming data via API |
 | `text` | Plain text files |
 | `binary` | Binary files (PDF, images, etc.) |
@@ -5017,6 +5018,22 @@ Databricks is a cloud-based platform for data engineering and data science.
 <Note>
 **Note on writing:** When writing to Databricks, the default `saveMode` is `error`, meaning the write fails if the target table already exists. To replace the existing table, add `saveMode='overwrite'` to the bind options (e.g. `"databricks saveMode='overwrite', ..."`).
 </Note>
+
+### Running inside a Databricks cluster (`inCluster=true`)
+
+When Prometheux runs **inside** a Databricks cluster, add `inCluster=true` to the bind. The connector then uses the cluster's ambient Spark session and native **Unity Catalog** access — `spark.table(...)` / `saveAsTable(...)` / `spark.sql(...)` — instead of opening a JDBC connection, so **no `host`, `token`, `OAuth2ClientId`/`OAuth2Secret` or `/sql/1.0/warehouses/...` warehouse path is required**. In this mode the third `@bind` argument is the `catalog.schema` and the fourth is the table; on write the schema is created if missing.
+
+```prolog
+% Read from a Unity Catalog table with no credentials
+@bind("sales", "databricks inCluster=true", "main.sales", "transactions").
+report(Product, Total) <- SELECT product_id, sum(amount) AS total FROM sales GROUP BY product_id.
+@output("report").
+
+% Write back into Unity Catalog (saveAsTable); saveMode='overwrite' replaces the table
+@bind("report", "databricks inCluster=true, saveMode=overwrite", "main.sales", "product_totals").
+```
+
+The same safe-default applies: if you omit `saveMode` on a write, the connector uses `saveMode=errorIfExists` (the write fails if the table already exists), so set `saveMode='overwrite'` or `'append'` explicitly. Without `inCluster=true`, the connector uses the JDBC path shown below (host + OAuth/PAT credentials + a warehouse path as the third argument).
 
 This example demonstrates writing data to a Databricks table.
 

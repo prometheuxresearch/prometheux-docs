@@ -89,7 +89,7 @@ Both forms compose: an inline Cypher body that references a Neo4j-bound predicat
 <Note>
 **Cypher cells in the Prometheux platform**
 
-The Prometheux [platform](/platform/projects) authors programs as **cells**, each with a type — `vadalog`, `cypher`, `sql`, or `python` (set via the [concept editor toolbar](/platform/concept-editor#toolbar)). In a **Cypher cell** you write the query directly, without wrapping it in a Vadalog rule head:
+The Prometheux [platform](/platform/ontologies) authors programs as **cells**, each with a type — `vadalog`, `cypher`, `sql`, or `python` (set via the [concept editor toolbar](/platform/concept-editor#toolbar)). In a **Cypher cell** you write the query directly, without wrapping it in a Vadalog rule head:
 
 ```cypher
 MATCH (a:Person)-[:KNOWS]->(b:Person)
@@ -694,7 +694,7 @@ busy_cities(City, N) <-
 The engine's [expression library](/vadalog/expressions/overview) goes considerably beyond what core Cypher offers. When a query needs one of the following, drop into a Vadalog rule on top of the Cypher result:
 
 - **Hashing and ids**: `hash:md5`, `hash:sha1`, `hash:sha2`, `hash:hash`, `uuid()`, monotonically increasing ids.
-- **AI / vector-search functions**: `embeddings:vectorize`, `embeddings:cosine_sim`, `llm:generate`, and the `ask(...)` function for vector retrieval over Qdrant collections.
+- **AI / vector-search functions**: `embeddings:vectorize`, `similarity:cosine_sim`, `llm:generate`, and the `ask(...)` function for vector retrieval over Qdrant collections.
 - **Set algebra on arrays**: `|` (union), `&` (intersection), and `collections:difference` / `union` / `intersection`.
 - **Richer date arithmetic**: `date:add`, `date:sub`, `date:diff`, `date:next_day`, `date:prev_day`, `date:spec_day`, `date:format`, `date:to_timestamp`.
 - **Boolean and conditional families beyond `CASE`**: `xor`, `nand`, `nor`, `xnor`, `implies`, `iff`, plus `nullManagement:ifnull(x, fallback)` and `nullManagement:coalesce` over arbitrary expressions.
