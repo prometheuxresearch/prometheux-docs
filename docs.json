@@ -107,6 +107,7 @@
         "pages": [
           "integrations/overview",
           "integrations/python-sdk",
+          "integrations/typescript-sdk",
           "integrations/rest-api",
           "integrations/config",
           "integrations/chat-api",

@@ -1,0 +1,435 @@
+---
+title: "TypeScript SDK"
+description: "Evaluate your own Vadalog programs and manage the Prometheux platform from Node.js with @pmtx/chain."
+---
+
+`@pmtx/chain` is the TypeScript SDK for Prometheux. It covers the same backend surface as the
+[Python SDK](/integrations/python-sdk), with typed requests and responses, streaming, and errors
+you can narrow on.
+
+A common use is to keep your Vadalog programs as `.vada` files in your own repository and
+evaluate them against the platform engine. You don't need to save anything as a concept, so you
+can version, review and test your programs like the rest of your code.
+
+<Card title="Runnable examples" icon="github" href="https://github.com/prometheuxresearch/prometheux-chain-ts-examples">
+  The examples on this page are runnable scripts in the `prometheux-chain-ts-examples`
+  repository. Clone it, add your token, and run each one with `npm run`.
+</Card>
+
+## Installation
+
+```bash
+npm install @pmtx/chain
+```
+
+The SDK requires Node.js 22 or newer. It ships both ESM and CommonJS builds, with type definitions included.
+
+## Configuration
+
+The client reads your token and backend URL from the environment:
+
+```bash .env
+PMTX_TOKEN=your-token
+JARVISPY_URL=https://api.prometheux.ai/jarvispy/<organization>/<username>
+```
+
+```ts
+import { Prometheux } from "@pmtx/chain";
+
+// Reads PMTX_TOKEN and JARVISPY_URL from the environment.
+const px = new Prometheux();
+```
+
+You can also pass them explicitly, along with other options:
+
+```ts
+const px = new Prometheux({
+  token: process.env.PMTX_TOKEN,
+  baseUrl: "https://api.prometheux.ai/jarvispy/<organization>/<username>",
+  timeout: 120_000, // ms, default 300000
+});
+```
+
+See [Authentication](/integrations/api-endpoints/authentication) for how to get a token.
+
+<Warning>
+Keep the token on the server. A token in browser code ships to every visitor and grants full
+access to your account. See [Bring your own frontend](/integrations/bring-your-own-frontend).
+</Warning>
+
+## Evaluate a Vadalog program
+
+`px.vadalog.evaluate()` sends a program to the engine and returns its output. Nothing is saved
+to the platform.
+
+```ts src/01-evaluate-inline.ts
+import { Prometheux } from "@pmtx/chain";
+
+const px = new Prometheux();
+
+const program = `
+  edge("Rome", "Milan").
+  edge("Milan", "Zurich").
+  edge("Zurich", "Paris").
+
+  reachable(X, Y) <- edge(X, Y).
+  reachable(X, Z) <- reachable(X, Y), edge(Y, Z).
+
+  @output("reachable").
+`;
+
+const result = await px.vadalog.evaluate(program);
+```
+
+<Note>
+Evaluation runs on your compute, so a machine must be running. Pass `compute` to target a
+specific one: `px.vadalog.evaluate(program, { compute })`. See [Compute](/integrations/rest-api#compute).
+</Note>
+
+### Read the result
+
+The result has one entry per `@output` predicate:
+
+```jsonc
+{
+  "resultSet":   { "reachable": [["Rome", "Milan"], ["Rome", "Zurich"], ...] },
+  "columnNames": { "reachable": ["X", "Y"] },
+  "types":       { "reachable": ["string", "string"] },
+  "elapsedTime": 412,
+  "violations":  []
+}
+```
+
+The SDK types this result as `unknown`, because the engine defines its shape. The examples
+repository declares the shape once and converts rows to objects:
+
+```ts src/lib/evaluation.ts
+export interface Evaluation {
+  resultSet: Record<string, unknown[][]>;
+  columnNames: Record<string, string[]>;
+  types: Record<string, string[]>;
+  elapsedTime: number;
+  violations: unknown[];
+}
+
+export function rowsOf(evaluation: Evaluation, predicate: string): Record<string, unknown>[] {
+  const columns = evaluation.columnNames[predicate] ?? [];
+  const rows = evaluation.resultSet[predicate] ?? [];
+  return rows.map((row) => Object.fromEntries(columns.map((column, i) => [column, row[i]])));
+}
+```
+
+```ts
+const result = (await px.vadalog.evaluate(program)) as Evaluation;
+console.table(rowsOf(result, "reachable"));
+```
+
+### Evaluate a `.vada` file
+
+A program is just a string, so you can keep it in a file next to your code and read it before
+you evaluate it:
+
+```prolog programs/company-control.vada
+% Company control: X controls Y when X owns more than 50% of Y, directly or
+% through companies X already controls.
+
+own("Alpha Treasury", "Phoenix Vault", 0.7).
+own("Alpha Treasury", "Initech", 0.4).
+own("Phoenix Vault", "Initech", 0.1).
+own("Phoenix Vault", "Royal Crown Bank", 0.6).
+own("Royal Crown Bank", "Initech", 0.1).
+own("Royal Crown Bank", "Goldward Bank", 0.3).
+own("Goldleaf Bank", "Acme Corp", 0.4).
+own("Initech", "Acme Corp", 0.4).
+own("Initech", "Soylent Corp", 0.99).
+own("Soylent Corp", "Goldward Bank", 0.3).
+
+controlled_shares(X, Y, Y, Q) <- own(X, Y, Q), X <> Y.
+controlled_shares(X, Z, Y, Q) <- control(X, Y), own(Y, Z, Q), X <> Z, Z <> Y, X <> Y.
+total_controlled_shares(X, Y, S) <- controlled_shares(X, Y, Z, Q), S = msum(Q).
+control(X, Y) <- total_controlled_shares(X, Y, Q), Q > 0.5.
+
+@output("control").
+```
+
+```ts src/02-evaluate-file.ts
+import { readFile } from "node:fs/promises";
+import { Prometheux } from "@pmtx/chain";
+import { type Evaluation, rowsOf } from "./lib/evaluation.ts";
+
+const px = new Prometheux();
+
+const program = await readFile("programs/company-control.vada", "utf8");
+const result = (await px.vadalog.evaluate(program)) as Evaluation;
+
+console.table(rowsOf(result, "control"));
+console.log(`Evaluated in ${result.elapsedTime} ms`);
+```
+
+```text Output
+┌─────────┬──────────────────┬────────────────────┐
+│ (index) │ X                │ Y                  │
+├─────────┼──────────────────┼────────────────────┤
+│ 0       │ 'Alpha Treasury' │ 'Phoenix Vault'    │
+│ 1       │ 'Initech'        │ 'Soylent Corp'     │
+│ 2       │ 'Phoenix Vault'  │ 'Royal Crown Bank' │
+│ 3       │ 'Alpha Treasury' │ 'Royal Crown Bank' │
+│ 4       │ 'Alpha Treasury' │ 'Initech'          │
+│ 5       │ 'Alpha Treasury' │ 'Soylent Corp'     │
+│ 6       │ 'Alpha Treasury' │ 'Goldward Bank'    │
+└─────────┴──────────────────┴────────────────────┘
+```
+
+The `control` output lists every company each owner controls. For example, "Alpha Treasury"
+controls "Goldward Bank" without owning any of it directly: the companies it controls, "Royal
+Crown Bank" and "Soylent Corp", own 60% of it together. The
+[banking supervision example](/examples/finance/banking-supervision) explains the rules.
+
+### Pass parameters
+
+Declare inputs with `@param` and reference them as `${name}`. The declared values are defaults,
+and `params` overrides them, so the same file can answer many queries:
+
+```prolog programs/large-orders.vada
+@param("region", "North").
+@param("min_total", 0.0).
+
+orders(1, "North", "delivered", 1250.0).
+orders(2, "South", "pending", 480.0).
+orders(3, "North", "shipped", 2320.0).
+orders(4, "West", "delivered", 150.0).
+orders(5, "North", "delivered", 990.0).
+
+large_orders(OrderId, Status, Total) <-
+    orders(OrderId, Region, Status, Total),
+    Region = ${region},
+    Total >= ${min_total}.
+
+@output("large_orders").
+```
+
+```ts src/03-evaluate-with-params.ts
+import { readFile } from "node:fs/promises";
+import { Prometheux } from "@pmtx/chain";
+import { type Evaluation, rowsOf } from "./lib/evaluation.ts";
+
+const px = new Prometheux();
+
+const program = await readFile("programs/large-orders.vada", "utf8");
+
+for (const params of [
+  { region: '"North"', min_total: 1000 },
+  { region: '"South"', min_total: 0 },
+]) {
+  const result = (await px.vadalog.evaluate(program, { params })) as Evaluation;
+  console.table(rowsOf(result, "large_orders"));
+}
+```
+
+<Warning>
+Each value in `params` is pasted into the program as Vadalog text. Numbers work as they are,
+but a string needs its own quotes: pass `'"North"'`, not `"North"`. Without the quotes,
+`Region = ${region}` becomes `Region = North`, and the engine reads `North` as an unbound
+variable and rejects the rule as not safe.
+</Warning>
+
+### Read your own data
+
+Your programs read data through `@bind`. To use a local file, upload it to your workspace
+storage (`disk/`) first, then bind a predicate to it:
+
+```prolog programs/company-control-from-csv.vada
+@bind("own", "csv useHeaders=true", "disk/examples", "ownership.csv").
+
+controlled_shares(X, Y, Y, Q) <- own(X, Y, Q), X <> Y.
+controlled_shares(X, Z, Y, Q) <- control(X, Y), own(Y, Z, Q), X <> Z, Z <> Y, X <> Y.
+total_controlled_shares(X, Y, S) <- controlled_shares(X, Y, Z, Q), S = msum(Q).
+control(X, Y) <- total_controlled_shares(X, Y, Q), Q > 0.5.
+
+@output("control").
+```
+
+```ts src/05-evaluate-with-your-data.ts
+import { readFile } from "node:fs/promises";
+import { fileFromPath, Prometheux } from "@pmtx/chain";
+import { type Evaluation, rowsOf } from "./lib/evaluation.ts";
+
+const px = new Prometheux();
+
+// Uploads go under disk/. The target directory must exist first.
+const folders = await px.files.list();
+if (!folders.some((entry) => entry.name === "examples")) await px.files.mkdir("examples");
+
+const { filePath } = await px.files.upload(await fileFromPath("data/ownership.csv"), {
+  path: "examples",
+});
+console.log(`Uploaded to ${filePath}`); // disk/examples/ownership.csv
+
+const program = await readFile("programs/company-control-from-csv.vada", "utf8");
+const result = (await px.vadalog.evaluate(program)) as Evaluation;
+console.table(rowsOf(result, "control"));
+```
+
+Uploading a file with the same name replaces the existing one. File paths in `@bind` must be
+relative and stay under `disk/`. A bind can also point to a database, a warehouse or object
+storage: see [Data sources](/vadalog/data-sources).
+
+## Check programs before you run them
+
+`px.vadalog.validate()` compiles a program without running it. `px.vadalog.analyze()` lists
+the predicates a program reads and the ones it produces. Together they make a quick CI step that
+checks every program in a folder:
+
+```ts src/04-check-programs.ts
+import { readdir, readFile } from "node:fs/promises";
+import { Prometheux } from "@pmtx/chain";
+
+const px = new Prometheux();
+
+let failed = 0;
+for (const file of (await readdir("programs")).filter((name) => name.endsWith(".vada"))) {
+  const program = await readFile(`programs/${file}`, "utf8");
+
+  const { valid, error } = await px.vadalog.validate(program);
+  if (!valid) {
+    failed++;
+    console.log(`✗ ${file}\n  ${error}`);
+    continue;
+  }
+
+  const { inputPredicates, headPredicates } = await px.vadalog.analyze(program);
+  console.log(`✓ ${file}`);
+  console.log(`  reads:    ${inputPredicates.join(", ")}`);
+  console.log(`  produces: ${headPredicates.join(", ")}`);
+}
+
+process.exitCode = failed ? 1 : 0;
+```
+
+```text Output
+✓ company-control-from-csv.vada
+  reads:    own
+  produces: total_controlled_shares, controlled_shares, control
+✓ company-control.vada
+  reads:    own
+  produces: total_controlled_shares, controlled_shares, control
+✓ large-orders.vada
+  reads:    orders
+  produces: large_orders
+```
+
+An invalid program resolves to `{ valid: false, error }` and doesn't throw. Check `valid`
+before you use the result.
+
+## Unit-test your programs
+
+Evaluate a program in a test and compare its output with the rows you expect. This works with
+any test runner. Here is Node's built-in one:
+
+```ts test/company-control.test.ts
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { test } from "node:test";
+import { Prometheux } from "@pmtx/chain";
+import type { Evaluation } from "../src/lib/evaluation.ts";
+
+const px = new Prometheux();
+
+test("company control finds direct and indirect control", async () => {
+  const program = await readFile("programs/company-control.vada", "utf8");
+  const result = (await px.vadalog.evaluate(program)) as Evaluation;
+
+  const pairs = result.resultSet.control.map(([owner, company]) => `${owner} → ${company}`);
+
+  assert.deepEqual(pairs.sort(), [
+    "Alpha Treasury → Goldward Bank",
+    "Alpha Treasury → Initech",
+    "Alpha Treasury → Phoenix Vault",
+    "Alpha Treasury → Royal Crown Bank",
+    "Alpha Treasury → Soylent Corp",
+    "Initech → Soylent Corp",
+    "Phoenix Vault → Royal Crown Bank",
+  ]);
+});
+```
+
+Run it with `npx tsx --test test/*.test.ts`. On Node 23.6 or newer, `node --test` runs
+TypeScript files directly.
+
+## Save and run concepts
+
+To make a program part of an ontology, save it as a concept. Concepts appear in the platform UI,
+take part in lineage, and can build on each other. Their results are stored, so you can page
+through them later:
+
+```ts src/06-concepts.ts
+import { readFile } from "node:fs/promises";
+import { Prometheux } from "@pmtx/chain";
+
+const px = new Prometheux();
+
+const ontologyId = await px.ontologies.save({ name: "sdk-example-company-control" });
+
+await px.concepts.save(ontologyId, {
+  definition: await readFile("programs/company-control.vada", "utf8"),
+});
+
+const run = await px.concepts.run(ontologyId, "control");
+console.log(`${run.total_records} rows in ${run.predicates_populated.join(", ")}`);
+
+const page = await px.concepts.fetchResults(ontologyId, "control", { pageSize: 5 });
+console.log(page.results.columnNames, page.results.facts);
+console.log(`page ${page.pagination.page} of ${page.pagination.total_pages}`);
+```
+
+To follow a long run as it progresses, use `px.concepts.runStream()` instead of `run()`. It
+streams one status event per concept:
+
+```ts
+for await (const event of px.concepts.runStream(ontologyId, "control")) {
+  if (event.event === "concept_status") console.log(event.data);
+  if (event.event === "complete") console.log("done:", event.data.status);
+}
+```
+
+<Tip>
+Use `px.vadalog.evaluate()` for programs that live in your repository, and concepts for logic
+your team works on in the platform. A concept's body is the same Vadalog, so a program can start
+as a `.vada` file and become a concept later.
+</Tip>
+
+## Handle errors
+
+Failed requests throw a typed error that you can narrow with `instanceof`:
+
+```ts
+import { AuthenticationError, ConflictError, QuotaExceededError } from "@pmtx/chain";
+
+try {
+  await px.vadalog.evaluate(program);
+} catch (error) {
+  if (error instanceof AuthenticationError) console.error("Check PMTX_TOKEN");
+  else if (error instanceof ConflictError) console.error("The engine is busy, retry shortly");
+  else if (error instanceof QuotaExceededError) console.error("Plan limit:", error.code);
+  else throw error;
+}
+```
+
+| Error | When |
+|---|---|
+| `AuthenticationError` | 401: the token is invalid or expired. |
+| `QuotaExceededError` | 402: a plan limit was hit. `error.code` says which one. |
+| `PermissionDeniedError`, `NotFoundError` | 403, 404. |
+| `BadRequestError`, `ConflictError`, `RateLimitError`, `InternalServerError` | 400, 409, 429, 5xx. |
+| `OperationFailedError` | HTTP 200, but the response reported a failure. |
+| `APIConnectionError`, `APITimeoutError` | The backend could not be reached, or did not answer in time. |
+
+All of them extend `PrometheuxError`. Every method also takes a last `{ signal, timeout }`
+argument, so you can cancel a request with an `AbortController`.
+
+## More of the SDK
+
+The client groups the API by resource: `px.ontologies`, `px.concepts`, `px.datasources`,
+`px.files`, `px.context`, `px.agent`, `px.apps`, `px.policies` and more. The
+[package README](https://www.npmjs.com/package/@pmtx/chain) lists every option and includes a
+table that maps each Python SDK function to its TypeScript method.

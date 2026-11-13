@@ -1,11 +1,12 @@
 ---
 title: PX APIs
-description: Overview of the ways to interact with the Prometheux platform programmatically — Python SDK, REST API, and MCP integration.
+description: Overview of the ways to interact with the Prometheux platform programmatically — Python and TypeScript SDKs, REST API, and MCP integration.
 ---
 
 The Prometheux platform provides multiple ways to interact with all platform features programmatically:
 
 - **Python SDK** (`prometheux_chain`): A high-level Python library for seamless integration
+- **[TypeScript SDK](/integrations/typescript-sdk)** (`@pmtx/chain`): The same API for Node.js, with types, streaming and typed errors
 - **REST API**: Direct HTTP endpoints for maximum flexibility and language-agnostic access
 - **MCP Integration**: Connect AI agents to your ontologies via Model Context Protocol
   - **Local MCP Server** (`prometheux-mcp`): For Claude Desktop with local installation
@@ -316,6 +317,11 @@ Error responses include detailed messages in the response body:
 
 - Python 3.9 or higher
 - Install via pip: `pip install prometheux-chain`
+
+### TypeScript SDK
+
+- Node.js 22 or higher
+- Install via npm: `npm install @pmtx/chain`
 
 ### REST API
 
