@@ -30,7 +30,9 @@ and esbuild pick the browser build automatically.
 In a browser, pass `token` and `baseUrl` to the client explicitly, because there are no environment
 variables. `fileFromPath()` and `saveTo()` use the file system and work in Node.js only. In a browser,
 upload a `File` from an `<input type="file">` and read downloads with `.blob()` or `.text()`.
-Browser support needs `@pmtx/chain` 0.1.2 or newer.
+Browser support needs `@pmtx/chain` 0.1.2 or newer. For a working page, see
+[`browser/app.ts`](https://github.com/prometheuxresearch/prometheux-chain-ts-examples/blob/main/browser/app.ts)
+in the examples repository (`npm run browser`).
 </Note>
 
 ## Configuration
