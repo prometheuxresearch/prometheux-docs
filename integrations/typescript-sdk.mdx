@@ -275,6 +275,33 @@ Uploading a file with the same name replaces the existing one. File paths in `@b
 relative and stay under `disk/`. A bind can also point to a database, a warehouse or object
 storage: see [Data sources](/vadalog/data-sources).
 
+### Stop a long evaluation
+
+Every evaluation is tagged with an `executionId`, a random UUID unless you pass one. When a
+request times out or you abort it, the SDK stops that evaluation on the engine before it throws.
+Otherwise the engine would keep running it and hold up the evaluations that follow:
+
+```ts
+const controller = new AbortController();
+setTimeout(() => controller.abort(), 60_000);
+
+await px.vadalog.evaluate(program, {}, { signal: controller.signal }); // stopped after 60 s
+```
+
+You can also stop evaluations yourself, and check whether the engine is busy:
+
+```ts
+await px.vadalog.evaluate(program, { executionId: "nightly-check" });
+
+await px.vadalog.stop("nightly-check"); // only that evaluation, from another process
+await px.vadalog.stop(); // every evaluation on your engine
+const { status } = await px.vadalog.status(); // "ready" or "busy"
+```
+
+<Note>
+Stopping evaluations needs `@pmtx/chain` 0.1.1 or newer.
+</Note>
+
 ## Check programs before you run them
 
 `px.vadalog.validate()` compiles a program without running it. `px.vadalog.analyze()` lists
