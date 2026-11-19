@@ -9,6 +9,8 @@ The smallest useful app: **one button** that runs a concept, and **one table** t
 
 In an ontology of your choice, create two concepts. The first computes a total per customer from a few inline facts:
 
+{/* playground-anchor */}<span id="playground-ccf5cf5603" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog Concept: customer_totals
 customer_orders("Acme", 1200.0).
 customer_orders("Acme", 800.0).
@@ -23,6 +25,8 @@ customer_totals(Name, Total) :-
 
 @output("customer_totals").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/MYVwzgLg9gtgpgJwPpQQE0WAFAIgILDw4A0ABAIwBMADNQHTUCUdAUKJLIiuprgUWQActBszbho8ZKgwJsOAEIBLBMAAWpAGSkAwlBKkALAFZ6TVu0lcZvHHoRwANo4CGBgMzkR58RyndZeQAREAA7GFQ4A0EATjMxS05pHjlcEPDIj28xXytkaAgXR2wAORd4MgAVKELHRlIALgBaFlI20kT-G1SyitI8CLCIRmJW9ura0gBeUhgwEBgsAaghnIABFYgABxAIXE6uAqKwHDEgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The second builds on it and keeps only the big spenders:
 

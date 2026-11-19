@@ -547,11 +547,15 @@ as_list(json_string: string, "field1:type1, field2:type2, ...") → array<struct
 When the second argument is a simple type (e.g., `"string"`, `"integer"`), the JSON array elements are cast to that type. When it contains `:` characters, it is parsed as a **struct schema** — each JSON object in the array is parsed into a struct with the declared fields.
 
 **Simple type example:**
+{/* playground-anchor */}<span id="playground-418d522219" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 data("[1, 2, 3, 4]").
 result(L) <- data(J), L = as_list(J, "integer").
 % L is an array of integers: [1, 2, 3, 4]
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/CYQwLiAUBEDaCMAaABAJhQZhQFgLrQEoA6AKACcBTAZwFcAbMSAGQOQB4BaZUCSAKQIomyALzIQVAPp0AllUZ8U0GQDswFAOYUyhUgFJkwueJXiyZEAE9kAewBmyVeq1kqALmQIU6ZFmR4SEgMAQWBgCmBkACNrMAALCmQABzorDTIbGhVgDyo4mwB3ZAK48GR4xLJ6am5tGQA3ClIAAUywJJpGaEpaBl0SIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Struct schema example (e.g., Qdrant `ask()` results):**
 ```prolog
@@ -578,6 +582,8 @@ as_struct(json_string: string, "field1:type1, field2:type2, ...") → struct
 Same schema format as `as_list`, but for a **single JSON object** (not an array). Returns a struct directly.
 
 **Example:**
+{/* playground-anchor */}<span id="playground-94ed241494" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 data("{""name"":""Alice"",""age"":30,""city"":""London""}").
 
@@ -589,6 +595,8 @@ result(Name, Age) <- data(J),
 % Result: ("Alice", 30)
 % Note: "city" was in the JSON but not in the schema — it is simply ignored.
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/CYQwLiAUBEDe3QHYgLYFMEC4EEEA2AlgMYbQA0CIA5qZgMwAMF0RBYAnlggDID2iwfggC+0AJQA6AFBSATmgDOAVzxhIAOVRoyAAhw0xOgDwBaHaAiQAUmLJSdDnQGUdAXh0gFAfQVhZSojUrXSQtTF9ZAkQqXWo0TCiwNBpZcTtHHU10Nx0IgLBMGjVQ9HJnW3tHfTQcvMDCtGK4sqdJKQABXiUwAAdumHllVXFpAFIdACVFFQKdGHxiDF1GMSlx9V4kzB0WNk4dAHdPHSidMAALGqsnAHl1HQAjbp1ETZPEM8vcokuUEB1ACgEJzAJwUuQIKB6eHYJyor3kwGkQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 <Tip>
 **as_list vs as_struct**
@@ -604,11 +612,15 @@ as_set(json_string: string, element_type: string) → array (distinct)
 ```
 
 **Example:**
+{/* playground-anchor */}<span id="playground-995801ba68" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 data("[1, 2, 2, 3, 3, 3]").
 result(S) <- data(J), S = as_set(J, "integer").
 % S is [1, 2, 3]
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/CYQwLiAUBEDaCMAaABAJhe5BmFPsF1oBKAOgCgAnAUwGcBXAGzEgGUjkAeAWmVAkgBSRFC2QBeZCBoB9GlWYCU0AJYA7MFQDmVCsXIBSZKOU1kCDLnxkyhgILBgVYMgBGAT2RgAFlWQAHBhA3TQoAezpVYAAuZBovUIB3ZASvcE8fZApGWl4dZQA3KnIAAXCwPzpmaGp6Jj0yIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 ### `as_map()`
 Cast to a map type:
@@ -708,11 +720,15 @@ is_null(expression: any) → boolean
 ```
 
 **Example:**
+{/* playground-anchor */}<span id="playground-ffa7f0a0f0" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a("hello").
 b(El, State) <- a(El), State = is_null(El).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIYIBYFMAbQkVTRWAUUIBoACAZQiwnxToB4BaOnalekxb46AXjoBLAM4B9AHZhiVQugxA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -728,11 +744,15 @@ is_not_null(expression: any) → boolean
 ```
 
 **Example:**
+{/* playground-anchor */}<span id="playground-5f3f59bb68" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a("hello").
 b(El, State) <- a(El), State = is_not_null(El).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIYIBYFMAbQkVTRWAUUIBoACAZQiwnxToB4BaOnalekxb46AXjoBLAM4B9AHYgI8sMSqF0GIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -804,12 +824,16 @@ struct:get(fieldName: string, struct: struct) → any
 ```
 
 **Example:**
+{/* playground-anchor */}<span id="playground-bc6833b1bb" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 a(10, 20).
 b(S) <- a(X, Y), S = struct("field1", X, "field2", Y).
 c(F1, F2) <- b(S), F1 = struct:get("field1", S), F2 = struct:get("field2", S).
 @output("c").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgjADANABATBAlAOgFACMQGVEwDwC0MoAGrAJqKxYwC8MAzgC4BOArgMZMgBEAZgEsApgBsAJmB6wyMfsPFwpMSmg4gAYmFjq4uQjEw5tYOo1acmALgDmQ7nNESlRmDtPN2XG3d6DHi6hRUAAEAezYmAAcI3g4eIKA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 ```prolog

@@ -503,6 +503,8 @@ extended).
 
 Consider this example:
 
+{/* playground-anchor */}<span id="playground-fe267c20a9" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {6}
 t(1,"b",5).
 t(1,"a",1).
@@ -511,6 +513,8 @@ p(X,Y,Z) <- t(X,Y,Z).
 @output("p").
 @post("p","orderby(3,-2)").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/C4CgjANARARlEFYCUA6AUKSUCG8yo3GgGM8CAHEADQgE0IAtJAAgB4BaZ0G+p9AAQD2AV2DlRIKOSgF+5QQGdQU+FEEAnACYBTdTACeIAMwR2AJiQz0QA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 We order by the third position (ascending) and, for the same value of the third
 position, by descending values of the second position.
@@ -535,6 +539,8 @@ The syntax is the following:
 where `atomName` is the atom at hand, `p1, …, pn` are integers denoting a valid
 position in atomName (starting from 1).
 
+{/* playground-anchor */}<span id="playground-f7e1798a75" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {6}
 t(1,"b",5).
 t(1,"b",1).
@@ -543,6 +549,8 @@ p(X,Y,Z) <- t(X,Y,Z).
 @output("p").
 @post("p","min(3)").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/C4CgjANARARlEFYCUA6AUKSt5lR80AxjngA4gAaEAmhAFpIAEAPALSOhW0PoACA9gFdgpYSCikoeXqX4BnUBPhQAtgEsAdiADMSKeiA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected result is:
 
@@ -555,6 +563,8 @@ Note that the min value is computed according to the lexicographic order over
 tuples obtained by projecting on the positions in the post-processing
 annotation.
 
+{/* playground-anchor */}<span id="playground-c246b590c5" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {6}
 t(1,"b",1).
 t(2,"c",1).
@@ -563,6 +573,8 @@ q(X,Y,Z) <- t(X,Y,Z).
 @output("q").
 @post("q","min(1,2)").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/C4CgjANARARlFgJQDoBQoBM0DG8ltEigEM8VUBHEADQgE0IAtRAAgB4BaF0Wh5tAAIB7AK7AADmJBQKUcgPFCAzqBnwoAWwCWAO3AQMiOWiA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected result is
 
@@ -588,6 +600,8 @@ The syntax is the following:
 where `atomName` is the atom at hand, `p1, …, pn` are integers denoting a valid
 position in atomName (starting from 1).
 
+{/* playground-anchor */}<span id="playground-a59666f4e2" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {6}
 t(1,"b",5).
 t(1,"b",1).
@@ -596,6 +610,8 @@ p(X,Y,Z) <- t(X,Y,Z).
 @output("p").
 @post("p","max(3)").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/C4CgjANARARlEFYCUA6AUKSt5lR80AxjngA4gAaEAmhAFpIAEAPALSOhW0PoACA9gFdgpYSCikoeXqX4BnUBPhQAtgEMAHiADMSKeiA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected result is:
 
@@ -608,6 +624,8 @@ Note that the max value is computed according to the lexicographic order over
 tuples obtained by projecting on the positions in the post-processing
 annotation.
 
+{/* playground-anchor */}<span id="playground-74fe9914f9" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {6}
 t(2,"b",1).
 t(1,"c",1).
@@ -616,6 +634,8 @@ q(X,Y,Z) <- t(X,Y,Z).
 @output("q").
 @post("q","max(2,1)").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/C4CgTANARARlEEYCUA6AUKB0DG9ntEigEM9U0BHEADQgE0IAtJAAgB4BaF0Wh59AAIB7AK7AADmJBQKUcgPFCAzqBnwoAW2IAPcIiRz0QA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Then the expected result is
 
@@ -642,6 +662,8 @@ where `atomName` is the atom at hand, p is the position to minimise (from 1) and
 `p1, …, pn` are integers denoting the positions that individuate a specific
 group.
 
+{/* playground-anchor */}<span id="playground-0d9f171f44" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {7,8}
 f(1,3,"a", 3).
 f(4,3,"a", 5).
@@ -654,6 +676,8 @@ f(3,6,"b", 9).
 
 g(X,Y,Z,K) <- f(X,Y,Z,K).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/GYCgjANAzBBECGsIAIoEoB0AoUAWaciKArJjiAEwQBscARksgOxmhW2wMoAcrIMHLsgCcZAAIB7AK4AXAA6yQsAOaxxciQGcZS1YQBOygLYBLAHYh8AHipQAfGjXYxG7bqSwJ+gCYBTfXQAnuCOZFjKIAAaEACaEABaEADSaMhWALTIoNFxiSnYQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected result is:
 
@@ -677,6 +701,8 @@ where `atomName` is the atom at hand, `p` is the position to maximise (from 1)
 and `p1, …, pn` are integers denoting the positions that individuate a specific
 group.
 
+{/* playground-anchor */}<span id="playground-fd67412005" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {8,9}
 f(1,3,"a", 3).
 f(4,3,"a", 5).
@@ -688,6 +714,8 @@ g(X,Y,Z,K) <- f(X,Y,Z,K).
 @post("g","argmax(4,<2,3>)").
 @post("g","orderby(1)").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/GYCgjANAzBBECGsIAIoEoB0AoUAWaciKArJjiAEwQBscARksgOxmhW2wMoAcrIMHLsgCcZAOYgAGhACaEAFoQA0mmQAeALTJQ0uYpXYAAgHsArgBcADhZCwxsMocvGAzudv3CAJzEBbeAAeIPhqVFAAfGgORs5uHkiwxl4AJgCmXnQAnuBRZEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected result is:
 

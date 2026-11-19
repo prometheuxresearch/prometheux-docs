@@ -140,6 +140,8 @@ console.table(rowsOf(result, "reachable"));
 A program is just a string, so you can keep it in a file next to your code and read it before
 you evaluate it:
 
+{/* playground-anchor */}<span id="playground-d1da3954f6" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog programs/company-control.vada
 % Company control: X controls Y when X owns more than 50% of Y, directly or
 % through companies X already controls.
@@ -162,6 +164,8 @@ control(X, Y) <- total_controlled_shares(X, Y, Q), Q > 0.5.
 
 @output("control").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgwg9gtgDghgOwJ4gMYQQFwE4QDYBcIAGmhjvgM4gCaIA7gBYCmCJIE9C1UE2zITI0QgArAAZQEAGa0ANCAAmAS36pMeFHwBQoIbgCuAc0ZlYiZc2qk4efnEUp0WXHkoA6bds4IAFACIAQTwYYRAAFXtKA2wkfwV-AAVGCFZlAA8QADU4AzxMeJBxdwB2AEpPHwDg0LgIqJi4hIBJBGVMZlRGQuKAFgrvLgDk1LbMnLyClraOrp73AEYBqqSUtPHc-ML-ACUIJFtwXC4QACFEAGt5gDZlod39w7BjtnOEK+n2zu6FYqXK+57A54I4+M6XbYAcXwinocGwinB73mAGY7n5-NC8Io8Mw4LI3h8QEFUFABJBsDB5v0ARjWl85glAqTyXwqb93DTBnSZt9tgBlfa4rDgNnzACc4vRAUFSGFmFFlKhMLhCKRROKaM82mcFDwuMUAH1KMJ+JRfMQFDQrQoAIplEAAHgAtBwhpb5CB7QpSI6AHy0Ty61wG42mqwWhQALRtXodLrILnwkdoZQUVWtIBjcZ9ToD2ajec9voDNE8mAgmFshuD+FDJvhEY9mf58ddtf1zCNDbNKcz2e9IH5IAAvCAoNEoL57UHyK4+23BJXqx36+Hzc27WmvSAA8VRNqAAIQAyYGCngId-wDIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 ```ts src/02-evaluate-file.ts
 import { readFile } from "node:fs/promises";
@@ -201,6 +205,8 @@ Crown Bank" and "Soylent Corp", own 60% of it together. The
 Declare inputs with `@param` and reference them as `${name}`. The declared values are defaults,
 and `params` overrides them, so the same file can answer many queries:
 
+{/* playground-anchor */}<span id="playground-3a7ee73800" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog programs/large-orders.vada
 @param("region", "North").
 @param("min_total", 0.0).
@@ -218,6 +224,8 @@ large_orders(OrderId, Status, Total) <-
 
 @output("large_orders").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIBwhgTmC2AUBEECmBzAlgewHbwDQAJ4A5DCAFwAt4BKAOgChRIYFo0sB9MjMsAGzz4ADLSF169UgBMkEAM6wAjAWKlKg+DL5oAbrKRTBigEwBWEWIbTZC4yoDKGAK7qVIJFinsUggCwAOC3FreVgAZhUScioVOQo0EHdDAmMw4yCrCBlQ3xUAdSQ5Mg0tXX1k-EVzUWCsm1hTSLUYwlK9ZAqATk6MiT5IFCQOEIUAeTqIAEkpAnteMic5AgAVHn5qfAAeAFp6fH38Edhx7OmCACVUTCxZ+cWVtb5qXD2Dy-RsfABefAASAG9kB8sABfF4HfCrXh8fAAPh+ALYnG40JBDEYzjIIBcCH6EEGwwmchoDCAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 ```ts src/03-evaluate-with-params.ts
 import { readFile } from "node:fs/promises";

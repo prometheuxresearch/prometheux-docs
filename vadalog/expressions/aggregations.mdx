@@ -44,6 +44,8 @@ The framework currently provides one such function.
 
 As an example consider the following program:
 
+{/* playground-anchor */}<span id="playground-933f8a0f45" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {12-17}
 a("one", 3, "a", 10).
 a("one", 6, "c", 30).
@@ -74,6 +76,8 @@ mmedian_result(X, Median) <- a(X, Y, Z, U), Median = mmedian(Y, "exact").
 @output("aavg").
 @output("mmedian_result").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRA9gdgpmA0ACAzEswGIIwAYCUAdAFCiSyYBsaAxpsvsadHElmgEaYBMDJ4z3GnV58wAFwDuETAFY0AM0q9Sk6UlSIwLRDOXhVlNAHNMAdj3ipgzQBNMAFgsH1aO0keEiRAM7eArgC2IAAaSADKgXiIADwAtIigoYgAmkgAWkgAqnjhgYgAvIgB-kHJngAO5QBOEDYhuQFRcQn1KelZOYgRAQVF1bUgZcTlAQCWUK3dTfGJSKmIGYjZDb0BYxNDRCPAAB6TkTEzrfOLy115hWu7g57U1BB+UGL7jYctSScdK5f3j8-Bt1+TwA+hAxAALGBVF7Td5zdpLTrdVZA-6eYDAABuRlaAEEAGoAcVhszaCy+iAJhNWWJxmzWMBso2AUGBVRg-gANv8kABZRnMqAk44Is78pks1YBAUswZoGA7YDUMRgTxEAACDzE5T8zzAvkCquImt1Or1lRqdk8Ju1uvAI3GRo1WrN9oCuydNtdYDuDyenpddp9qNBEKhAdNQYx2Ijtr1DIlrPZXJVniAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 After execution, the relation `ssum` contains the following tuples:
 
@@ -168,6 +172,8 @@ This assumption guarantees the homogeneity of the facts with existentially aggre
 
 Let us start with a basic example.
 
+{/* playground-anchor */}<span id="playground-619f3feb81" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {7}
 s(1.0, "a").
 s(2.0, "a").
@@ -178,6 +184,8 @@ s(3.0, "b").
 f(J, Y) <- s(X, Y), J = msum(X).
 @output("f").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/M4CgjAdADANABAIgIYIJQQFCgEzXstTUAZj0RXSxABYyEAjQq02RRyjAMxACl4BNVHAA8AWjigAGgNTwecALxwAtsACuykJMoABAPZqALgAcjIBJyZA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected output is:
 
@@ -249,6 +257,8 @@ In this example, all the intermediate results have been simply discarded by intr
 
 In addition, Vadalog Parallel provides an annotation mechanism that allows to introduce special behaviors, pre-processing and post-processing features. A post-processing annotation can be used to filter only the maximum (or minimum) values for each group as follows (see the section on [Post-processing](/vadalog/annotations#post-processing-with-@post) for more details).
 
+{/* playground-anchor */}<span id="playground-a1192b9c7a" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {9}
 s(1.0, "a").
 s(2.0, "a").
@@ -261,11 +271,15 @@ f(J, Y) <- s(X, Y), J = msum(X).
 @post("f", "mmax(1)").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/M4CgjAdADANABAIgIYIJQQFCgEzXstTUAZj0RXSxABYyEAjQq02RRyjAMxACl4BNVHAA8AWjigAGgNTwecALxwAtsACuykJMoABAPZqALgAcjIBJyY7je4IfOX8y5UgAe4VEyA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 ## Using `mmin` and `mmax` Without Intermediate Results
 
 The aggregates `mmin` and `mmax` have the expected semantics with the difference that they produce no intermediate results.
 
 Consider for example the following program.
+
+{/* playground-anchor */}<span id="playground-ce342df765" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {5}
 b(1, 2).
@@ -277,6 +291,8 @@ h(X, Z) <- b(X, Y), Z = mmax(Y), X > 0.
 @output("h").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/EYCgjANABATAlAOgFCklAzIlIbQKxai5QDsWAFiABrQBacUAPALRSg1QCacdUAvFAC2ggIYAPEN2hUoAPigAGZEgACAewCuAFwAO2kACJyBrEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 The output (listed below) does _not_ include the intermediate results:
 
 ```
@@ -287,6 +303,8 @@ h(2, 7).
 These operations can also be used to compute the rest of the aggregate operations without intermediate results.
 
 For example, the following program computes the sum of positive values.
+
+{/* playground-anchor */}<span id="playground-625d3e44dd" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {7,8}
 b(1, 2).
@@ -301,6 +319,8 @@ b_sum(X, Z) <- b_msum(X, Y), Z = mmax(Y).
 @output("b_sum").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/EYCgjANABATAlAOgFCklAzIpKQ2gVi1DygHYsUB9AWwGcBXakADWgC04oAeAWilFZQAmnHZQAvFDqMQI5MEoMmgjtz4Lpy6CLGTq1AIYAPWRQACAe3oAXAA42QAIgVLHWIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 The expected result is
 
 ```
@@ -314,6 +334,8 @@ The aggregate `mcount` has the expected semantics and does not produce any inter
 
 Consider for example the following program.
 
+{/* playground-anchor */}<span id="playground-0d83b1fdf2" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {6}
 b(1, 2).
 b(1, 3).
@@ -324,6 +346,8 @@ h(X, Z) <- b(X, Y), Z = mcount(Y), X > 0.
 
 @output("h").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/EYCgjANABATAlAOgFCklAzIlIbQKxai5QDshO0AnFgBYgAa0AWnFADwC0UojUAmnGZQAvFAC2AYwD2AVwB2AFxADo9KAD4oABmRIAArIUAHGUoBENM1iA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected output is
 
@@ -336,6 +360,8 @@ h(2, 3).
 
 To combine some properties into a set, you can simply do the following:
 
+{/* playground-anchor */}<span id="playground-689a163d5b" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog {5}
 c(15552,"Name").
 c(15552,"Synonym").
@@ -343,6 +369,8 @@ c(15552,"Alternative").
 
 synonyms(Id, NewSynonyms) <- c(Id,Synonym), NewSynonyms = munion({}|Synonym).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/MYCgjArFBMA0BEA5AhgWwKbwJQDoBQokMCAygJ4B2A9hWatvoVBHPAIIA2ALugE4XIuASwBumXHjwBnSjTpSQASQAmsAASJ0Ad3LVaqKVjUAeALRrQK2Lrmos6zTtn6pagLxrUAVwpCaIAG8AXwAfG30JPABSNTZlZXRlNQAjMjUuAAt0NQAHDmQyAHNeKh9lAC41KQyqLTUtDMF0rLVeLw50VwTeUXR8AAFSrhyvLhB4GT15BjwgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 ## Median Aggregation
 
@@ -373,6 +401,8 @@ Vadalog Parallel provides three variants of median computation:
 | `"reservoir_sampling"` | Large datasets (10,000-1,000,000+) | High | 8KB |
 
 ### Example: Basic Median Computation
+
+{/* playground-anchor */}<span id="playground-c19f51002f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 mark("Alice", "Math", 85.0).
@@ -405,6 +435,8 @@ median_reservoir(Student, Median) <-
 @output("median_reservoir").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/LYQwTg1gFARAggGwJYGMCmMA0ACGBZEAFwAstsAOAVgDoAGASmoChRJZFUMd8jScBOWnUYtw0eMnRkeJMgHZyw5q3Ecp3ArIEAmJaLYTO0zXwqKGzfeIBCAewBGx3vKEWrsO443Occmm5UPByctbDldNyYAUmwAUQAPEBRCbGA0ABMkEAA7bHsAT2wAZ0IAV3S0bMIWDKzsgH00ROSoAGUyiqqcPFqc+mwAHgBabCZscdSxNo7Kwhx6nFaUWzA0ehwxiZ7MnOwAXlS0ney25dXuJqTCGBFo7DgABwewW3ikUEI0VN7c0qKkbIAc2wAAUAE3YEAIQErJAkYA1Y71EBPF7xablWbdH79YajCaTNjtTFdbALbBLFZrDYE7Z1faHH6nKncB7aZHQ2Hwm6WGKPZ6vd5EL5Hel-AHA1ZFNBgAButiQYGKIGAD2QQMRdXqUpl8sVGM6c2wdL6gxGm3GgWJhvmizO1PxWx+DOAopyzPOuB1coVYHqRRVaolPKYTAAArZSoQHlHYG6GpdkiGI1GY4Q4z9kajXsnI9HYzB49q0NKfYqQ0A" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 The expected output for exact median is:
 
 ```prolog
@@ -415,6 +447,8 @@ median_exact("Bob", 72.0).    % Sorted: [70, 72, 75] → middle value
 ### Example: Median vs Average with Outliers
 
 Median is particularly useful when dealing with outliers:
+
+{/* playground-anchor */}<span id="playground-292804779e" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 salary("Engineering", "Alice", 80000).
@@ -435,6 +469,8 @@ median_salary(Dept, Median) <-
 @output("avg_salary").
 @output("median_salary").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/M4QwNiBOCeAUBEBRAdgcwJbIKZcp18ANAATwCCY6AxlkcQBwAMzjAlAHQBQoEMCKGbLnx14AIQD2AIzr0ArCw7dwUOEjSYceNKIDCACyiVaJegCZFXHqv4ah2giXi7EAeToKWbdsWIBSYlcAVwAXY0hOTgCyADdcEFQsYnRgYhAAM3SsKhCsABNiKWhiCVDw4E4QGNQAfWs+ABEsAAcQkljUVmIAHgBaYk5fX3q4JtaSGvaAW1LkENYSQaGO4gBeYimq1FgyGaC5pSjiAFl89BBkZNTIaSDgEOIQiRKy9FwKqbOLupVGlraTl9kF0+gMhsQRrAxgDJsRdrN5otwac8udLuspp9URcdns5k4sAAPEA5eCHAACpRCzVCCC2P140DJXEpoRpIQQWLRDNUzM4QA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -466,6 +502,8 @@ median_salary("Engineering", 83500).    % Better representation: (82000+85000)/2
 
 The aggregate `maxcount` returns the key tuple with the highest frequency
 
+{/* playground-anchor */}<span id="playground-f4432c7f50" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("hotspot").
 affects("Component1","Component2").
@@ -476,6 +514,8 @@ affects("Component2","Component1").
 affects("Component6","Component7").
 hotspot(Component2,MaxCount) <- affects(Component1,Component2), MaxCount=maxcount().
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEALEEDOUXwJQDoBQAhgGZECmAxmggMIgC2GAdqYxAIzwA08tDIzrAEzZ8xMpVQ16TFhADMXHtP6zhuQiQpUlfARAAsi3jKEiN47cZWsArEeV6O6sVsk6TEYdyuOzLiVK6sgBs9kGsAOxmyGgYELA+qpwAsgQAHrRgrFgABAA8ALQ5-lSJrGycZZ5YnDmpGeCsALx06eSN8epAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected output is
 

@@ -2411,6 +2411,8 @@ Here the schema only declares `name` and `__score__` — the `country`, `__id__`
 
 Same as `as_list` but for a **single JSON object** (not an array). Returns a struct directly, without wrapping it in an array.
 
+{/* playground-anchor */}<span id="playground-b92933e3a1" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 % If you have a single JSON object string (not an array)
 data("{""name"":""Alice"",""age"":30}").
@@ -2421,6 +2423,8 @@ result(Name, Age) <- data(J),
     Age = struct:get("age", S).
 @output("result").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgkgZiCeD2CuIAWBDAbgUxCkBnAlgHYDmANlgFIDKA8gHIiwBGAVhgMYAuenATkcRAAKQrG4pC2XrxTQAlACgAJik4ohAIgDeGjYRQBbDLoBcugIKl87YxoA0ulMVsmAzAAYAvhrkA6BQq8GLjwpJxCdIYYdiDmznIgADwAtCAqakIUcnYKIHkgVCAAvNi4APq4fPBcmTF6USaV-CQxThgmRJwYzrw+OfkgkUbFPLzVnCbO4fVG9gXZuflxWCVN45MY021zVH4KAAIInAAO8NNBIWE+-kA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 <Tip>
 **Schema cheat sheet for Qdrant ask() results**

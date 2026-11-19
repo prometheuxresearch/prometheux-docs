@@ -27,6 +27,8 @@ The `@model` matters here: it names the column (`region`), and the app will refe
 
 Second, the search itself. It declares two `@param`s and filters with them:
 
+{/* playground-anchor */}<span id="playground-b92a8ecbb1" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog Concept: matching_orders
 @param("region", "North").
 @param("min_total", 0.0).
@@ -44,6 +46,8 @@ matching_orders(OrderId, Region, Status, Total) :-
 
 @output("matching_orders").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIBwhgTmC2AUBEECmBzAlgewHbwDQAJ4A5DCAFwAt4BKAOgChRIYFo0sB9MjMsAGzz4ADLSF169UgBMkEAM6wAjAWKlKg+DL5oAbrKRTBigEwBWEWIbTZC4yoDKGAK7qVIJFinsUggCwAOC3FreVgAZhUScioVOQo0EHdDAmMw4yCrCBlQ3xUAdSQ5Mg0tXX1k-EVzUWCsm1hTSLUYwlK9ZAqATk6MiWgwMgBjeKwUDhCFAHk6iABJKQIAJVRMLAJ7XjInOQIAFR5+anwALgBaenxL-AnYaez5pZXsdc3tvYO+alwLq+X0bHwAF58AASADeyH+WAAvt8rvh9rw+PgAHzA8FsTjcJHQhiMZxkEAuVgDYbecYzOQ0BhAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The values in the `@param` declarations are just defaults for running the concept by hand — the app overrides them on every run.
 

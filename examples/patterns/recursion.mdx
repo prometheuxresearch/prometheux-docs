@@ -28,6 +28,8 @@ Consider the following small graph:
 
 ![Recursion graph example](/images/recursion.png)
 
+{/* playground-anchor */}<span id="playground-d12d759b45" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge("a","b").
 edge("a","e").
@@ -47,6 +49,8 @@ path(X,Z) <- path(X,Y),edge(Y,Z).
 
 @output("path").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUBECG0BpoCNoEoB0AoUEbyWHW1yjkWgDNidwzUkQbSYBjC1TWvadw5ujCZJ2XFtGHQAFgJ7UkYGlgCkAAmSwAzsFWstwAFyqAlpVUAXKcABOO45tWwAdiFWlVlawHsAthauqTl4gOgAaFl7+OkEhqgCaUU5RtiYOsKoADrCWHt5+4eaRcVhZlpChCHFoqgA8ALRughVV2CqqtqwArtaaxgBuOnraRqbJdmmZ2VK5vlGBwWERczE6Cc6uljbjjknunrOb87EJhcsLqgBaCIljqY6TOft+hyuqBZEv5xclU+UIF9V6g8pH8qggWHF-lwsAABLydcwZBEwUoyLhAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 After execution, the relation `path` contains the following tuples:
 

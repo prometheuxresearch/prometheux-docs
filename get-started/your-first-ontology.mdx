@@ -75,6 +75,8 @@ Each `owns` fact reads: an owner holds a fraction of shares in a brand.
 Rule 1 says a conglomerate controls a brand when it directly owns more than 50% of
 it. Think of relationships between entities as verbs — `owns`, `controls`.
 
+{/* playground-anchor */}<span id="playground-825112d027" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 owns("Yum", "KFC", 0.6).
 owns("Yum", "Pizza Hut", 0.7).
@@ -82,6 +84,8 @@ owns("Yum", "Pizza Hut", 0.7).
 % Yum! controls some brand if it owns more than 50% of the shares of that brand.
 controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVatQCk6RgEJ0AY2BhBAJ2AAbCOgjAkAU3QAjNdzAATdGwBm1wejo6kwNUcEALc+gCsRGcB2nkYQXm46geie3A6m5hY0yqoa2gzIhADK+gYAQmaWFOgAPAC0juDQ8OkYWYZ58TVhBhAUjdzh6AB8xCQ+NNLoAIIWFgZWxgCeUR5GAA6a3BMA5hoIlgBcuh6g6CBeDsHoagiazeijamwAbgY0AALAQrNCsEnqWhAwEkA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The head atom (`controls(...)`, before `<-`) declares intent; the body (after `<-`)
 is the implementation detail.
@@ -116,6 +120,8 @@ the running aggregation correct across each recursive call.
 Putting it together, generalised over any conglomerate, and exposing the result
 with an `@output` annotation:
 
+{/* playground-anchor */}<span id="playground-cd3178c74d" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 owns("Yum", "KFC", 0.6).
 owns("Yum", "Pizza Hut", 0.7).
@@ -147,6 +153,8 @@ controls(Conglomerate, SomeBrand) <-
 
 @output("controls").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0ACUESwBTdGiALnQ8cwBzS2AkNI1uQQyACzl0AAMAZWqNNIha9G4kbTBBdGAAM3b0ACMysGV0NgG2Hpd0QWqejq6ZgYgmloSJsDnKjJHuMZpqiAB9Ne5m6DywQuLS8rSME4x6u4AhUeUX9YgKdAAeAC01HQvSkUGutxKZQqL3en2+FxacUSKXS6AATDlIUVoQ90Mc6o0ka12p0EN1egNePsxhMpj0jOZBFpLBB2ts2N1SiVlGwLgBPTYgSrAAk1eblMnLKnoc6XLY7PafI5yM4-CEFXH3WHoACS3I0vP5GgFcJKHwOX3QxMufyBIPQTO6rKuWruMMe+sNxsFFFQjqCBoqRrSfMF5rSlrGiLtNE29WQ7UsliV6D5zSMizpXIzaSzcp+sogd2Gnx2UvmGWdUJ1VTkqtOgmAgis6pJmpu2s9kej1oAKi2rLbkQDgaDju3Lp3az3vSHfabewibT9-Y7B63LCP2QBedBICDIKA7lG5d14ipO5muuWl2njSYTQTsgBWwC5M3ApTWbB0sslRlih0A4BQAcggTZ5RaCZ2W4IZgAANwyBwiHiGhnRZYA2RnbsHmXK17XHcUmyHSwpxaXCPXwm14StWNkQDUEd3QAA+YgSAceMAAFtEEHQhFgTDXRgCQgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 A couple of details worth noting:
 

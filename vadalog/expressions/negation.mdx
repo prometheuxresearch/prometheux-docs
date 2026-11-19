@@ -28,6 +28,8 @@ runtime error, condition 2 is not enforced and negatively bound joins can be
 used (albeit discouraged), being aware of the theoretical and practical
 implications.
 
+{/* playground-anchor */}<span id="playground-8bf9288d2f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {10}
 employee("Mark").
 employee("Ruth").
@@ -43,6 +45,8 @@ safeProjects(X,P) <- project(X,P), not contractor(P).
 @output("safeProjects").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYWwDgNg9gnswAoBEBZAhgJwNZIJQDoAoUSWeZAJQFcAXACzyIBMBLDYAYxqg2QCk0AO2CNCdNsCaVaDAoQ5RBNDGi49k6bKLAYoAK040EARgA0qTDjk79hhACZz1ett0GuCAMzmBw0YQBnNAAzYAAFN0MAhAANUzDcAAIAHgBaRJt3IziE00TBKBpEhSUVNV4EokIAAShaMFpkINCI2y4A0SA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 The expected result is:
 
 ```
@@ -56,6 +60,8 @@ contractor. Since a person can have various company attributes (`employee`,
 contractor.
 
 Consider this next example:
+
+{/* playground-anchor */}<span id="playground-9bb99b6700" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {10,11}
 s(1, 2).
@@ -72,6 +78,8 @@ f(Y, X) <- f(X, Y), not b(X, Z).
 
 @output("f").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/M4CgjANABATAlAOgFChtAzIlJ3QKxagAs0AbFgEYinTzJUmyUhpPIDGLWSAZiABrQAmnCgAeALRRQgqCOgA7APYAXKFSHQAWlj6ao-UZKh9Z8qMrVVZO5EgACSgK4qADi5AAiHp6xA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected result is:
 
