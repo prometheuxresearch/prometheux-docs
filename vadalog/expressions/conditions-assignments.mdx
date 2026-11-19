@@ -11,12 +11,16 @@ Notice that although the comparison symbols used in conditions are partially ove
 
 Each rule can have multiple comma-separated conditions.
 
+{/* playground-anchor */}<span id="playground-18e99e6baa" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 contract("Mark",14).
 contract("Jeff",22).
 rich(X) <- contract(X,Y),Y>=20.
 @output("rich").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/MYewdgLgTghsEAoBEBZGUDWSA0BGALAJQB0AUKJLPMgFICmAZgzgEwsmlQCWwAFggA1CAAgA8AWmEVocRAOwBNQooB8AXhYAGMgAEQAVwgAHQ8m58kHIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 In the example we individuate the contracts for `Y>=20` and classify the respective employee as rich. The expected result is:
 
@@ -26,12 +30,16 @@ rich("Jeff").
 
 Consider this next example:
 
+{/* playground-anchor */}<span id="playground-f990c0a094" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 balanceItem(1, 7, 2, 5).
 balanceItem(2, 2, 2, 7).
 error(E, I) <- balanceItem(I, X, Y, Z), X <> Y+Z.
 @output("error").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/EYQwNiB2DGCmCSAXWBbAFARgDQAIDsuATLgKwCUAdAFCgQwLLrE7PN6VWwBOXA9l2gCiueGRwAeALQ5aUOElRp4uABq4AmrgBaZVRIB8OdQGot1AAK8ArogAONtACJufLo45A" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Here, we individuate the balance items for which X is different from the sum of Y and Z and report an error E for the identifier I of such an item. The expected result is:
 
@@ -40,6 +48,8 @@ error(_e, 2).
 ```
 
 This next example selects the senior English players.
+
+{/* playground-anchor */}<span id="playground-6b1861029e" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 player(1, "Chelsea").
@@ -58,6 +68,8 @@ seniorEnglish(X) <- player(X, Y), team(Y), age(X, A), Y=="Chelsea", A > 20.
 @output("seniorEnglish").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/A4GwhgngpgTgFARgDQAIBEBhAFlEBnKMNASgDoAoMAcykVQCYAWM80SWOe1NAIXZgB2JCgBdCAWziYc+QsMo1ODAKws20eF3R8NQlmLCTpuAkRbVaW+qorqOAZm7YTc84scoEADn0Spz2TNRP15+PQoCAQBLAHsYAFEBKhAovCw4AA1iFAAeAFoUO3gM1ABNYlQDSXLUC0zUAEEKlFKAXlbjQLRGlAA+FHoABgoAARiAVxFgSalI2ISklLT5IA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 They are those who play with Chelsea with age greater than 20. The expected result is:
 
 ```
@@ -70,6 +82,8 @@ Rules can be enriched with assignments in order to generate specific values for 
 
 Each rule can have multiple comma-separated assignments.
 
+{/* playground-anchor */}<span id="playground-3f9beaf3c3" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 balanceItem("loans", 23.0).
 balanceItem("deposits", 20.0).
@@ -79,6 +93,8 @@ operations(Q, Z, A) <- balanceItem(I1,X), balanceItem(I2,Y),
                        A=(X+Y)/2.
 @output("operations").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/EYQwNiB2DGCmCSAXWBbAFAIjAeygZwwBoACAJgGYA6ABgEpKAoUCGBZdDAE1gAds8AlogIlS1GvQbYesAE4hEA7JDxoAiiQBaJAIK1iAHgC0xZlDhJUaeAEZCADVokzrS+nilCATScNi-gMCg4P9bAF4wrFwVImIPCK5efiERYj8QjJDNMPsAai8SdMzi-x0wtDyfAHpSRgABbABXRB5mzGk5BSUYySA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 This example generates a fact for operations, summing two balance items, one for loans and one for deposits. Observe that `I1=="loans"` and `I2=="deposits"` are conditions to select the `balanceItems` (as I1 and I2 appear in the body), whereas `Z=X+Y` and `A=(X+Y)/2` are assignments (as Z and A do not appear in the body).
 

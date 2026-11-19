@@ -80,6 +80,8 @@ Formally, two companies c1 and c2 are close links if X (resp. Y) owns directly o
 
 Determining whether two companies are closely-linked is extremely important for banking supervision since a company cannot act as a guarantor for loans to another company if they share such a relationship.
 
+{/* playground-anchor */}<span id="playground-0c3e3b06fd" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 % input company graph, described as ownership edges
 % the company A owns 0.2% of shares of the company B
@@ -116,6 +118,8 @@ close_link_sum(X,Y,J) <- closeLinkPaths(X,Y,W,P), J = msum(W).
 close_link(X,Y,W) <- close_link_sum(X,Y,W), W >= 0.2.
 @output("close_link").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAglgdgDgrgLiAxgewLZQIYQJ4gOYBOGUAFgDQgAmApgM6IFgBG1lIGtIyA7hNQbRJgoIVnjoAoUHBLUkaTDhABBLr04AGAHQAmUMgBmIQRgJ0uRmXJTosuAEISeEABQAiZW4pv7XkNp0ASi0pECt5WyV7NQhNLQAOfSMTM05DMNkIxVxlJ153X29PCm144LzXHz83AGE-APLndzrvABF6rQA2Rvy3dqKOgE4eyuKQWo6gkNCwS0ybbJAADRjODBAofkRqCDgMcRAAdQtjElNzdIBNdgg2bjkMSjZIdmNqOFDwgDcwWjA4VggCDIGjLG5sb6-f6A4Ggy4UKwQDL8OS-V6IAA2yFo1AAMpAANYABQwMjSRiWoWQX34IGu3H+JFO504xywdzkTEYEDwyJAGN+CHSPz+ALYsPMRJCmOxeMJJLJLiWZHhhzIRMCIAAPABaGJKlVkQ6BChEgC8AG8AL4AHyWNvhyy1AD5LtNQLNkWZwGskFicfiIMTSUyDAQ0GC4Mg6SAGTJmakjgBGWOM144oVGEXQyihCWcIlJijsvkSkAALR9QOQCBe4QFtEzfOzYurNFoCMyZcrv1CjxozyR4QzJxbMJBdE7Oy9qN9MoD8pDnDDEeV5dCcaZY-FE4LEnncqDCpItAN5bIACl1ZrdX7ZYHg4rlaqi4WTRIQJ+v9+f7-f014XPQ4gjID8-3AiDPwvEAzWTAAqYDQMg5DfyJGCQELG1zzAlDcMrABCF5C3dcA5hRKt1gPB9j2XcNUD5BY7EjaNwkYpR6TTFJzEOPtbj5EdhShVt8wwqch1kb00Uo-1qAAfQFINZNoGB6KYXBCGQGAoEgXk1NCFYSw4+Moz2DEEzkK8QDU9g8EIag8FJHT+JUk4eIPeTCSUlSDXhC8bz1KjFyfQ01Q1ChoNg1BlNQFxjRIz0rEkucZI8xTopOFZqVpIymS41liz44czkTXtQDs0laRkLB-F0MSGIULAwHMAy+Ouc5wCRA9+UJVN4zyo59xShSCR8o1-LvHFUoJLyYufMaKGOZ1YICEIAAFNLgWA4HcdzhrccogA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 After execution, the relation `close_link` contains the following tuples:
 

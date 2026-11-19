@@ -7,12 +7,16 @@ description: "Linear rules, join rules, facts, and constants in Vadalog."
 
 _Linear rules_ are rules with one single atom in the body. They define facts of the head predicate, given facts of the single body predicate.
 
+{/* playground-anchor */}<span id="playground-a632526aab" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 employee(1).
 employee(2).
 department(Y,X) <- employee(X).
 @output("department").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYWwDgNg9gnswAoCMBKAdAKFJW8ECZ0MATYMAQwCcAXEYAO2oQE0AaADRQAIAeAWi7ZocRJ0wABKAFdqYGQgBEpCjTqMFRIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 For each employee X there exists a department Y. The expected result:
 
@@ -42,6 +46,8 @@ For each employee X in a department Y, there exists a project Z in which they pa
 
 If the atoms in the body do not have variables in common, the Cartesian product is assumed.
 
+{/* playground-anchor */}<span id="playground-beaa883446" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 employee("Jack").
 employee("Ruth").
@@ -50,6 +56,8 @@ department("finance").
 canWork(X, Y, Z) <- employee(X), department(Y).
 @output("canWork").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYWwDgNg9gnswAoBEApAhgYwNZIJQDoAoUSWeZAJQFcAXACzyIBNgw0AnGkYAOxuQDOGAJa8MwRoRZtO3PsgBmwnmh7jJGVQHUo7LAgAaAGgAEATVMAtXCYA8AWhMlocRAdynpHLr35mChAACULRgtMiaPDp6kkA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Any employee X can work in any department Y on some unknown project Z. The expected result:
 
@@ -68,12 +76,16 @@ When they appear in the head, they denote specific constant values to be generat
 
 When they appear in the body, they denote specific filters, or selection criteria, to be applied to the facts considered in the rule.
 
+{/* playground-anchor */}<span id="playground-d2c57cc2ac" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 employee("Mark").
 junior("Mark").
 contract(X, "basic", 20) <- employee(X), junior(X).
 @output("contract").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYWwDgNg9gnswAoBEBZAhgJwNZIJQDoAoAKwFcA7ASyg2XWzyIGMpyAXDNJthADQBoABEgBGaAM6UmSIQCYADLkEAeALSDQkWPD64hZKjV1EAAlFJswF5C3adujQkA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 A junior employee will have a "basic" contract, with stipend 20. The expected result:
 
@@ -83,6 +95,8 @@ contract("Mark", "basic", 20).
 
 For this next example:
 
+{/* playground-anchor */}<span id="playground-feb14d34ce" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 employee("Mark","junior").
 employee("Ruth","senior").
@@ -90,6 +104,8 @@ contract(X,"basic", 20) <- employee(X, "junior").
 contract(X,"advanced", 40) <- employee(X, "senior").
 @output("contract").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYWwDgNg9gnswAoBEBZAhgJwNZIDRICsBXAOwEsoMkBKAOgChRJZ5kAlIgFwAs8kBnYOUo0GAYyglOGNGM4IAGvgBGafmTF4ABACYADNS0AeALRam0OIiVbCpClTr0JUmXMX40AEwBuaEmLAXtoALAbGZhYs1ri2gsKODAACUFxgXMgu0rKcovRAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Any junior employee X will have a "basic" contract with stipend 20. Any senior employee X will have an "advanced" contract with stipend 40. The constants filter the facts to which the rules apply, so the basic contract rule applies only to Mark, and the advanced contract rule applies only to Ruth.
 

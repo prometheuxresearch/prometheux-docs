@@ -49,12 +49,16 @@ A **Vadalog (logic) program (or ontology)** is a set P of rules and facts.
 
 The following is an example that shows a simple Vadalog program.
 
+{/* playground-anchor */}<span id="playground-91f0c4612e" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 a(1).
 c(1,2).
 b(Y,X) <- a(X), c(X,Y).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgjAlAdAUAxuANAJmjARiAmogGhAAgB4BaA0fRAhXRLNAAQHsBXAFwAd2QAidHtEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 `a(1)` is a fact, `b(Y,X) <- a(X),c(X,Y)` is a rule. Observe that `@output("b")` is an annotation and specifies that the facts for `b` are in the output. We will take a look at [annotations](/vadalog/annotations) later.
 
@@ -130,12 +134,16 @@ Variables in Vadalog need to be capitalized, and can contain underscores.
 
 To ignore certain predicates in a rule body, use anonymous variables with the underscore symbol (`_`):
 
+{/* playground-anchor */}<span id="playground-92ec5899be" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 t("Text", 1, 2).
 t("Text2", 1, 2).
 b(X) <- t(X, _, _).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/C4CgRAKgpgHsYBoAEBGZAmAlAOgFCklmHUVQx1wCMQANTJAHgFolQbkB9TigAQHsArsAAOQ8JTAUgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Here, `b(X)` is derivable for all values of `X` for predicate `t`, regardless of the values of `t`'s 2nd and 3rd terms. The expected output:
 
@@ -157,12 +165,16 @@ The following two examples show possible uses of labelled nulls. Many more are i
 
 **Example 1:**
 
+{/* playground-anchor */}<span id="playground-4cdcca7f7f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 employee(1).
 employee(2).
 manager(Y,X) <- employee(X).
 @output("manager").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYWwDgNg9gnswAoCMBKAdAKFJW8ECZ0MQBDAOxIHNgAnBATQBoANFAAgB4BaN7aORK0wABKAFcALmEkIARKQrUasokA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 This ontology represents that every employee has a manager. The expected result:
 
@@ -174,6 +186,8 @@ manager(y2,2).
 where `y1` and `y2` are labelled nulls, representing that there must be a manager for each of the two employees. We cannot know from this program alone if they are the same person or not, but there exists the possibility that they are different people.
 
 **Example 2:**
+
+{/* playground-anchor */}<span id="playground-c3a24e8fa3" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 employee("Jack").
@@ -187,6 +201,8 @@ hired(Y,X) <- manager(Y,X), contract(X).
 contractSigned(X) <- hired(Y,X), manager(Y,Z).
 @output("contractSigned").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYWwDgNg9gnswAoBEApAhgYwNZIJQDoAoDKAOwBcAnTc5dbPI0SWeZAJQFdyALR4slRodufAoWbQ4iJAEFSpfoRBpSaAObBKCAJoAaABq4ABAB4AtMcmtERojwCWlYABNdhkxeMq1m7fqM9YxIKagxaOwFQmgBlB3VSVwQjM0tHZzcA3CCfDS13AC1xAAEobjBuZBChcLiE134gA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 This example states that every employee X has a manager Y. If the manager Y sees that there is a pending contract for the respective employee X, then she hires the employee. Once a manager Y has hired an employee X, the respective contract X is signed.
 

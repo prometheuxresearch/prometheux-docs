@@ -14,6 +14,8 @@ In self-recursive rules, in case of bodies with two atoms, we distinguish betwee
 
 Some examples follow.
 
+{/* playground-anchor */}<span id="playground-ecf34db9f4" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge(1, 2).
 edge(2, 3).
@@ -23,6 +25,8 @@ path(X, Y) <- edge(X, Y).
 path(X, Z) <- path(Y, Z), edge(X, Y).
 @output("path").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0AEAmAlAOgFCgpRCDMam4Uc8ALIVlGQgKyEAOAhgC4AWkAGggJrLwAeALTwqXXo1Ydu8AFr9h8Zu0g8E8hGJl8MAAQD2AVxYNjkAETK25wkA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The expected results are:
 

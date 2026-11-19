@@ -96,6 +96,8 @@ The `and(args)` operator evaluates to true if all the conditions in `args` are t
 
 This example shows the use of the `and(args)` operator to evaluate multiple conditions on the variable `X`. The rule `b(X, IsIn)` checks if `X` is greater than 2, less than 5, and equal to 3. The result of this conjunction is stored in `IsIn`.
 
+{/* playground-anchor */}<span id="playground-1f1d9e7eff" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -105,6 +107,8 @@ a(4).
 a(5).
 b(X, IsIn) <- a(X), IsIn=and(X>2, X<5, X==3).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmU2AFkoFYDFYANAGgAIBJAZw4DsU2AHgC0bHExTtufALxZeAE2YA+IuyaDa6mTIqYgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -123,6 +127,8 @@ The `or(args)` operator evaluates to true if any of the conditions in `args` are
 
 This example illustrates the use of the `or(args)` operator to evaluate multiple conditions on the variable `X`. The rule `b(X, IsIn)` checks if `X` is less than 2, equal to 4, or equal to 6. The result of this disjunction is stored in `IsIn`.
 
+{/* playground-anchor */}<span id="playground-6c668acc9f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -132,6 +138,8 @@ a(4).
 a(5).
 b(X, IsIn) <- a(X), IsIn=or(X<2, X==4, X==6).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmU2AFkoFYDFYANAGgAIBJAZw4DsU2AHgC0bHExTtufALwgATs0FF2TGTKqr1ANgJA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -150,6 +158,8 @@ The `not(expression)` operator negates the Boolean value of the expression. It r
 
 This example demonstrates the use of the `not` operator to negate a condition.
 
+{/* playground-anchor */}<span id="playground-090a1d47bb" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -157,6 +167,8 @@ a(2).
 a(3).
 b(X, IsNotTwo) <- a(X), IsNotTwo=not(X==2).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmAxWADQBoACASQGcA5ECAFQHcQV6APAFp6OaigYt2XXgF4AdhxqzZJTEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -173,6 +185,8 @@ The `xor(expression1, expression2)` operator (exclusive or) evaluates to true if
 
 This example shows the exclusive or operation between two conditions.
 
+{/* playground-anchor */}<span id="playground-0cc78cae28" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -180,6 +194,8 @@ a(2).
 a(3).
 b(X, IsExclusive) <- a(X), IsExclusive=xor(X>1, X<3).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmAxWADQBoACASQGcBRADwGMAbMZgSwBuAUxT0APAFp6OaigYsOPPkOEBediABONAHy4G1cRUxA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -196,6 +212,8 @@ The `nand(expression1, expression2)` operator (not and) evaluates to true if at 
 
 This example demonstrates the NAND operation.
 
+{/* playground-anchor */}<span id="playground-c6161f0dab" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -203,6 +221,8 @@ a(2).
 a(3).
 b(X, IsNand) <- a(X), IsNand=nand(X>1, X<3).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmAxWADQBoACASQGcA5LAOwBMV6AeALT0c1FAxbtuAXg6cuNAHy4G1PhUxA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -219,6 +239,8 @@ The `nor(expression1, expression2)` operator (not or) evaluates to true only if 
 
 This example demonstrates the NOR operation.
 
+{/* playground-anchor */}<span id="playground-c85a66f26f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -226,6 +248,8 @@ a(2).
 a(3).
 b(X, IsNor) <- a(X), IsNor=nor(X>1, X<3).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmAxWADQBoACASQGcA5EAJxXoB4BaejmooGLdhwC8AO040AfLgbUeFTEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -242,6 +266,8 @@ The `xnor(expression1, expression2)` operator (exclusive nor) evaluates to true 
 
 This example demonstrates the XNOR operation.
 
+{/* playground-anchor */}<span id="playground-96250cdb15" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -249,6 +275,8 @@ a(2).
 a(3).
 b(X, IsXnor) <- a(X), IsXnor=xnor(X>1, X<3).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmAxWADQBoACASQGdqA7EAJxXoB4BaejmooGLdlwC8ADw6caAPlwNqvCpiA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -265,6 +293,8 @@ The `implies(expression1, expression2)` operator (implication) evaluates to fals
 
 This example demonstrates logical implication.
 
+{/* playground-anchor */}<span id="playground-be698e3168" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -272,6 +302,8 @@ a(2).
 a(3).
 b(X, IsImplied) <- a(X), IsImplied=implies(X>1, X<3).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmAxWADQBoACASQGdGBbKAGwEsBTAExT0APAFp6OaigYt2XPvwC83Dj17MaAPlwNqwipiA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -288,6 +320,8 @@ The `iff(expression1, expression2)` operator (if and only if) evaluates to true 
 
 This example demonstrates the if and only if operation.
 
+{/* playground-anchor */}<span id="playground-e0bc6d2a8a" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -295,6 +329,8 @@ a(2).
 a(3).
 b(X, IsIff) <- a(X), IsIff=iff(X>1, X<3).
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmAxWADQBoACASQGdGAzNlegHgFp6c1FAxbs2AXgCWHGgD5cDatwqYgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -311,12 +347,16 @@ The `if(condition, true_value, false_value)` operator provides conditional logic
 
 This example demonstrates conditional logic using the `if` operator to classify numbers as positive or non-positive.
 
+{/* playground-anchor */}<span id="playground-365dc2f19a" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
 a(-1).
 b(Result, Value) <- a(Value), GTZero=Value>0, Result=if(GTZero, "positive", "non-positive").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gFp9NFYAlAUwGcwAbCAGgAIA1LesKlFgHiIscHLj1YBxACoAtKgCcQAXhHcAfAAZW1Oo0UBLAGawpsha3hQQNPRD0A3KvHMA7EM6KXrth6kxA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -329,6 +369,8 @@ b("non-positive", -1).
 
 This example uses the `if` operator to check if a string is empty and return appropriate labels.
 
+{/* playground-anchor */}<span id="playground-6bbeada89d" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a("").
@@ -336,6 +378,8 @@ a("NonEmpty").
 a(" ").
 b(El, IsEmpty) <- a(El), IsEmpty=if(is_empty(El), "is_empty", "is_not_empty").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIYNZn8AciAHYCiAtlBAJ57YIAE9isZANgDSMCSAzpWo0UjADwBaRjg4pu-QbQC8ASwBmsZXwD6AUyq027Wc0279dbvFMkQEM0PpA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -349,12 +393,16 @@ b(" ", "is_not_empty").
 
 This example uses the `if` operator to check if a string is not null and return appropriate labels.
 
+{/* playground-anchor */}<span id="playground-5036935d9e" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a("hello").
 a("not_null").
 b(El, State) <- a(El), State=if(is_not_null(El), "not_null", "is_null").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIYIBYFMAbQkVTHeAOxAgH1KxiyNFYBRQgGgAIBlCLBHwpuAHgC03HBxQ9+g-AF4AlgDNYygM70a9RoXaFZ3KroZMe8LXqboMQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -366,6 +414,8 @@ b("not_null", "not_null").
 **Example 13: Nested `if` statements for credit rating**
 
 This example demonstrates complex nested `if` statements to implement a credit rating system based on credit scores. Each nested `if` evaluates a range of credit scores and assigns a corresponding rating value.
+
+{/* playground-anchor */}<span id="playground-facba39b47" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 @output("credit_rating").
@@ -390,6 +440,8 @@ credit_rating(Val) <- credit_score(Score), Val = if(Score < 500.0, -3.250,
                                                                                             3.000)))))))))).
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEBjATgUwCYEsIH1kEMJMA7Ac3gEoA6AKBQ2xwGdEQ1YAWAVgAYqfqdNFlws2qWFwAcfAbXojmrdgHYATLMELGY1TP5bhO5RKkaD8o6JOwpvC0IbXxsAJzm5NR4oJEysADV8ABsKAAIAHgBaMO1ndgBlEwoAGjCg4LCAXjDMADNYJPFIsN5ZNKiAZio1XhSaMMam5pbWtvaOtvzYfGJ0QpMwgD4csv40orQSgDYeTQq1KgBGOobO9Y3Nlu7e-snUYZzZ8rD9kpU5gwqlmrn6rYfHroLdgeKRsIuTs4jP+wEKnwyvcnqDHjs+m8ph8VP8JoNfjJ5mE+LUeCCwZj1hC9oMPkjxqcEWE7Mi+LD0WssdTnj1IWd8XCicVfq5LgCwjcNJSabzti96XicmzvsTXP9UpyqNNVny5bkBbj3sKmT9OXNkYslncqfLqTioQcPtr2fCWZyTVcwosuHUwrq9Y6nWFqhqKO6PZ7aEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **Expected output:**
 
 ```prolog
@@ -406,6 +458,8 @@ credit_rating(1.200).
 
 In this example, the `and(args)` operator is used to evaluate conditions on `X`, and the result is compared to `#T` to enforce that all conditions must be true. The rule `b(X)` only succeeds if `X` is greater than 2, less than 5, and equal to 3.
 
+{/* playground-anchor */}<span id="playground-74af110a0f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 @output("b").
 a(1).
@@ -415,6 +469,8 @@ a(4).
 a(5).
 b(X) <- a(X), IsIn=and(X>2, X<5, X==3), IsIn==#T.
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/AIewrgLgDpAUBEAjeBKAdAKAIawIzu1gCYCcBmU2AFkoFYDFYANFAAgB4BaVnFgGlYBJAM6CAdgF4sYgCbMAfEQFN2tZRIkUBI8RoDEAFUxA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Expected output:**
 
@@ -435,12 +491,16 @@ q(K1, K2, Kn, J) <- body, J = substring(x, start, end).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-23463c4ebf" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {3}
 a("prometheux").
 b("oxford").
 q(Y,J) <- a(X), b(Y), J = substring(X,4,10).
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRADgTg9gtgUwC4AsEFcAeYCUA6AKACNwZMAzGKAE10IEcQBNAGgCkcACAHgFpPQADRwtOJJiM5tOAXk4BndEXlIoASwB2AcxCCWAFhYBGAAz4CAARjokEG+Hp0CQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -457,12 +517,16 @@ q(K1, K2, Kn, J) <- body, J = contains(string, substring).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-2ead210c85" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {3}
 a("prometheux engine").
 b("engine").
 q(X, Y, J) <- a(X), b(Y), J = contains(X, Y).
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRADgTg9gtgUwC4AsEFcAeACBA7AcwEs8EwBKAOgCgAjcfY0imgRxAA0AabATR4BS5bAB4AtNlAdyPerxnYB2ALzYAxjDxJgJAM6ce8mgAEY6JBHPhWLakA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -481,12 +545,16 @@ q(K1, K2, Kn, J) <- body, J = starts_with(string, start_string).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-8cc652a685" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {3}
 a("prometheux").
 b("prom").
 q(X,Y,J) <- a(X), b(Y), J = starts_with(X,Y).
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRADgTg9gtgUwC4AsEFcAeYCUA6AKACNxp5dCBHEADQBoBNOgKRwAIAeAWjdBpzpsSDAW2ZsAvGwDOSYFCTSA+gHcAlqlqN8BAAIx0SCIfCUKBIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -503,12 +571,16 @@ q(K1, K2, Kn, J) <- body, J = ends_with(string, end_string).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-0f43109d28" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {3}
 a("prometheux").
 b("theux").
 q(X, Y, J) <- a(X), b(Y), J = ends_with(X,Y).
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRADgTg9gtgUwC4AsEFcAeYCUA6AKACNxUNt8CBHEADQBoACATSYCkdGAeAWkdFo4mJZkMZtGAXkYIAdgBMAzgH0A7gEtUdeqMIABGOiQQj4KrkJA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -525,6 +597,8 @@ q(K1, K2, Kn, J) <- body, J = contains_any(string, keywords_array).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-ef304c53eb" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {4-5}
 a("hello world", ["world", "foo"]).
 b("hello world", ["bar", "baz"]).
@@ -533,6 +607,8 @@ d(Result) <- b(Text, Keywords), Result = contains_any(Text, Keywords).
 @output("c").
 @output("d").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRAFgpgNjD2ACA7vATjAJmANIg2mKhtnmAGbzxgC6AlAHQBQARuNHEsVrgWC8DS9+wAF61GTAMYgASlADOAVxgAXOogA8AWkSgAKlAAeqvAGkoAT2KYFdPPOVrEAXkRT4AO1XAAlp4UAfWBPSxBDE3MrGztmTDlFFXUtXTYI00QLa3Rbe0RHJNd3Lx9-IJCw9KjstFzmAAF4JVUAB2bwKTBJRua21XBsSSA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -550,6 +626,8 @@ q(K1, K2, Kn, J) <- body, J = rlike(string, pattern).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-97bc079f8d" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {4}
 a("foo bar").
 a("the foobar case").
@@ -557,6 +635,8 @@ keyword("foo").
 b(Name, Matches) <- a(Name), keyword(K), Matches = rlike(Name, concat("(^| )", K, "( |$)")).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRAZg9lAEBGwBOYCUA6AUKMAXAFgKazRSJKwDGwAzoWlgNaECeA7lEgCbikObwQAOWABbQgBpYAWWC5KRGqlgAeALSxQI8ainN2nHgGldMuQsI1YAXlhIANgEtmwsZKpQAdtVzgQAPQAfWFQwKSMpMBBYQIASUNQMTAABKABXXAAHDPB4fiA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -574,12 +654,16 @@ q(K1, K2, Kn, J) <- body, J = concat(string, concat_string).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-6dd46fe8c6" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {3}
 a("prometheux").
 b("engine").
 q(X,Y,J) <- a(X), b(Y), J = concat(X,Y).
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRADgTg9gtgUwC4AsEFcAeYCUA6AKACNwEA7AcwEsyFdCBHEADQBoBNVgKRwAIAeALS9QzHK14l243l14BeXgGMYZJcCQsO+AgAEY6JBEPgG9AkA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -597,11 +681,15 @@ q(K1, K2, Kn, J) <- body, J = strlen(string).          % equivalent alias
 
 Example:
 
+{/* playground-anchor */}<span id="playground-6cf27aa4c0" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("prometheux").
 q(X, J) <- a(X), J = string_length(X).
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRADgTg9gtgUwC4AsEFcAeYCUA6AKAEcQANAGgAIApHSgHgFpLRScrrKBeSgZySgBLAHYBzAPoAbBGNRl8BAAIx0SCKvBFchIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -618,11 +706,15 @@ q(K1, K2, Kn, J) <- body, J = to_lower(string).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-ff0d75dbe7" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("Prometheux").
 q(X, J) <- a(X), J = to_lower(X).
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRACgTg9gtgUwC4AsEFcAeYCUA6AKAEcQANAGgAIApHSgHgFpLRScrrKBeSpGAfQA2MAO4IoZfAQACMdEgAO88EVyEgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -639,11 +731,15 @@ q(K1, K2, Kn, J) <- body, J = to_upper(string).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-76916bedba" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("prometheux").
 q(X, J) <- a(X), J = to_upper(X).
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRADgTg9gtgUwC4AsEFcAeYCUA6AKAEcQANAGgAIApHSgHgFpLRScrrKBeSpGAfXQQICKGXwEAAjHRIIs8EVyEgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -660,11 +756,15 @@ q(K1, K2, Kn, J) <- body, J = split(string, delimiter).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-054db905c9" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("prometheux engine").
 q(X, J) <- a(X), J = split(X, " ").
 @output("q").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRADgTg9gtgUwC4AsEFcAeACBA7AcwEs8EwBKAOgCgBHEADQBpsApc7AHgFptQHyLVtgC82AM4QANkSSMWYbBRoABGOiQQN4WsupA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -703,11 +803,15 @@ q(K1, K2, Kn, J) <- body, J = substring(string, start).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-844ee1e096" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("Elizabeth").
 b(Name, Substring) <- a(Name), Substring = substring(Name, 6).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRAogNglgXsARgUwC4AswEoB0AoREAOWAFtkAaAAgGUBXRAZ1QCcYA7AcyyoB4BaKqBLks1ek1YdOVALxVGDZmy7EylKgDZceAAIB7OqgAOR8Imz4gA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -724,11 +828,15 @@ q(K1, K2, Kn, J) <- body, J = concat_ws(separator, string1, string2, ...).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-3a93592dc6" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("Laura", "Wilson").
 b(FirstName, LastName, FullName) <- a(FirstName, LastName), FullName = concat_ws(" ", FirstName, LastName).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRAMsCuBOxgDQAIwHUCWAbAzgewDswBKAOgCgAjEAMQ1hwBcA5YAWwFMUonXOUa0LFj4diyADwBaZKDoMW7Lsh6LOxAUJFLkAXmQBjQgeCMA+gHcc4VAPq8l3YA-UUAAnmiMADl-CUSCiA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -745,11 +853,15 @@ q(K1, K2, Kn, J) <- body, J = replace(string, search, replacement).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-0b22b17608" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("The quick brown fox").
 b(Result) <- a(Input), Result = replace(Input, "fox", "dog").
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRAKgFgpgBARwK4EsDGBrOAjATgewHcA7OAM3wA8wBKAOgChsQAlGAZyQBsAXGuADwBaOKACSxAA5I+AGjhtOvOAF44uGJK7A0MEBOk95YCtWMATfAHNajAAL4Zh8NlsMgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -766,11 +878,15 @@ q(K1, K2, Kn, J) <- body, J = join(array, delimiter).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-005dc762ff" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a(["apple", "banana", "cherry"]).
 b(JoinedString) <- a(Array), JoinedString = join(Array, ";").
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCg2gRMAO0DYFMIBoAEEBGwB2PgvQGMALBAJzIE8IBdASgDoAoDEAKQHsBLbBAEwDKAFzI8A5nVQAeALSpQAQQrBKdNJx79ho7GNQBeVACtu2EErIq0EANwRGTAAIcArkOhuQme8yA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -787,6 +903,8 @@ q(K1, K2, Kn, J) <- body, J = is_empty(string).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-8674f1688e" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {4}
 a("").
 a("NonEmpty").
@@ -794,6 +912,8 @@ a(" ").
 b(El, IsEmpty) <- a(El), IsEmpty = is_empty(El).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRGCUB0BQpgHIHsB2BRAtgBwC4E8o4EACI2AIxHQBsAaEgSQGcs99ISAeAWhNFqQGLNgRIBeEgEtmAfQCmOAtRoxYAAWQBXXNh3gK5IA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -812,12 +932,16 @@ q(K1, K2, Kn, J) <- body, J = strip(string).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-7285fbe8f7" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {3}
 a("  hello world  ").
 a("no_spaces").
 b(Original, Stripped) <- a(Original), Stripped = strip(Original).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRABBAWCmA28D2EDuSBO8AmUwEoA6AKFDADskB9AZwAdgBjWGgkgIxAHkMBLAc17lg8ADQQAygBc+dOrGz4IAHgC0EUDwFCR+cdNnzcAXgg0ZvOtz6Dh8IsQACSAK5S6b8OzbEgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -850,11 +974,15 @@ q(K1, K2, Kn, J) <- body, J = similarity:levenshtein(string1, string2).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-36757581eb" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("kitten", "sitting").
 b(Distance) <- a(Left, Right), Distance = similarity:levenshtein(Left, Right).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRA1glgLjCmA7MAaABGAzrGVEHMwBKAOgCgAjEAESkxmEQGN4i0AeAWjVABl4AZjHQAlKPgAWMIulr1GLNAF402ALZQANsABOsAJ4AuTfABuSTFPh4Q-IaPFTSZAAIB7AK4wADl-AViciA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -871,11 +999,15 @@ q(K1, K2, Kn, J) <- body, J = similarity:levenshtein_sim(string1, string2).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-736dd5f99c" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("kitten", "sitting").
 b(Similarity) <- a(Left, Right), Similarity = similarity:levenshtein_sim(Left, Right).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRA1glgLjCmA7MAaABGAzrGVEHMwBKAOgCgAjEAZSgFsoAbYAJ1gE8i0AeAWjVAAZeADMY6AEpR8ACxhF0tBszYx2aALxpsy1hwBcjeADckmOfDwB9HSGFjJ0uaTIABAPYBXGAAdv4CmJyIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -892,11 +1024,15 @@ q(K1, K2, Kn, J) <- body, J = similarity:jaro_winkler(string1, string2).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-66aade39fa" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("MARTHA", "MARHTA").
 b(Similarity) <- a(Left, Right), Similarity = similarity:jaro_winkler(Left, Right).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRAsgggSgKgCSmANAAkrBdkEoB0AUAEYgDKAlgLYUA2wAThQC4CeuaAPALRqgAyAUwBmzdDAoBzABbNc6SjXpM2aALxoAztTqMWrAFwArRgHsA+gHcKAOwDWtQQxBDR4qbIKEAAqYCuzAAOAeDEYF5AA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -913,11 +1049,15 @@ q(K1, K2, Kn, J) <- body, J = similarity:jaccard(string1, string2).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-b5f300c41a" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a("apple banana cherry", "banana cherry date").
 b(Similarity) <- a(Left, Right), Similarity = similarity:jaccard(Left, Right).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgRMAOkDYKYAIBGwB2bgIMYAs4Cd8BPMAGgTBXXWz0KIQBNgAXOMASgDoAoJEAMoBLALZCYwfEJZEOCADwBaBKAAycAGYtyAJSEBzHCw7lhYiVJkIAvAgDOo8ZOlEAXACtgWLJMYh1WroGRtw8AAIA9gCuLJAx4EicvEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -934,11 +1074,15 @@ q(K1, K2, Kn, J) <- body, J = similarity:cosine_sim(vector1, vector2).
 
 Example:
 
+{/* playground-anchor */}<span id="playground-66c6340896" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a([0.1, 0.2, 0.3], [0.5, 0.2, 0.5]).
 b(Score) <- a(Vec1, Vec2), Score = similarity:cosine_sim(Vec1, Vec2).
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCg2gDAdAjANAAmgJkdAzAXUZKBWNKVJfTASigCgAjEAZQGMB7AJwFMyEAeAWgVABqbBvARCGyMokas2CALwIAzgEsAtioA2wFioAuATwBczVQDs2AfVVqQ40eMlUAAkwCuegA4eQAImq+FJRAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 ## Set operators
 
@@ -947,11 +1091,15 @@ Vadalog supports set operations on arrays using the union (`|`) and intersection
 ### Union (`|`)
 The union operator combines two arrays, removing duplicates:
 
+{/* playground-anchor */}<span id="playground-9915cf0e54" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a([1, 2, 3], 4).
 b(Result) <- a(Set1, Value), Result = Set1 | Value.
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCg2gjANABATLAzAXVgFgJQDoBQAjEAJQFMBnAVwBsAXDGAHgFoZQBlY66GANWEvOIZYJCjRgBeGO04wAPjz4DcAAQD25agAcNIAER5d2HEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -962,11 +1110,15 @@ b([4, 1, 2, 3]).
 ### Intersection (`&`)
 The intersection operator finds common elements between two arrays:
 
+{/* playground-anchor */}<span id="playground-17c0c9727b" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {2}
 a([1, 2, 3], [2, 3, 4]).
 b(Result) <- a(Set1, Set2), Result = Set1 & Set2.
 @output("b").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCg2gjANABATLAzAXVmBNGwCzIJQB0AUAEYgBKApgM4CuANgC54wA8AtDKAMqWPQxejOHlhU6TGAF5BfCDABks4cQACAe1qMADlpAAiEvsJEgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -980,12 +1132,16 @@ Boolean-returning functions can be used directly as conditions in rule bodies wi
 
 ### Direct Boolean Functions as Conditions
 
+{/* playground-anchor */}<span id="playground-5c3656cb1b" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {3}
 a(1, "Alice").
 a(2, "Bob").
 out(X) <- a(X, Y), contains(Y, "Alice").
 @output("out").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgjANABARAggGwJYGMCmMCUA6AUKAJmhgCEB7AIyzzIFcAXEADUygB4BaKUJ6ATUzQUZAHb1gSEQGcQfYolQYcuAAJ16ABwYgY66riA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -997,12 +1153,16 @@ out(1).
 
 Use `!` to negate boolean expressions directly in conditions:
 
+{/* playground-anchor */}<span id="playground-e43478108f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {4}
 a(1, "Alice").
 a(2, "Bob").
 out(X) <- a(X, Y), !contains(Y, "Alice").
 @output("out").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/IYCgjANABARAggGwJYGMCmMCUA6AUKAJmhgCEB7AIyzzIFcAXEADUygB4BaKUJ6ATUzQAhCjIA7esCRiAziD7FEqDDlwABOvQAODEDE3VcQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 
@@ -1015,6 +1175,8 @@ out(2).
 - **`not`**: Used for negating atoms (checking if a predicate doesn't exist)
 - **`!`**: Used for negating boolean expressions
 
+{/* playground-anchor */}<span id="playground-4e280c2c66" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {5-6}
 person(1, "Alice").
 person(2, "Bob").
@@ -1024,6 +1186,8 @@ activeNonAlice(ID, Name) <- person(ID, Name), not blocked(ID), !starts_with(Name
 @output("activeAlice").
 @output("activeNonAlice").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/A4UwTgzg9gdgFARgDQAIBEBBANgSwMYhoCUAdAFCiSxwBMqaAQlAEbHnNZR4DWIAJrVJkAhngAuOAG4hs+EHACSAEVQA5YQFsQRFAB4AtCkrR4ytZu2oYUMSg5deA5UVQQxwsGIgB9AO44xAAs4dS16WTYRcSkQVVhZAkUVFFDtPUNjajMUixcUa1t7Hn4kvIBCNw8vPwDg1PDcSIABKABXMWB2uDRRCWkEwiEW9s6xbt6YuJgByKA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Expected output:
 

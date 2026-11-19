@@ -41,6 +41,8 @@ Variables on the head of the rule with the function receive the algorithm's resu
 
 ### 1  Transitive closure
 
+{/* playground-anchor */}<span id="playground-87d1dd0a37" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge(1,2).
 edge(2,3).
@@ -51,9 +53,13 @@ tc_function(X,Y) <- #TC(edge).
 @output("tc_function").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMBKAdAKFBS9YGYXvCh1gBZ8MoTZp9UAXAYwH0AzAVwDsG6BLAew6QAGrACaiAAQAeALQSAxABUAwpAr4AAnzZ0ADjsgAiRq07d+HQ-iA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **Output**: All reachable pairs including self-loops from cycles: `(1,2), (2,3), (3,4), (4,1), (1,3), (2,4), (3,1), (4,2), (1,4), (2,1), (3,2), (4,3), (1,1), (2,2), (3,3), (4,4)` – 16 tuples total.
 
 ### 2  PATHS function with configurable options
+
+{/* playground-anchor */}<span id="playground-677d682623" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge(1,2).
@@ -86,6 +92,8 @@ paths_custom(X,Y,V) <- #PATHS(edge, "visited=true,self_loops=false,all_paths=tru
 @output("paths_custom").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMBKAdAKFBS9YGYXvCh1mn1QFIACAEWADMBDAVwBsAXSgI2AAsGA3AJYB7AE6VIAO2GUADg1EMAtsDbBRAZ0Sp5bHhoD6Ies3aQAGrACaiSgB4AtJQDEABQCCAFQASAZUgYwGRUrgx6GpQA7oJ6lEIaMaCU0sYRbIoAxgDWgpJgEglKsizAcmH6lMKSLACe2rr6BvGJIBbWsABqgglqILaOLh4+-oGwlABEzb0AvOlMwOPBlKHhUTE8lBrALHQOLMLCshHAkgycJSA65YbRegb7hxptNvZObl5+AYRj41s79wcjrNRPNFmgKMtrmtYkoGAAPSjGWSxFiCJQxCRVWqUaCUHiHerXIzAZE8aDPfpvIafUYTWFw4mk6bQMGoCErCq3DZTJLpBjZXL5BiSECUemIkmxeBXcJNbotRl6eDPTqUwYfEbfCY8kDA+awemKnjTeCsiHuFgsSrIkSSCIaWTADKCOiCUAyxoZJgaNjCJQqjpq97DL4QH46vXAWB-OgAx7TRgsLawBiWgwNDSRg3wo3MgAMZoAAsImGxZKXIOMM8TGKw2Kzi6Xy2xK9WdQ2S2WK1WiVy40cO03u9WkXoWfhG12Wz3ZTqjaaJ53m62iV6fX7WUA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **`paths_default` Output**: All reachable pairs including self-loops from cycles (using defaults): `(1,2), (2,3), (3,1), (1,3), (2,1), (3,2), (1,1), (2,2), (3,3)` – 9 tuples.
 
 **`paths_visited` Output**: Only simple acyclic paths: `(1,2,[1,2]), (2,3,[2,3]), (3,1,[3,1]), (1,3,[1,2,3]), (2,1,[2,3,1]), (3,2,[3,1,2])` – 6 tuples. Each includes visited nodes.
@@ -99,6 +107,8 @@ paths_custom(X,Y,V) <- #PATHS(edge, "visited=true,self_loops=false,all_paths=tru
 ### 2b  PATHS with source and target filtering
 
 The `source` and `target` parameters restrict path enumeration to specific endpoints. This is particularly useful for large graphs where you only care about paths between two known nodes.
+
+{/* playground-anchor */}<span id="playground-de94430a71" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge("A","B").
@@ -122,6 +132,8 @@ paths_a_to_f(X,Y,V) <- #PATHS(edge, "visited=true,all_paths=true,source=A,target
 @output("paths_a_to_f").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUBECC0BpoCFoEoB0AoUEbyQGF1tcoVFoAREncc4pGzOvCpAUVrJhqQDFaWAKQACAPIA7ADYBPUQAcAhgBcAFgGdRGlUoBOKgJaSwogGZ6A9gFtRkyyGCjYWZeo0B9CzY9LIADQQATQQANTRRAB4AWlEAYgAFWAAVAAkAZUgyBFFoADdDDUMVUABeFT0AV2AEDUtKvQBjYFL4FhEJGXk3TVFgSRBjU1U7Byd+V1VNDxVLLwDgsIiY+KS0zOzcgqKSkHKqmt09CBVSwXaxKTlFKa1vW1hRWdF+UUglaWlRQZ1jRpVRFZKiUNGhJu5fDM5mYFiFwlFYokUhksvQcvlCsUyhVqggPtIPD0NPtcXUGs1WggjiczkIAAL1FQKYEwIleKzWXy0BnA5kqVm3KFebmMvkCiFKIVmWhAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **`paths_from_a` Output**: All paths originating at A: `(A,B,[A,B]), (A,C,[A,C]), (A,D,[A,B,D]), (A,D,[A,C,D]), (A,E,[A,B,E]), (A,F,[A,B,D,F]), (A,F,[A,C,D,F])` – 7 tuples. All start from A.
 
 **`paths_to_f` Output**: All paths ending at F: `(A,F,[A,B,D,F]), (A,F,[A,C,D,F]), (B,F,[B,D,F]), (C,F,[C,D,F]), (D,F,[D,F])` – 5 tuples. All end at F.
@@ -131,6 +143,8 @@ paths_a_to_f(X,Y,V) <- #PATHS(edge, "visited=true,all_paths=true,source=A,target
 To restrict `#PATHS` to several specific origin–destination couples at once, use
 `source_target_pairs`. Only the listed sources are explored, which is cheaper
 than computing all paths and filtering afterwards:
+
+{/* playground-anchor */}<span id="playground-2678ef3368" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge(1,2).
@@ -142,6 +156,8 @@ paths_pairs(X,Y) <- #PATHS(edge, "source_target_pairs=[1:4,2:3]").
 @output("paths_pairs").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMBKAdAKFBS9YGYXvCh1gBZ9UBSAAgHkA7AGwE8qAXAC2CoGMB7AVwAODYAGcqMUoioBDOiAnY8qQTI6iA+qoCWAJ1GQAGrACa0gDwBaKgGIACgEEAKgAkAypAzBYVAESiBXW5gDVYZXQhWLRk9UQBeAG1oAC4SBGScAF1ffAABAVZBflZIX1V1aNictCA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **`paths_pairs` Output**: `(1,4), (2,3)`. Square brackets and per-node quotes are optional; quote a node only when its identifier contains a separator (`:`, `,`, `|`) or whitespace, e.g. `source_target_pairs=['New York':'Boston']`. This option cannot be combined with `source`/`target` and works with `visited=true`/`all_paths=true` too.
 
 When you want **several** sources or targets (but not a fixed pairing between
@@ -150,6 +166,8 @@ them), use the list options `sources` and `targets`. They generalise the single
 listed nodes, `targets=[x,y]` keeps paths ending at **any** of them, and using
 both restricts to the cross-product (every listed source to every listed
 target):
+
+{/* playground-anchor */}<span id="playground-bf2bf30b14" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge(1,2).
@@ -171,6 +189,8 @@ paths_cross(X,Y)        <- #PATHS(edge, "sources=[1,2],targets=[4]").
 @output("paths_cross").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMBKAdAKFBS9YGYXvCh1gBZ8MoBWWANn1QFIACABQEMAXACwGcmeObAE4cAlgDswTAGZCA9gFsm4uSGBNoTOUOWr1lVAAdOvAPqzFpnnICuQgMbAekABqwAmoiYAeALRMAYhYAQQAVAAkAZUgKWCYAIms7Rx4AXgBtOEoAXXj6ZnZuPmBxEAkpTl01JhwtHRVqkiMTHlMOOTbhCA5nN08mAb9AkIjo2ITBIW609OISXPymAGF5Hh5fQ3kQG3sOAC4ZeSUAbzh4AF8mdqZjknPmotN7Vd6PLwGPwf8gsKiYwjiiVsDicGTO2Vgk2mGXmeTQqAAArYOIYbBxIPFjI8LAorMCUnDEcjUejMS02h0ocAeoSkWiSRisWZnnI1oSgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **`paths_from_sources` Output**: `(1,2), (1,3), (1,4), (5,6)` — every path from
 node 1 plus the path from node 5.
 
@@ -189,6 +209,8 @@ them can be combined with `source_target_pairs`.
 
 This is a single, self-contained script that runs `#PATHS` with each option on
 the same small DAG so you can paste it as-is and diff the outputs side by side.
+
+{/* playground-anchor */}<span id="playground-32d01bc0ea" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 % Two routes 1 → 4 (via 2 and via 3), continuing to 5
@@ -224,6 +246,8 @@ paths_pairs(X,Y)      <- #PATHS(edge, "source_target_pairs=[1:5,2:4]").
 @output("paths_pairs").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgKg7g9iBOUFcAuBTAziAjCQSYQgCwgAUAbgJYCGIATCBQHYAmI5VAzAJQA0IAxlPSRl6CYQHMQSGAFYAUCkZiURTF2ocAdPMXLVnLQqVFqXfJu1G2p84eX4u087NBEKHEABEUAMwoIANkgAXCAoJCiwAJ5wKBS8ABYUAEb+KMRoiLC8KDxIFLBKSO78CAAOqbKlFEjxaAD6FP7+RAAaXACa7iDdPSAAPAC0IADEAAoAgmAAEgDKRLZOLknuAPL0aWhkALblaVU1IKURfIi7PBBkBzVp5JuozPRQjOiV1bV1t5cKrR1cAGpdQYjCbTOa2HgAIk+9wAvEhYAgUBDFsReO4ADLbS6SeJpeEUcKwNCNSQwWjxKClNCvGr1Z6lGrUH6dXr9IZjSazeY6SFbCgADzq9JqMOoyK0zmIjFW9H80X2tRAaDysCE9Ak1RAj2eWBp7288C2dUwzP+XTZwM5YJ5IChZDuCjhCJyGQQWRQMMw4tkkvm7gAooToox7WreEg4IhUCADVAtlhSSBpMRHtHGv46gq0E7ERw9fVMHUpHVpKaAT0gRzQdylJDoY74YiuOnM29s42XZlsp6uCrCjDpN7fd53OMlUdeGRvGReEqUBGoN4TmVUhgiHz6JEBlIBhvInms62yETmeaK+yQVzwbbXe6i-lCkeiTCANqYILSNRBfAAXSHAAEo1KZAiAhQ9029QDkGApBQMPetGEgoCQLAtshRQBl4jFcwoKQGC4LQ2MjS9HDkNg1DaWNIsoBLJDoJQw8qmPNBvSAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 | Output | Rows | Result |
 |--------|------|--------|
 | `paths_all` | 9 | `(1,2),(1,3),(1,4),(1,5),(2,4),(2,5),(3,4),(3,5),(4,5)` |
@@ -240,6 +264,8 @@ with `paths_1_to_5`'s two rows).
 
 ### 3  All shortest paths
 
+{/* playground-anchor */}<span id="playground-2fd2f2db4c" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge(1,2,9).
 edge(2,3,5).
@@ -250,8 +276,12 @@ asp_function(X,Y,Z) <- #ASP(edge).
 @output("asp_function").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMsCcBKAdAKFBSiDMsArOluFAQCywBsJ2UVcAHCRgIYDOADgPoBmAVwB2AYwAuASwD2QyAA1YATVgAtFAAIAPAFp1AYgCCAZQAKkeiQACUgWK63IAIk69BoyTMckgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 `#ASP` also accepts optional parameters to restrict the result and to return the
 visited nodes along each shortest path:
+
+{/* playground-anchor */}<span id="playground-3604b36bd0" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge(1,2,10).
@@ -274,6 +304,8 @@ asp_visited(X,Y,Z,Visited) <- #ASP(edge, "source=1,visited=true").
 @output("asp_visited").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMtoAYCUA6AUKCNYGZYBWDbcKRQ+UnC2AFiRvMkMYE5TMBSAAgHkAdgBsAnrwDOACwD2AJwAuwCQt4AHAIYKpE3gDM5MgLa9BMkMF7RMGiWoD6B4-eiQAGrACasAFqpeAYGBADwAtLwAxACCAMoACpC0sLwARBIyAK5yAMbAALzQKVx8QmK82pbS8koq6lpSkBL+TiZmFlblMqbmlvQ2di72CjL29O5evv5BQWGRsQlJqelZuQWwChpyEAp59EVYPLwASsAKWYK8GsLCvMAAjhlXodkytVWKyqqa2roA7gCW2nKUks8gsclAvGE-1qMj0vAAbjDAZC2sp+g4kRIUSBxt4fLAAGrIpQgfyzaLxRLkZJpTI5fJwLE4vIKOQZYD7TCYAACmQUagyCkgKVsDhaLi5fKFguFooG0CGIz2pGlAqFIrF9mZpK5QA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 As with `source_target_pairs`, the `source` and `target` values may be quoted
 when the node identifier is a complex string (e.g. `source='New York'`); quotes
 are optional for numbers and simple strings.
@@ -289,6 +321,8 @@ computation to an explicit list of couples with `source_target_pairs`. Only the
 sources that appear in the list are processed, so this is much cheaper than
 computing the full all‑pairs result and filtering afterwards:
 
+{/* playground-anchor */}<span id="playground-3ae6ed3d05" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge("a","b",1.0).
 edge("a","c",5.0).
@@ -300,6 +334,8 @@ edge("k","m",1.0).
 asp_pairs(X,Y,Z) <- #ASP(edge, "source_target_pairs=['a':'b','k':'z']").
 @output("asp_pairs").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUBECG0BpoCNEEYB0AGAlBgUKBDPEgMaICs2eh4UKi0FCmuBRDA1kwF6IBmGh3oweSALbph+fAFIABAHkAdgBsAngoAuAC2AKyAewCuABzXAAzgtgKAtAD4FyWypAKuD573ywrZgD6ZrAAlgBOVpAAGggAmggAWjgKADz2CgDEAIIAygAKkJwICtBWpuFkwIHasOEQ2sFhkQC8ANoA5LAdAFwdyB0IHVy9HbwdALrQtAACptpmJtokAU0RVtMEQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **`asp_pairs` Output**: `("a","b",1.0), ("k","z",3.0)`.
 
@@ -315,6 +351,8 @@ To restrict the shortest-path computation to a **set** of sources and/or targets
 (without pinning specific couples), use the `sources` and `targets` list
 options. They generalise the single `source`/`target`: combining both keeps the
 cross-product (every listed source to every listed target):
+
+{/* playground-anchor */}<span id="playground-25b4691074" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge(1,2,10).
@@ -337,6 +375,8 @@ asp_cross(X,Y,Z)        <- #ASP(edge, "sources=[1,2],targets=[4]").
 @output("asp_cross").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMtoAYCUA6AUKCNYGZYBWDbcKRQ+UnC2AFiRvMkMYE5TMBSAAgGUAFgHsATgBdgAZ3G8ADgENxgqbwBmo4QFteAO2EhgvaLzF6DR+JgVS5AfQ3a7U4QFdRAY2mQAGrACasABaqLwAPAC0vADEAIL8AAqQtLC8AEQu7l5SALwA2nDwALppXHxCYpIy8koqvMC6IACWumC8SuaGvPimop1G9Na2duLCIwqiEOJSvgHBobzhUXGJyeSpaeITU7l5bCVlvADCmlJSEXKaIK4e4gBc6po6AN6FAL68o7zP9G9D9h5TjM-IEQotweDIjF4kkUulMp5pPlCkVYFtJsBpvl6AcsJgAAJucRyVziSBpGz2RxaZxuRFSUpYQmkklkinDUbjDHTRkEoms8mUuyA4RnXlAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **`asp_from_sources` Output**: `(1,2,10), (1,3,5), (1,4,11), (2,3,2), (2,4,1)` —
 shortest paths from sources 1 and 2.
 
@@ -356,6 +396,8 @@ parameter is **required**, so the output is restricted to shortest paths from a
 single source node. The output schema is `(Source, Target, Distance)` and the
 trivial self-row is not emitted.
 
+{/* playground-anchor */}<span id="playground-edee6ec148" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge(1,2,10).
 edge(1,3,5).
@@ -367,6 +409,8 @@ edge(3,4,9).
 sssp_from_node1(Source, Target, Distance) <- #SSSP(edge, "source=1").
 @output("sssp_from_node1").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMtoAYCUA6AUKCNYGZYBWDbcKRQ+UnC2AFiRvMkMYE5TMBSAAgGUAFgHsATgBdgAZ3G8ADgENxgqbwBmo4QFteAO2EhgvaL3HDewAG7BRAT16jgCgMaCFAIwA2R-YcxSAuQB9DW0g32BoSH5hAFdRZ2BYXgAVBVEIcWSAEQBLGQVdRNReAB4AWl4AYn5agAVIWmSAIik4hOAAXmhm0gABOPE5WPFIVsCQzS1wg0jerCA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Output:**
 ```
@@ -387,6 +431,8 @@ list `sources=[1]`; `source_target_pairs` also satisfies the required-source rul
 A single self-contained script that exercises `#ASP` and `#SSSP` with each option
 on the same weighted graph. The graph has **two equal-cost** routes from `1` to
 `4` (and on to `5`), which is what makes `visited=true` return more than one row.
+
+{/* playground-anchor */}<span id="playground-cf7f4247ce" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 % Two equal-cost routes 1 → 4 (via 2 and via 3); 1 → 5 is cheapest through 4
@@ -423,6 +469,8 @@ sssp_from_1(S,T,D)   <- #SSSP(edge, "source=1").
 @output("sssp_from_1").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgKg7g9iCmCOBXAhgGwLQGMoGcAuIATlInrDiAIwiBJhCACwgAUAbgJbIgBMIyAdgBMQ7TgGYAlAG4qtEAFYQbCpgAWsZAAdyBPCuKIA5ioYAoWAIOwmlADRcblAHQAGcY7MWrt0Q5duPlkz29L6u7uaBPiFOYQFWIXJ2fuGeQTaJcskmJqBMyOIgAIKoGBrIbIQUOCpQhGT4IAJKePyY5CbIOBoA+mioTAAaNgCaNgBaBSBT0wA86CAAxIUAygAKTBGw-jnMAEYFAGLEALa8IDhsfAaosOckhG0dXd0AZifdlIMj45NTc4srdabGwgABEOHubQAvJRQdtcpgCoVzpdrrdamwDJdZAJtJdkHg2FA+CAyhUnj1KN08FBunIvqMJtMQP8lmsNp4QeDIbAYTYWoRLHgoXI4e4dkwBEiSnAkGgsLgCNVavUCGVdBQ3lBTrYQBA2LoQLpbuwLmQhHwoLicBTuqaDeYGeMbAA1AqswEcyxciGIB682z281QvCERCwMXZXJbIrnLSYNgvNiYc6wAhQF4gbCIDQ3ChMY78ACe6Bp6ELfCL4ltZMqTqZzI97OBYN9-upyEFae6tZwUIA2pQAFwhLhDuQAXUjEpeBWWqJu6GWPJAyxqdW0IFWBOMTDbbUUFEICEQFXMIBetUWyxvq2rOAfPS1xw+TGWNjANgAIr9WTfm5yrY8jC04AAIkHgGikEwoKdD0fSRuBpBQXgMFwa87ywv4SGQdBsHPFSNJ0ohEEoWhzxBuYJHIXh6G9tRuGoeCj4YdqHyRkAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 | Output | Rows | Result |
 |--------|------|--------|
 | `asp_all` | 9 | `(1,2,1),(1,3,1),(1,4,2),(1,5,4),(2,4,1),(2,5,3),(3,4,1),(3,5,3),(4,5,2)` |
@@ -442,6 +490,8 @@ simply `#ASP` with a mandatory `source`, so `sssp_from_1` matches `asp_from_1`.
 unweighted shortest path (the same engine as `#ASP`/`#SSSP` with every weight set
 to 1), and the level is an integer. Any edge weight in the input is ignored.
 
+{/* playground-anchor */}<span id="playground-dac0a5d108" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge(1,2).
 edge(1,3).
@@ -454,6 +504,8 @@ bfs_from_1(Source, Target, Level) <- #BFS(edge, "source=1").
 @output("bfs_from_1").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMBKAdAKFBGsDML3inlgBY8MpsSyDJjYBWPVAUgAIAhAMQGVWAbYADdgfAM6sAZgCcA9gFtWAOxkhgraKgBGE0QH1p83dEjcZAVykBjYLFYAVAIZSIAF1sAZISMSsAPAFpWAGIubkhyWwAiUXMrYABeaEi8AAFzFwAHMxdISO09AzkjZLQgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **`bfs_from_1` Output**: `(1,2,1), (1,3,1), (1,4,2), (1,5,3)` — hop distance from node 1 to each reachable node.
 
 `#BFS` accepts the same options as `#ASP`:
@@ -465,6 +517,8 @@ source is optional — omit it to compute levels between every reachable pair, e
 Use the `sources`/`targets` list options to restrict to a set of endpoints, e.g.
 levels from several start nodes at once:
 
+{/* playground-anchor */}<span id="playground-b7d19327fc" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge(1,2).
 edge(2,3).
@@ -474,6 +528,8 @@ edge(5,6).
 bfs_from_sources(Source, Target, Level) <- #BFS(edge, "sources=[1,5]").
 @output("bfs_from_sources").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUCMA0BMBKAdAKFBS9YGYXvCgFZYA2fVAUgAIAZYAN2ABsBnagMwCcB7AW2oA7HiGDVo1HlyEixRVACMOrAPrd+K1jwCuXAMbBWkAMo79wWNQAqAQy4QALpfpNmiagB4AtNQDEAIQAxY0gMC2oAIi1dA1YAXgBtOCIAXQj8AAEdBwAHbQdICKVVdT5NM1j0tCA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **`bfs_from_sources` Output**: `(1,2,1), (1,3,2), (5,6,1)` — hop distances from
 nodes 1 and 5.
@@ -505,6 +561,8 @@ The same reversed-edge trick applies to `#PATHS` and `#ASP`.
 
 ### 4a. Simple disconnected graph
 
+{/* playground-anchor */}<span id="playground-0b42b5db4b" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 % Two separate components: {1,2,3} and {4,5}
 edge_raw(1,2).
@@ -533,6 +591,8 @@ cc_full(X,ID,C) <- #CC(edge, "sort_component=true,component_id=true").
 @output("cc_full").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgKg7g9iDOCmAHAhgJ2QF3iAxlAtolAHbzEawBcIA3gIwA0ATAwMwC+IyxAJrQCwMArOwBQ8HgHN4AfXQQAFIyYBKAHTips+Qpat1m6XOSLBQg6NABZZAGtsE6bBABXXgEtU8HFj4LYAJ74+PAYqO44KobwCgAaDACaKiAAPAC0II7aJnGJBlkKCQyxyemZWsaK8UkaliAAIvAAZsguADYY1MQwsFCoGO7Ekgwg3bgERKTkIACS9aI4ODI8za0duQDCpRkAxBsbClkWoADq7hgAFnB9vuOEJGQUIE19ICtYqPiD7rD4C0u9foSTbbEB7A5ZEYAIkBGBkeHuUwwAF4wi54FDjiAzpc7pNHrN6iAFF9iO58C58KMoCsQIM8Q9yFFFjIIOcLjJ3DxcnMGFtUrt9octNCEfjyJyeKjUOjMbVTuyQAAjKC42GDSRcXiE56vJrtNpvULwT7fX7-GT6tptHn1Pmg8HC6TQ2HwiaMlFo+AMMUeyXS2UWAACUBcGEQYYUUJZKxa7QwctEIbDEYwUZZsIkieT4cj0aWbMukuzodzafzloNiaAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **`cc_default` Output**: Each node mapped to its component array (order may vary): `(1, [1,2,3]), (2, [1,2,3]), (3, [1,2,3]), (4, [4,5]), (5, [4,5])`.
 
 **`cc_sorted` Output**: Same but arrays are sorted: `(1, [1,2,3]), (2, [1,2,3]), (3, [1,2,3]), (4, [4,5]), (5, [4,5])`.
@@ -542,6 +602,8 @@ cc_full(X,ID,C) <- #CC(edge, "sort_component=true,component_id=true").
 **`cc_full` Output**: Both sorted and with ID: `(1, 1, [1,2,3]), (2, 1, [1,2,3]), (3, 1, [1,2,3]), (4, 4, [4,5]), (5, 4, [4,5])`.
 
 ### 4b. Cyclic graph
+
+{/* playground-anchor */}<span id="playground-8d362b3134" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 % Single component with cycle: {1,2,3,4}
@@ -554,9 +616,13 @@ cc(X,C) <- #CC(edge).
 @output("cc").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgyglgdg5gNgUxAYwPYFsAOqoKgFxAHcJ8ALFAT2UQC4QBvARgBoAmFgZhYBYBfAFAIAJjAQAKVmwCUAOiGiJHTnIVjx3HqpHqeLJqoHJk4gBosAwtJAAeALQgAxBYvidCVQAFUAV3yY-cQAiYyDVIA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **Output**: All nodes in one component: `(1, [1,2,3,4]), (2, [1,2,3,4]), (3, [1,2,3,4]), (4, [1,2,3,4])`.
 
 ### 4c. Multiple disconnected components
+
+{/* playground-anchor */}<span id="playground-fbfef9aa31" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 % Three separate components
@@ -567,6 +633,8 @@ edge(5,6).
 cc(X,C) <- #CC(edge).
 @output("cc").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgKgFgTgpjIGcYAcCGVUBd4GMD2AtsngHYwmYIBQMAJgOYwAUAjADQBMAlAHQ0PMAzGwAsvfoyYBWNgDZxVHDiYANNgGEuIADwBaEAGJ16pnUbiAAngCumZLaYAiJY-FA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Output**: Three components: `(1, [1,2]), (3, [3,4]), (5, [5,6])`.
 
@@ -646,6 +714,8 @@ Struct nodes let you keep this metadata attached during graph traversal instead 
 
 ### Example 1: Transitive Closure with Struct Nodes
 
+{/* playground-anchor */}<span id="playground-7c7cce6be7" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 % Define node properties
 node(1, "Alice", "Engineering").
@@ -670,6 +740,8 @@ tc(X, Y) <- #TC(edge_struct).
 @output("tc").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgIgpgZglgdhEcD2ATRAHATsjEsAuMEAzgFAroAUAjADQgBEAggDYwDGEjDjAonADm8CPniDGASgB0FNBCoAmXgCFkAIx5MAygENWpKbMoKAzLwDCAC11Z23XgOEIxQo2TKhIsBCBIwAWwwDEAhUQVIQKgArAFcSAhAASTASSTIwiIB9fyCDWgZFGQzwiBzA4IVlEFNizxALLAhdAkQErFiORMzI9QBPEGjkeHEkeRIQAHcYAitQ0vIenIIOrqoADQYATUkQAB4AWhAyEFP57NzKqiTUemTUIroTs5Nr24YAOV0AiDvIDAINEkTzOY2oN2qXx+1X+BEez1O6xAAF4-CtOgQqIwYKgtDc7ow4N8HCAob9eOgAVpYUCQWctii0atMdjcQwIbwiT8tGTqoxKQRqRAAUVZPVmBhggMACoWEDIOBMjHnSJHbC4fBESK2TBNEj4ABuYQAhGQCBwNttdocQABiWVUJbtDF1AACyFiBAwnqx5vcQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **Output** includes full structs with all properties preserved:
 ```
 (struct(id=1, name="Alice", dept="Engineering"), 
@@ -683,6 +755,8 @@ tc(X, Y) <- #TC(edge_struct).
 ```
 
 ### Example 2: PATHS with Struct Nodes and Visited Tracking
+
+{/* playground-anchor */}<span id="playground-1b77aaa3e3" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 % Person nodes with metadata
@@ -709,6 +783,8 @@ paths_with_metadata(X, Y, Visited) <-
 @output("paths_with_metadata").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgCgpgTgzg9gOxAuATCMQHcCWAXACxAFsI8BDVcigKAAdp4EAKARgBoQAiAQQBscAYwhdOAJgAcASgB09RomZjOXAEJwARqJABmAKyz5sRTpUBhAuSgCRnACxjDNUAGU4gnOT4hBiBBEE8HEQYGgBrFCwYNnFDCLgopU4dJ1AzKAhqCBAYPCgAV0CQCFQAcwxwyJgAfVyCwOYADU4ATSkQAB4AWhAaEH6QeMSASVQOEFHHdj6BhmMWUfGAOXJScZ5y1ilpgZA5pmZJzhXSZRANiCmZ-saQAF4cvMK8Zi4cVG1FlQRV2xATiDjLjkcraC5bHYDFr3R71F5vD6cI7cH6kbQAs7A0GcC6OOTOEAAMRwCFQIC83jo1AImFwhBAADccDB8CVkGgMCBmEyWXg2Sh0JgrNkvPAQAAzfJ8bx1Z4wACEUno1JqdII1VIFCoFCarU4ADVmazUO1ur1dgBiMA8AAqAAkXMwhjVZYEVDzjXcniInAABOD5PB0QOvKmEVX4dWayjUchcQxAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **Output** includes full structs in visited arrays:
 ```
 (struct(id=1, name="Alice", age=28), 
@@ -721,6 +797,8 @@ paths_with_metadata(X, Y, Visited) <-
 ```
 
 ### Example 3: All-Shortest Paths with Weighted Struct Edges
+
+{/* playground-anchor */}<span id="playground-bc0c9b448f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 % City nodes with coordinates
@@ -747,6 +825,8 @@ asp(X, Y, Distance) <- #ASP(flight_struct).
 @output("asp").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgwglgLgniB2B7AJgUwM4gO7QBYgGNFEAnZCeAQygwCgDoYAKARgBoQAiAOVSxACapANacOAFgAMAOgDsLAEwAODgFpZ46ZMkA2SQEpp9RkwUdOAGUTxk1sSACsLaQ8ka1MxbKWHjsJgDM5gAqiMIwiPYBDtI6sjpmICwBAJyxrgG+tKAA6qgQAOa4NMggAGYANoXFmEw4UPjk6FCU8ASo+rSV1VCsHIkODrIyBtIgIKDcAmAgUIggVjbWAFyOQ5IgwgC2XVVFvYlBICkOelqG46CLtvCz86HhiKsneps73ft9IEcskkqu5zGk2mdxADwiICY5BIqAIUH0q1+-w221o2XAMOoqGw+X2qFKzRIAFc4SB8QU6B9igB9Qkk3oADQ4Ag4ABEIM19CAADyqEC0cbjKm9ACSyHYIDFiXZnLYAsFDH8Yol3EoW1QEos1E11hY+jlgsIJilHFV6sSWqgFusCn18vGDJAAF4QHS4UxOBBkPZleYqOr7GaNeYKtR7JaJZwKnYOIs9QbBQJna6oMT3Z7vRwTVx-ahA2rUIko2HY9Qi9H4OGbVlQAAxCgE3CkGjNEAAB2ouEw9Xwirg6payGolHbMPQqBIADd8bRKOg20wmYI2RyWm0Ojy+QBiACCAGUAApMYW01P0rIAAUQRKgbZvHrnbc4viAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **Output** shows shortest paths with full city information:
 ```
 (struct(id=1, name="New York", lat=40.7128, lon=-74.0060),
@@ -755,6 +835,8 @@ asp(X, Y, Distance) <- #ASP(flight_struct).
 ```
 
 ### Example 4: Connected Components with Struct Nodes
+
+{/* playground-anchor */}<span id="playground-27f8d9aa82" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 % Company nodes
@@ -781,6 +863,8 @@ cc(Node, ComponentId, Component) <-
 
 @output("cc").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgwg9gtgDghgOwJ4gRAJgUwM4CgDG08yAFAIwA0IARAIL5SYgCSC+1V1AKpvgBZoANhADmSagEoAdASKIkJAEycA4sIBGcQeAgAnGBxo9+Q0eOmzY8kgGZOAGQj4tIewBd0h6gCVMbuACWgpIyhFakACycAMpQWtqQXr7+QSG4uKAACnC6bgiYuth8ATDYICQArgjoAbq8bpjoErjwufm6APq6cADu5FSKFq15BV29tlQRFhkgALJwANZMVTV1+A3oIIib+HVwDSDYbroV6yCNIjgtOSO6JAAaVACaEiAAPAC0IMPtY320VAAQhIqGFiAoASAAHKUFhkEEgMHWQFUKHKFiDCi4EA43F4-E4+4gAC8h2OpzcJGoAU8VEh1AQcEYhhhnAC1QqR104iozHhWIJgrxTxJZJO6ypNMMKJojOZqPR1I5XJ5GKGN3aD2er0+3w1o26fRltARSNIkNZcNNclIMrRvMx2KFQqJpK5FMltJA9LlmBZsKV6E5x1VfJBTudBJFbvJEupXplDKZfoVbOVIcMzEGMhmADF2TsiBB8gg3GUegE3HxETaUIx-Oh9nAttUWAARPD4fAkKEYTBUSCwYuYUvMdADosltw6r4RkAAYjAYBIPwKnDBw9LHRpxPJ-ewejcHQ3U93Jz90wAAhAKm4YLeqV20kA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Output** includes full company structs:
 ```
@@ -818,6 +902,8 @@ Centrality measures quantify the importance of nodes in a graph. Vadalog provide
 
 **Degree Centrality** measures node importance by counting connections, normalized by the maximum possible degree.
 
+{/* playground-anchor */}<span id="playground-5a790a9242" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge("a","b").
 edge("a","e").
@@ -843,6 +929,8 @@ dc_out(N, DC) <- #DC(edge, "type=out").
 @output("dc_out").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUBECG0BpoCNoEoB0AoUEbyWHW1yjkWgDNidwzUkQbSYBjC1TWvadw5ujCZJ2XFtGHQAFgJ7UkYGlgCkAAgAqAewAusADaqQwMACdgwVZACWAO1UBqVZoCu2hKpuaTAW31WAXqBoWCCsAPraOvqQAHLuACIAwmiqADwAtKoAxEmQpFwqqgCSNulGpuZONnoAnpa2rJretmCqpADOwaFhtrEJyWmZOYl5dO7Q2jUADsAAvLZKagDyrmXGZhaa1XWQLtpgmi1tdJ0h4Xt9qkkpGdm5pOOTM7N7SgACe1OuQuGRuno0D6uL7aH49GyAz7fCTnVw0IA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **Output**: Normalized scores between 0.0 and 1.0. For `dc_total`:
 ```
 (a, 0.375)  % 3 connections / 8 nodes = 3/8
@@ -863,6 +951,8 @@ dc_out(N, DC) <- #DC(edge, "type=out").
 
 **Betweenness Centrality** measures how often a node lies on shortest paths between other nodes. High betweenness indicates "bridge" nodes.
 
+{/* playground-anchor */}<span id="playground-024e49099f" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 % Simple chain: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 edge(1,2).
@@ -880,6 +970,8 @@ bc_approx(N, BC) <- #BC(edge, "sample=100").
 @output("bc_exact").
 @output("bc_approx").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgyglgtgDgNgUxAYwBYEMIDsBcICMIAtAHwgBMxZAzFSACx0CsdAbAFAIAmA5ggBT4ANOQCUAOk68B5IdQlS+-akPoLuS+kKbrp-JkNYL2oAKIAPdMgAuIAEYJrAdwQIsWBAGdPIfujhwIJ4A9gCuAE7IXqLsdsgA+giWNvwAckIgAEIAwqIgADxEIADEOfwaCMagAIIwMOHB5tDo1kgOzq7uXj78nuiwiAQADENBYZFeIABmweEgcOjhfCA84egwqJ4xcfHr9Y1pGTl5hSVlFRkARH0DCAC8+COXxgACYdYwodb8lztJVtZnpI3l9Pt9fgk9g1zED2EA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 **Output** for `bc_exact` (linear chain):
 ```
@@ -902,6 +994,8 @@ bc_approx(N, BC) <- #BC(edge, "sample=100").
 
 **PageRank** computes node importance using link structure. Originally used by Google for web search ranking.
 
+{/* playground-anchor */}<span id="playground-4a87f6d308" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 % Directed cycle: 1 -> 2 -> 3 -> 4 -> 1
 edge(1,2).
@@ -923,6 +1017,8 @@ pr_precise(N, PR) <- #PR(edge, "damping=0.85,tolerance=0.00001").
 @output("pr_precise").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgIglgTgpgxgFxgExHAnnANjAXCARhAFoA+EAJhPIGZqQAWeggKBQHMYAKAgGgoCUAOjbJOXCrxrDR4mrwYyO3BrwIyWoMDABmAQwCuWBCAAKezgCU9AOwDWILsj0BbAA4Qb7ALwAGIQAcAKy8IAgA9jhQtnAwfkK+ieosblAA+si6hsZcAHKhppYCIAA8xCAAxIVcyhqgAMIGAM4RLiDO7p7sIPqI4VAp6XDNrXkFRaXlVZY1YjChAEQdHl7xAJwLdSAAEhDsABYgqfAQTRDhNoNpx3Cn3PlmE2WV1cqLy13xwbwRUTFx-kSSU2IhYAAFwgYEG4oVwFqkMlkjAgQeDIdDYfChiNwi5URCoTCEHCETc7qigA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 **Output** for `pr_default` (cycle):
 ```
 (1, 0.25)  % All nodes equal in symmetric cycle
@@ -939,6 +1035,8 @@ pr_precise(N, PR) <- #PR(edge, "damping=0.85,tolerance=0.00001").
   - `tolerance`: Convergence threshold (default 0.0001)
 
 ### 9  Centrality Comparison Example
+
+{/* playground-anchor */}<span id="playground-280d07084b" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 % Same graph for all three measures
@@ -957,7 +1055,11 @@ pr(N, Score) <- #PR(edge).
 @output("pr").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KQAgyghgtgpiDmAnCAHAFiAZge0SCANgSAC5qIxywQDOArhTQFAwAm8MAFAIwA0ATAEoAdC3Zd+vAMwixHTlN4AWWW3l8ZopqADC2KCjok4hYgGMYAOxLICASxJ2YzVmc4A5XuDO4YgkAA8ALQgAMQAIjqcan6iAEZunt6+-sFhAEJRMbIoiB5eYD4UqSGhAAoAStHiskwAAthGhiScAESurbINTUZtCZ2i3STNbbkDTEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 ## Reasoning + Graph Analytics
+
+{/* playground-anchor */}<span id="playground-404a81eba8" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge_large(1,2,9).
@@ -977,3 +1079,5 @@ asp_function(X,Y,Z) <- #ASP(edge).
 max_asp(X,Y,M) <- asp_function(X,Y,Z), M = mmax(Z).
 @output("max_asp").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sD6A2CGBOEAUBGANAJjQTgJQDoAoUCGBZAZjQBY0A2Aw48KAZwAsB7eAFySyoZGJNl15Ja6FI0IBXAHYB3YAEsw7HqEgjUaAKyMFytRq069mGToAaaAJpoAWrgAEAHgC0LkWUTAktg7ORDb2Tq6e3iyQHNx8geEhLAFh0u5eRqrqmiDayYEELgCkLgDqwC6wrKxq8pUuIMAAZrCy0DwNKqw8sPIAxhUAvC4oTFUADpBNCn08KpzyKUERXgDEAIIAygAKSCKMALawAB6QE0toALIrlayT0-1zCxfOaC6XLsMHR8dIwYQAAU4sh44xBSAARD8zncIYwgA" target="_blank" rel="noopener">▶ Run in the Playground</a>

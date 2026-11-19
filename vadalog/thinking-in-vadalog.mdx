@@ -102,6 +102,8 @@ We'll add a statement that models our rule 1 from the facts, introducing the
 concept of "control". It helps to think of relationships between entities as
 verbs, such as "owns", "works at", "parents", or "controls".
 
+{/* playground-anchor */}<span id="playground-2eea521dd6" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {4-5}
 owns("Yum", "KFC", 0.6).
 owns("Yum", "Pizza Hut", 0.7).
@@ -110,9 +112,13 @@ controls("Yum", "KFC") <- owns("Yum", "KFC", 0.6).
 controls("Yum", "Pizza Hut") <- owns("Yum", "Pizza Hut", 0.7).
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVatQDGwMIIBOwADbR4yQtnwwK6ADwBadHVWMNuAhlKUaMuYpUN1zdl14DhOg0fAmnmFzz8QiIk4jTUAKToAIIAJrEAprHoAEYAnuiCABYJ6AAOStxpAOaKCGCxAFzoEFmg6CBZ3IKZOejyCEoJEOiJ8mwAbgk0AALAQnlCsLYKyhDaNEA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 Let's make these statements into a generic rule, replacing "KFC" and "Pizza Hut"
 with the variable `SomeBrand`, and the number of shares as the variable
 `Shares`.
+
+{/* playground-anchor */}<span id="playground-825112d027" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {4-5}
 owns("Yum", "KFC", 0.6).
@@ -122,8 +128,12 @@ owns("Yum", "Pizza Hut", 0.7).
 controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVatQCk6RgEJ0AY2BhBAJ2AAbCOgjAkAU3QAjNdzAATdGwBm1wejo6kwNUcEALc+gCsRGcB2nkYQXm46geie3A6m5hY0yqoa2gzIhADK+gYAQmaWFOgAPAC0juDQ8OkYWYZ58TVhBhAUjdzh6AB8xCQ+NNLoAIIWFgZWxgCeUR5GAA6a3BMA5hoIlgBcuh6g6CBeDsHoagiazeijamwAbgY0AALAQrNCsEnqWhAwEkA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 Let's introduce a new company called `FastFoodsGroup`, and some ownership facts.
 FastFoodsGroup owns 45% of McDonalds, and Yum owns 70% of FastFoodsGroup.
+
+{/* playground-anchor */}<span id="playground-752c6f826d" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {3-5}
 owns("Yum", "KFC", 0.6).
@@ -136,10 +146,14 @@ owns("Yum", "McDonalds", 0.1).
 controls("Yum", SomeBrand) <- owns("Yum", SomeBrand, Shares), Shares > 0.5.
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0RgBCdCNzQS1LCHQIYCQAU3QAIw1uMGV0NgAzKsF0F3QkYA0iwQALcvQHIkTgWo6iiE7WnP70Du560vLlGnSwTOBs4KZ0AGV8goAhMoqKdAAeAFoGqVXCTcLd2Yx1kYKICjuHnIA+YhIHGgT0AEFlMoCpVigBPCbtIo6SzcUEAc18FQAXLl2qB0CBOvVBugNAhLI90ECNGwAG4FGgAAW0gh0QlgCyW2RgEiAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 Yum also owns 10% of McDonalds, but simply according to rule 1, it does not
 control McDonalds as it's only a minority shareholder. Therefore, we will need
 to model the indirect ownership of McDonalds by Yum! via the intermediary
 FastFoodsGroup, using rule 2:
+
+{/* playground-anchor */}<span id="playground-62cfdb04c1" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {10-14}
 owns("Yum", "KFC", 0.6).
@@ -158,6 +172,8 @@ controls("Yum", "McDonalds") <- controls("Yum", "FastFoodsGroup"),
                                 Shares > 0.5.
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0RgBCdCNzQS1LCHQIYCQAU3QAIw1uMGV0NgAzKsF0F3QkYA0iwQALcvQHIkTgWo6iiE7WnP70Du560vLlGnSwTOBs4KZ0AGV8goAhMoqKdAAeAFoGqVXCTcLd2Yx1kYKICjuHnIA+YhIHGgSk5FSFktsugwuYrKoqrU2PVGs1WhNOmBur10F02IsChpCso2NwNABPdAeBRKVSabQ6VC-EDtYBVJGCBAaJGwlptRHIvq1UERVTUQFZVwhZg88FRA4nNIZQUXZjErxk3x6Z7UdBq9UazVa7UaoIyOQk7zkvwi0xgyKXV4qnU222a+54x7oD6kb7UX4AQWUygKlWKhMG6B0lm4+IA5r4KgAuXK0kDoGlTBFFDQISxOn0aNgANwKNAAAtpBDohLABctxTQgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 <Tip>
 **Naming atoms**
 
@@ -170,6 +186,8 @@ pursue both `controls` definitions on lines 8 _**and**_ 12 to their logical conc
 </Tip>
 
 More generally:
+
+{/* playground-anchor */}<span id="playground-05bf8f6007" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {10-14}
 owns("Yum", "KFC", 0.6).
@@ -188,6 +206,8 @@ controls("Yum", SomeBrand) <- controls("Yum", Intermediary),
                               Shares > 0.5.
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0RgBCdCNzQS1LCHQIYCQAU3QAIw1uMGV0NgAzKsF0F3QkYA0iwQALcvQHIkTgWo6iiE7WnP70Du560vLlGnSwTOBs4KZ0AGV8goAhMoqKdAAeAFoGqVXCTcLd2Yx1kYKICjuHnIA+YhIHGgSk5FSFktsrktiU9pUanU0hksjkumxFgVCso2NwNABPdAgdrAKpgCYIDT4xrNVq-Sb4np9Aadabg+Yw5auEJ3LY3fZHU6A2EXDAASURGmRqIxz2o6Alkql0plsolQQFggKQoKKLR6NZ13BLzRjzFcoNhsl91170+32ovwAgsplKqSpjBugdJZuOiAOa+CoALlyOJAWNpE3aRQ0CEsj3Qdo0bAAbgUaAABbSCHRCWDcpkwCRAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 Company ownership rule 2 states that X controls Y if it has joint ownership of more than
 50% of Y. That means that we'll need to sum up the ownership shares via all
 intermediaries.
@@ -202,6 +222,8 @@ of the running sum while we step through each intermediary. How do we do that?
 It always helps to think of working backwards from your end goal: Yum! controls
 some brand, if it controls directly or indirectly, more than 50% of its shares.
 Let's use the verb phrase `has_shares` to represent this.
+
+{/* playground-anchor */}<span id="playground-1e9f3f9b0e" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {16-19}
 owns("Yum", "KFC", 0.6).
@@ -224,6 +246,8 @@ controls("Yum", SomeBrand) <- controls("Yum", Intermediary),
 controls("Yum", SomeBrand) <- has_shares("Yum", SomeBrand, Shares),
                               Shares > 0.5.
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0RgBCdCNzQS1LCHQIYCQAU3QAIw1uMGV0NgAzKsF0F3QkYA0iwQALcvQHIkTgWo6iiE7WnP70Du560vLlGnSwTOBs4KZ0AGV8goAhMoqKdAAeAFoGqVXCTcLd2Yx1kYKICjuHnIA+YhIHGgSk5FSFktsrktiU9pUanU0hksjkumxFgVCso2NwNABPdAgdrAKpgCYIDT4xrNVq-Sb4np9Aadabg+Yw5auEJ3LY3fZHU6A2EXDAASURGmRqIxz2o6Alkql0plsolQQFggKQoKKLR6NZ13BLzRjzFcoNhsl91170+32ovxS0MWsJBhTBsyqtTYghyACtgAj6nRlcM2DoGjSptCkDpyuiAOQ5YamqoQX7cYrAABuRSpDNtTN5GzZ4IOJ3QnQgAH1Y6Mc1cdtqNq99UaGzKTaN0B9SBbfgBBZTKVUlTGDdA6SzcdEAc18FQAXLkcSAsbSJu0ihoEJZHuhexo2GmaAABbSCHRCWDcpkwCRAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Since we've created this intermediate calculation `has_shares`, we should
 rephrase our 2 existing rules by dropping the condition (since that now happens
@@ -262,6 +286,8 @@ When performing arithmetic across recursion, we need to use the recursion-specif
 which keep track of the aggregation (in this case "sum") across each recursive call.
 </Note>
 
+{/* playground-anchor */}<span id="playground-60fc3b82cd" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {16-20,24}
 owns("Yum", "KFC", 0.6).
 owns("Yum", "Pizza Hut", 0.7).
@@ -290,6 +316,8 @@ controls("Yum", SomeBrand) <- has_total_shares("Yum", SomeBrand, Shares),
                               Shares > 0.5.
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0RgBCdAALOXQAAwBlDI0AUwgs9G4kbTBBdGAAM1L0ACMNbjBldDY6tiqXdEEMqrKK7rqIfKL2sF60gsbm1poMiAB9Ue5C1xCMHOAkAoAhOeUtsYgKdAAeAFpqqWCmdG3dg5ajh5O4xJT0zNyTksGEJVqnVeE0Xu1OlUjOZBFpLBBSpM2JUChpdso2GsAJ7oEBpYDfBF9biCBKlcqA4boVbrCZTGZg+bURYrE53QgASRRaIKGOxWx2+0OxzWRTOV2o6HQ0MqcI29y5glR6MxGixFFQkpu9EVyt5qqxAqewreotONDJOWQpUslnp6AxhSMVSglmRMwAHGdwcjHQVndSTuhXe6EdEAEyXaJ2M61amC2YvMnEqqMQkLORLQTAQRWVlm9lGoUvDAAFRzVjyZvFly1LJpRUL6F1PL5aqLz1aIvWGq15dzlirtIAvOgkBBkFAh2KLZ9kKkZbDgPD47tE60Ie1BAiAFbAZHdcCo0ZsHTAqYk6U7HQtLEAcgRDYRbAgZO4DWAADcZg4iPEaIucpNo8xatDWhJZhWlj5uswGCp2rzTqcmpSqhaHoRhmGoUh6AAHzECQDizugACCyjKLyjQ4n0Mw6JY3BYgA5r4rQAFyBqAuL9PaGgIJY4wURobDfjQAAC2iCDoQiwPWJwwBI4lCFJggyZm2YDjBRTyWJEnKbAgHLlEEhAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 You'll notice that in our new `has_total_shares` rule, we've dropped `Intermediary` from the head
 of the rule and replaced it with `TotalShares`. Since we only care about the
 total sum of the shares, and we've already used the [`msum`
@@ -306,6 +334,8 @@ them as separate predicates, as if you had named them different things.
 To resolve this, we simply force line 8 to have 4 arguments, by adding an [anonymous
 variable `_`](/vadalog/language-primitives#anonymous-variables) into the 2nd position. This argument is never processed anyway, so
 you could call it anything you want and it would be ignored.
+
+{/* playground-anchor */}<span id="playground-6f0b1a3524" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog showLineNumbers {8}
 owns("Yum", "KFC", 0.6).
@@ -334,6 +364,8 @@ has_total_shares("Yum", SomeBrand, TotalShares) <-
 controls("Yum", SomeBrand) <- has_total_shares("Yum", SomeBrand, Shares),
                               Shares > 0.5.
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0RgBCdAALOXQAAwBlDI0AUwgs9G4kbTBBdGAAM1L0ACMNbjBldDY6tiqXdEEMqrKK7rqIfKL2sF60gsbm1poMiAB9Ue5C1xCMJYwc4CQCgCE55R2xiAp0AB4AWmqpYKZ0Xf2jlpOns7jElPTM3LOSoMEJVqnVeE03u1OlUjOZBFpLBBSpM2JUChp9so2GsAJ7oEBpYC-JF9biCBKlcrA4boVbrCZTGYQ+bURYrM4PQgASTRGIKWNxOz2h2OpzWRQuN2o6HQsMqCI2jx5gnRmOxGhxFFQ0ru9GVqv56pxQpeoo+4vONApOWQpUslkZ6CxhSMVSgllRMwAHBdIajnQVXbSzuh3Z6kdEAEzXaJ2C61WnC2ZvCmkqqMYkLORLQTAQRWdkWzkmkVvDAAFTzVjyFsl1x1bLpRWL6H1fIFGpLr1aYvWWp1lfzlhr9IAvOgkBBkFARxKrd9kKk5fDgIjE-tk60oe1BEiAFbAVHdcDo0ZsHSgqZk2V7HQtHEAciRTaRbAgFO4DWAADcZg4iPENDLgqLbPKWrR1sSOZVpYhbrKBwrdu8s7nNqMroRhmFYdh6EoegAB8xAkA487oAAgsoyj8o0eJ9DMOiWNwOIAOa+K0ABcwagPi-SOhoCCWOMVEaGwv40AAAtogg6EIsCNmcMASJJQgyYIcnZrmQ5wUUikSVJqmwMBq5RBIQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 <Warning>
 **Atoms with the same name**
@@ -375,6 +407,8 @@ activate both definitions, just with the remaining values being set to `null`.
 Finally, let's make our rules totally generic, and see the entire ownership
 graph by adding an `@output` annotation
 
+{/* playground-anchor */}<span id="playground-2ee130c0bf" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers {30}
 owns("Yum", "KFC", 0.6).
 owns("Yum", "Pizza Hut", 0.7).
@@ -408,6 +442,8 @@ controls(Conglomerate, SomeBrand) <-
 @output("controls").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0ACUESwBTdGiALnQ8cwBzS2AkNI1uQQyACzl0AAMAZWqNNIha9G4kbTBBdGAAM3b0ACMysGV0NgG2Hpd0QWqejq6ZgYgmloSJsDnKjJHuMZpqiAB9Ne5m6DywQuLS8rSME4x6u4AhUeUX9YgKdAAeAC01HQvSkUGutxKZQqL3en2+FxacUSKXS6AATDlIUVoQ90Mc6o0ka12p0EN1egNePsxhMpj0jOZBFpLBB2ts2N1SiVlGwLgBPTYgSrAAk1eblMnLKnoc6XLY7PafI5yM4-CEFXH3WHoACS3I0vP5GgFcJKHwOX3QxMufyBIPQTO6rKuWruMMe+sNxsFFFQjqCBoqRrSfMF5rSlrGiLtNE29WQ7UsliV6D5zSMPSgli5GQAHICAJx-K1bDNpLNyn7oHN59nROyA6KUWUQO7DT6bSU9eYZZ1QnVVOSq06CYCCKzqkmam7az2R6PWgAqE6stuRAOBoOO08us8HC+9Id9psXCJtP39jtXk8sG-ZAF50EgIMgoA+Ubl3XiKk7ma6codrS4yTBMgjsgAVsAXIzOApRrGwOiyj2-5IDoBwCgA5BAmzyi0EzstwQzAAAbhkDhEPENDOiywBsge84POeVr2tu4pjmulh7i0jEesxNrwlasbIgGoIPugAB8xAkA48YAALaIIOhCLAtGujAEhAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 The output will be
 
 ```prolog
@@ -439,6 +475,8 @@ You might be wondering, why did we define `has_shares` for Rule 2 to be based on
 
 This is a good intuition, and indeed we can write rules that don't do this:
 
+{/* playground-anchor */}<span id="playground-3bec56be54" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog showLineNumbers title="Non-recursive version of the program" {29}
 owns("Yum", "KFC", 0.6).
 owns("Yum", "Pizza Hut", 0.7).
@@ -464,6 +502,8 @@ controls(Conglomerate, SomeBrand) <-
 
 @output("controls").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0ACUESwBTdGiALnRGAEJ0I3NBLUsIdF4AIw1uMGV0NgAzBsF0F3QAPnQHIkTgZsEACwyIQe4NNPK2MHQhjOra5RoisBLgMqg8cwBzS2AkNJrBNIwAZX20gCEauop0AB4AWmp0NqlNnb2Do5P0c4ProszmMJhAKKgXn8QZNOsQSA4aAlkqkMgAmHL5QrFUrlKo3epNWbDdAQZBtZpsQTlZRsCZGVqjcaTDCLIlpJGM0EtN6QBp1WlpemWACe6AAbmxeLVRdNjhoDjTxqKhtxWpSeeUuj0+o0IYk2OUkMAJkTat1estsetoFswLsLj8zhdAbcHs9XkFbfbvqrfgBJVaHBWSjTCjABuXBpWnaFgiEe94RoNpRWhp0A-EYABSwFlMaZcchns+Dt96aumfQJgF9PzoPBkIAKsBBFY6zCALzoHN52PoADUVZrgnbEHj6CT8pTIeFo9hpAc4+brcsc66C8RAAFtIIdEJYCs1mUYBIgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 Initially, this seems like a good representation of our business rules. There's
 one Vadalog rule each for each business rule.
@@ -577,6 +617,8 @@ It actually feels more natural to write:
 
 <Tabs>
   <Tab title="Recursive">
+    {/* playground-anchor */}<span id="playground-e7a027fb7b" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
     ```prolog showLineNumbers {16}
     owns("Yum", "KFC", 0.6).
     owns("Yum", "Pizza Hut", 0.7).
@@ -601,8 +643,12 @@ It actually feels more natural to write:
 
     @output("controls").
     ```
+
+    {/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0ACUESwBTdGiALnQ8cwBzS2AkNI1uQQyjc0EtSwh0XgAjMrBldDYAM3bBdBd0AD50ByJE4C7BAAsMiAnuDTT6tjB0SYzm7laaKrAa4DqoPLBC4tLytIwAZROAIRblCnQAHgBaanReqQOCopKyisubndLrN5hAKKg3ugLiCFgNiCQHDQEslUhkAEw5Q7HX5ndDbXZ1BrodatdrjKboCDIXpdNiCerKNjzIw9GZzBYYDZtVbItmg7ofSDtVpMtIsywAT3QADc2LwNlKlhUNCVGXMpZNygL8bUIBDEmx6khgPMVrNlsN4ltqrqvkcfqd-lDAVyHi9ITq9tAsQ6-ud0ABJHalVVyjQSjBB5Wh9XQ9lgiHvIJRkNpNXhgElW5cjAAKWASrjoPBkKCPpOfszaWzrQwJlFLKLCxL7wAKsBBFYm-UALzoJBUpBQfOFmFg9AAan7g6g9eZgm7LfQ7c7lm7cNIiOo1AAAtpBDohLBPXUYBIgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
   </Tab>
   <Tab title="Non-recursive">
+    {/* playground-anchor */}<span id="playground-d6426dd83a" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
     ```prolog showLineNumbers {16,20}
     owns("Yum", "KFC", 0.6).
     owns("Yum", "Pizza Hut", 0.7).
@@ -628,6 +674,8 @@ It actually feels more natural to write:
 
     @output("controls").
     ```
+
+    {/* playground-link */}<a href="https://www.prometheux.ai/playground#code/PYdwdgzgFARAmgVwLYwDQAIYGkBiBhNdABgDoA2AShIChRJZEUMYAFASwC8OBDdACQQAXQqQDsVWuGgwc3CIJzBgAEwgBxAE7AEAB0IwAsgGMAIsDDcANqpEkALAFYJdaY32z5ileq27b4mhcGZH1jMwtrCFsARglqAFJ0ACUESwBTdGiALnQ8cwBzS2AkNI1uQQyjc0EtSwh0XgAjMrBldDYAM3bBdBd0AD50ByJE4C7BAAsMiAnuDTT6tjB0SYzm7laaKrAa4DqoPLBC4tLytIwAZROAIRblCnQAHgBaanReqQOCopKyisubndLrN5hAKKg3ugLiCFgNiCQHDQEslUhkAEw5Q7HX5ndDbXZ1BrodatdrjKboCDIXpdNiCerKNjzIw9GZzBYYDZtVbItmg7ofSDtVpMtIsywAT3QADc2LwNlKlhUNCVGXMpZNygK+oNhqMOhDEmx6khgPMVrNlnqttVatAsT9Tv8oYCuQ8XpCgg6Tn9zugAJI7UqquUaCUYQPKkPq6HssEQ95BSPBtJqsMAkq3LkYABSwCVsdB4M9n29OOdV0zQPQJlFLMLC2L7wAKsBBFYG-UALzoPMFmH1ADUNbrgk7CYDQZVqdDEs7cNIDgnrfblnng0XSIAAtpBDohLB8XaYBIgA" target="_blank" rel="noopener">▶ Run in the Playground</a>
   </Tab>
 </Tabs>
 

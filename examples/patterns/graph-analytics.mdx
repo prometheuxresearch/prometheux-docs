@@ -11,6 +11,8 @@ For high-performance built-in graph algorithms, see [Graph Functions in Vadalog]
 
 The task of finding out all pairs of nodes in a graph that are connected to each other either directly or indirectly is known as [transitive closure](https://en.wikipedia.org/wiki/Transitive_closure). You might think of this asking if it's possible to fly from some airport to another in one or more direct flights.
 
+{/* playground-anchor */}<span id="playground-cec6185d11" style={{ display: "block", scrollMarginTop: "96px" }}></span>
+
 ```prolog
 edge("a","b").
 edge("a","e").
@@ -31,11 +33,15 @@ path(X,Z) <- path(X,Y),edge(Y,Z).
 @output("path").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUBECG0BpoCNoEoB0AoUEbyWHW1yjkWgDNidwzUkQbSYBjC1TWvadw5ujCZJ2XFtGHQAFgJ7UkYGlgCkAAmSwAzsFWstwAFyqAlpVUAXKcABOO45tWwAdiFWlVlawHsAthauqTl4gOgAaFl7+OkEhqgCaUU5RtiYOsKoADrCWHt5+4eaRCcpYWZaQoQhxaKoAPAC0boKV1dgqqrasAK7WmsYAbjp62kamyXZpmdlSub5RgcFhEfMxOgnOrpY2E45J7p5zWwuxCYUri6oAWgiJ46mOUzkHfkerqgWRrxeXqiVlUhUEJcag1HgCWmgECw4kCuFgAAJeLrmDLImD-GhAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 After execution, the relation `path` contains all connected node pairs, showing both direct and indirect connections in the graph.
 
 ## Degree Centrality
 
 Degree centrality measures the importance of a node based on the number of edges connected to it. This is a fundamental metric in network analysis that helps identify the most connected or influential nodes in a graph.
+
+{/* playground-anchor */}<span id="playground-769cc4738d" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge("a","b").
@@ -72,6 +78,8 @@ degree_centrality(N,DC) <-
 @post("degree_centrality", "orderby(-2)").
 ```
 
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUBECG0BpoCNoEoB0AoUEbyWHW1yjkWgDNidwzUkQbSYBjC1TWvadw5ujCZJ2XFtGHQAFgJ7UkYGlgCkAAlYAnYLAAuwVQFcAdiACWW1npCrSAZ1WUNAewC2qsxas26t7sAD6xh7AlqCQABoIAJpoqgA8ALTeeJExJHSBJuYhVpBRCOGxiclQqVwq7sCUpkb6sAA29apGTiDA9jWqOlL6YBqwAA5SWC1tEUVJpJnBoSAR0eVqrE7GOl09XU46Dc0GLsjAGqpOlM2t7SN7-qPtkAByexNnY4UIqg9uALyqLsurkJhVFgKqwGqwDPVdPpuvo2n1gPoTjZYKwpM9gCNzv44VooHcAIwIAAiwHhwCeUyC2Vm90JdwATGg3iSyapvr8VkYdADsCCwRCoWcNC4GqYAF6gSqs1jALn9eqmHQATwcTiO2lR6KwOIR-hlctFyvuxIAwk8sKpLejsaTccaWbimRarUYrjdbPdHghnZa7ud7N8PglCT7VESTWyw7aEQB6P1tWy8gACKx0AwM3Ik0YC+p08sVSpoSYGTlsmZ1OdlecNhbe0DVbQ0yCVkASjJoQA" target="_blank" rel="noopener">▶ Run in the Playground</a>
+
 The degree centrality is normalized by dividing by `N-1` (where N is the total number of nodes), producing values between 0 and 1. The `@post` annotation orders the results by degree centrality in descending order, making it easy to identify the most central nodes in your network.
 
 ## Community Detection (Connected Components)
@@ -79,6 +87,8 @@ The degree centrality is normalized by dividing by `N-1` (where N is the total n
 Community detection identifies groups of nodes that are more densely connected to each other than to nodes outside the group. One fundamental approach is finding connected components—groups of nodes where every node is reachable from every other node in the group through a path of edges.
 
 This example uses Equality Generating Dependencies (EGDs) to merge communities when nodes are connected, effectively computing connected components in an undirected graph:
+
+{/* playground-anchor */}<span id="playground-538b444f35" style={{ display: "block", scrollMarginTop: "96px" }}></span>
 
 ```prolog
 edge("a","b").
@@ -106,5 +116,7 @@ C1 = C2 <- edge_undirected(X, Y), community(X, C1), community(Y, C2), X!=Y.
 
 @post("community", "orderby(1)").
 ```
+
+{/* playground-link */}<a href="https://www.prometheux.ai/playground#code/KYEw5sAUBECG0BpoCNoEoB0AoUEbyWHW1yjkWgDNidwzUkQbSYBjC1TWvadw5ujCZJ2XFtGHQAFgJ7UkYGlgCkAAlYAnYLAAuwVQFcAdiACWW1npCrSAZ1WUNAewC2qsxas26t7sAD6xh7AlqCQABoIAJpoqgA8ALTeeJExJHSBJuYhVpBRCOGxiclQqVwq7sCUpkb6sAA29apGTiDA9jWqOlL6YBqwAA5SWC1tEUVJpJnBoSAR0eVq2qxSza36yMD1TkZg9jpOqrDqri7GpjoAnlisp+dX86oAwhNrY4XYFaaUXQDuh6N2kctCcjLVZqpkJcjkZVJAgtlZrFSAguj1oZttrsuoduvpbLAXPpbi4zkYLtcngBGVQAXmeACZ4pMMgjPGFIqoYqiSWSKY9qWgeXdyQ98oyhapwgBCWlRT4AAQGTlsOjYIopiFU0CcGjaGihkCpaCUagAgiA2tYoWj9AN6rBLn0nEEAFyqWxSJy-VS-KS6W2qDQGepA-WmABuwGwCpdOgGBjV0CmbJyoBoscTCaTgIzcez6tJ90uNCAA" target="_blank" rel="noopener">▶ Run in the Playground</a>
 
 The EGD `C1 = C2` ensures that whenever two nodes are connected by an edge, their community identifiers are unified. This propagates through the graph, merging all connected nodes into the same community. The `@post` annotation orders results by the first column (node), making it easy to see which community each node belongs to.
