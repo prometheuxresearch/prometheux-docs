@@ -442,6 +442,49 @@ curl -X POST "$BASE_URL/concepts/$PROJECT_ID/reorder" \
 }
 ```
 
+## Delete concepts
+
+Permanently delete one or more concepts from a project, by name.
+
+```
+POST /concepts/{ontology_id}/cleanup
+```
+
+| Parameter | In | Required | Default | Description |
+|---|---|---|---|---|
+| `ontology_id` | path | yes | — | The ontology ID. |
+| `concept_names` | body | yes | — | Non-empty array of the concept names to delete. |
+| `confirm_impact` | body | no | `false` | Delete global concepts even when other projects read them. See below. |
+
+```bash
+curl -X POST "$BASE_URL/concepts/$PROJECT_ID/cleanup" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "concept_names": ["cleaned", "final_report"] }'
+```
+
+```jsonc
+{
+  "status": "success",
+  "message": "Selected concepts for project proj_123 deleted successfully",
+  "data": null
+}
+```
+
+There is no "delete all" mode: a missing or empty `concept_names` returns `400`
+and deletes nothing. To empty a project, list its concepts with
+[`/list`](#list-concepts) and pass every name. Names that do not exist in the
+project are ignored.
+
+Deleting does not update the concepts that read the deleted ones; fix or delete
+those yourself.
+
+Global concepts live in the project whose ID is `global`. Deleting one that
+other projects read returns `409` with `data.errorCode` set to `GLOBAL_IMPACT`
+and `data.dependents` mapping each affected project to the concepts in it that
+read the deleted ones. Send the request again with `"confirm_impact": true` to
+delete anyway.
+
 ## Execution status
 
 When a concept runs, the platform persists a snapshot of the run (one per run,
@@ -517,5 +560,4 @@ its last run succeeded).
 | Read (or lazily generate) a description | `GET /concepts/{ontology_id}/description` | Query: `concept_name`. |
 | Ask a question over predicate data | `POST /concepts/{ontology_id}/llm` | Body: `predicate_names`/`predicate_data`, `question`. Returns `{ "response": "..." }`. |
 | Export results to CSV / download a file | `GET /concepts/{ontology_id}/download` | Query: `path`, `export_csv`, `concept_name`. Returns the raw file, not the envelope. |
-| Delete concepts | `POST /concepts/{ontology_id}/cleanup` | Body: `concept_names` (omit to delete all). |
 | Check whether a share grants filesystem access | `GET /concepts/{ontology_id}/share-warehouse` | Returns `{ "filesystem_shared": bool }` for the calling recipient. Read by the [share](/integrations/api-endpoints/sharing) layer; `false` when you are not a live recipient of the project. |
