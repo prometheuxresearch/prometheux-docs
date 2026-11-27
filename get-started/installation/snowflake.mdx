@@ -415,9 +415,23 @@ or API keys. All inference is handled natively within Snowflake.
 ## Cortex Agent Integration (MCP)
 
 The native app includes a built-in MCP server that is automatically registered when
-the platform starts. Cortex Agents and Snowflake Intelligence can discover and invoke
-Prometheux tools (list concepts, run reasoning, query knowledge graphs) without any
-additional setup.
+the platform starts. Cortex Agents, used from Snowflake CoWork / Snowflake Intelligence
+or from **AI & ML → Agents** in Snowsight, can discover and invoke Prometheux tools
+(list concepts, run reasoning, query knowledge graphs) with no connector or OAuth setup.
+
+<Warning>
+**Cortex Code cannot use the built-in MCP server**
+
+Cortex Code (Snowflake's AI coding assistant) only uses **external MCP connectors**:
+servers on a public URL that each user signs in to with OAuth. The native app's server is
+an app-hosted MCP server (`CUSTOM MCP SERVER`), and Snowflake makes those available to
+Cortex Agents only. This is why Cortex Code reports that `PROMETHEUX_MCP` "does not exist
+or not authorized".
+
+To use Prometheux from Cortex Code, set up the
+[external MCP connector](/integrations/mcp/snowflake-cortex) instead. It connects to the
+cloud-hosted Prometheux platform, not to the native app.
+</Warning>
 
 ### Verify the MCP server
 
@@ -427,6 +441,11 @@ After `CALL init()` completes, confirm the MCP server is registered:
 SHOW CUSTOM MCP SERVERS IN APPLICATION prometheux;
 DESC CUSTOM MCP SERVER prometheux.app_public.prometheux_mcp;
 ```
+
+Use `DESC CUSTOM MCP SERVER`, not `DESCRIBE MCP SERVER`: the latter only looks up
+Snowflake-managed MCP servers and reports this one as missing. If you installed the app
+under a different name, replace `prometheux` with that name here and in the agent
+specification below.
 
 ### Use with a Cortex Agent
 
@@ -446,19 +465,17 @@ mcp_servers:
 $$;
 
 GRANT USAGE ON AGENT my_prometheux_agent TO ROLE my_role;
+GRANT APPLICATION ROLE prometheux.app_user TO ROLE my_role;
 ```
 
+The second grant matters for any role other than the one that installed the app (which
+already has it). `APP_USER` carries `USAGE` on the MCP server and access to the app's
+endpoint, and Snowflake checks both for the role running the agent on every run and
+every tool call. Without it, the agent cannot reach the Prometheux tools.
+
 The agent will automatically discover Prometheux tools via `tools/list` and invoke
-them as needed.
-
-<Tip>
-**Cortex Code**
-
-The built-in MCP server works with Cortex Agents and Snowflake Intelligence. For
-**Cortex Code** (Snowflake's AI coding assistant), use the
-[external MCP connector](/integrations/mcp/snowflake-cortex) pointing at the
-cloud-hosted Prometheux platform instead.
-</Tip>
+them as needed. To try it, open the agent in Snowflake CoWork / Snowflake Intelligence or
+under **AI & ML → Agents**, and ask *"List my Prometheux ontologies."*
 
 <Tip>
 **Available Tools**
